@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
 import Input from '../components/UI/Input'
+import Select from '../components/UI/Select'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
@@ -9,15 +10,16 @@ import SuccessModal from '../components/UI/SuccessModal'
 
 const Materials = () => {
     const [items, setItems] = useState([])
+    const [materialTypes, setMaterialTypes] = useState([])
     const [loading, setLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isEditMode, setIsEditMode] = useState(false)
     const [editingItemId, setEditingItemId] = useState(null)
     const [formData, setFormData] = useState({
+        material_type_id: '',
         name: '',
-        description: '',
+        size: '',
         quantity: '',
-        unit: '',
     })
     const [submitting, setSubmitting] = useState(false)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
@@ -27,15 +29,22 @@ const Materials = () => {
     const [successMessage, setSuccessMessage] = useState('')
 
     useEffect(() => {
-        const fetchItems = async () => {
+        const fetchData = async () => {
             setLoading(true)
-            const response = await api('get', {}, '/materials/list')
-            if (response?.data) {
-                setItems(response.data.data)
+
+            const materialsResponse = await api('get', {}, '/materials/list')
+            if (materialsResponse?.data) {
+                setItems(materialsResponse.data.data)
             }
+
+            const typesResponse = await api('get', {}, '/material_types/list')
+            if (typesResponse?.data) {
+                setMaterialTypes(typesResponse.data.data)
+            }
+
             setLoading(false)
         }
-        fetchItems()
+        fetchData()
     }, [])
 
     const handleInputChange = (e) => {
@@ -67,10 +76,10 @@ const Materials = () => {
             setIsEditMode(false)
             setEditingItemId(null)
             setFormData({
+                material_type_id: '',
                 name: '',
-                description: '',
+                size: '',
                 quantity: '',
-                unit: '',
             })
 
             setSuccessMessage(isEditMode ? 'Материал успешно обновлен' : 'Материал успешно создан')
@@ -84,10 +93,10 @@ const Materials = () => {
         setIsEditMode(true)
         setEditingItemId(item.id)
         setFormData({
+            material_type_id: item.material_type?.id || '',
             name: item.name,
-            description: item.description || '',
+            size: item.size || '',
             quantity: item.quantity || '',
-            unit: item.unit || '',
         })
         setIsModalOpen(true)
     }
@@ -120,10 +129,10 @@ const Materials = () => {
         setIsEditMode(false)
         setEditingItemId(null)
         setFormData({
+            material_type_id: '',
             name: '',
-            description: '',
+            size: '',
             quantity: '',
-            unit: '',
         })
         setIsModalOpen(true)
     }
@@ -157,16 +166,16 @@ const Materials = () => {
                                         ID
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                        Тип материала
+                                    </th>
+                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Название
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Описание
+                                        Размер
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Количество
-                                    </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Единица
                                     </th>
                                     <th className="text-right p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Действия
@@ -198,23 +207,23 @@ const Materials = () => {
                                                 </div>
                                             </td>
                                             <td className="p-4">
+                                                <div className="text-sm text-slate-600">
+                                                    {item.material_type?.name || '-'}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
                                                 <div className="text-sm font-bold text-gray-700">
                                                     {item.name}
                                                 </div>
                                             </td>
                                             <td className="p-4">
                                                 <div className="text-sm text-slate-600">
-                                                    {item.description || '-'}
+                                                    {item.size || '-'}
                                                 </div>
                                             </td>
                                             <td className="p-4">
                                                 <div className="text-sm text-slate-600">
                                                     {item.quantity || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.unit || '-'}
                                                 </div>
                                             </td>
                                             <td className="p-4">
@@ -278,6 +287,20 @@ const Materials = () => {
                 >
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-4">
+                            <Select
+                                label="Тип материала"
+                                required
+                                options={materialTypes.map((type) => ({
+                                    value: type.id,
+                                    label: type.name,
+                                }))}
+                                value={formData.material_type_id}
+                                onChange={(value) =>
+                                    setFormData((prev) => ({ ...prev, material_type_id: value }))
+                                }
+                                placeholder="Выберите тип материала"
+                            />
+
                             <Input
                                 label="Название"
                                 type="text"
@@ -289,12 +312,12 @@ const Materials = () => {
                             />
 
                             <Input
-                                label="Описание"
+                                label="Размер"
                                 type="text"
-                                name="description"
-                                value={formData.description}
+                                name="size"
+                                value={formData.size}
                                 onChange={handleInputChange}
-                                placeholder="Введите описание"
+                                placeholder="Введите размер"
                             />
 
                             <Input
@@ -304,15 +327,6 @@ const Materials = () => {
                                 value={formData.quantity}
                                 onChange={handleInputChange}
                                 placeholder="Введите количество"
-                            />
-
-                            <Input
-                                label="Единица измерения"
-                                type="text"
-                                name="unit"
-                                value={formData.unit}
-                                onChange={handleInputChange}
-                                placeholder="Введите единицу измерения"
                             />
                         </div>
 

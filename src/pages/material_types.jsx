@@ -15,7 +15,6 @@ const MaterialTypes = () => {
     const [editingItemId, setEditingItemId] = useState(null)
     const [formData, setFormData] = useState({
         name: '',
-        description: '',
     })
     const [submitting, setSubmitting] = useState(false)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
@@ -66,7 +65,6 @@ const MaterialTypes = () => {
             setEditingItemId(null)
             setFormData({
                 name: '',
-                description: '',
             })
 
             setSuccessMessage(
@@ -83,7 +81,6 @@ const MaterialTypes = () => {
         setEditingItemId(item.id)
         setFormData({
             name: item.name,
-            description: item.description || '',
         })
         setIsModalOpen(true)
     }
@@ -151,10 +148,7 @@ const MaterialTypes = () => {
                                         ID
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Название
-                                    </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Описание
+                                        Тип
                                     </th>
                                     <th className="text-right p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Действия
@@ -164,13 +158,13 @@ const MaterialTypes = () => {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="4" className="p-8 text-center text-slate-500">
+                                        <td colSpan="3" className="p-8 text-center text-slate-500">
                                             Загрузка...
                                         </td>
                                     </tr>
                                 ) : items.length === 0 ? (
                                     <tr>
-                                        <td colSpan="4" className="p-8 text-center text-slate-500">
+                                        <td colSpan="3" className="p-8 text-center text-slate-500">
                                             Нет данных
                                         </td>
                                     </tr>
@@ -188,11 +182,6 @@ const MaterialTypes = () => {
                                             <td className="p-4">
                                                 <div className="text-sm font-bold text-gray-700">
                                                     {item.name}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.description || '-'}
                                                 </div>
                                             </td>
                                             <td className="p-4">
@@ -257,22 +246,13 @@ const MaterialTypes = () => {
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-4">
                             <Input
-                                label="Название"
+                                label="Тип"
                                 type="text"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleInputChange}
-                                placeholder="Введите название"
+                                placeholder="Введите тип"
                                 required
-                            />
-
-                            <Input
-                                label="Описание"
-                                type="text"
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                placeholder="Введите описание"
                             />
                         </div>
 

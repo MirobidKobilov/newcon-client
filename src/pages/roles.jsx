@@ -9,13 +9,14 @@ import SuccessModal from '../components/UI/SuccessModal'
 
 const Roles = () => {
     const [items, setItems] = useState([])
+    const [permissions, setPermissions] = useState([])
     const [loading, setLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isEditMode, setIsEditMode] = useState(false)
     const [editingItemId, setEditingItemId] = useState(null)
     const [formData, setFormData] = useState({
         name: '',
-        description: '',
+        permission: [],
     })
     const [submitting, setSubmitting] = useState(false)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
@@ -25,15 +26,21 @@ const Roles = () => {
     const [successMessage, setSuccessMessage] = useState('')
 
     useEffect(() => {
-        const fetchItems = async () => {
+        const fetchData = async () => {
             setLoading(true)
-            const response = await api('get', {}, '/roles/list')
-            if (response?.data) {
-                setItems(response.data.data)
+            const [rolesResponse, permissionsResponse] = await Promise.all([
+                api('get', {}, '/roles/list'),
+                api('get', {}, '/permissions/list'),
+            ])
+            if (rolesResponse?.data) {
+                setItems(rolesResponse.data.data)
+            }
+            if (permissionsResponse?.data) {
+                setPermissions(permissionsResponse.data.data)
             }
             setLoading(false)
         }
-        fetchItems()
+        fetchData()
     }, [])
 
     const handleInputChange = (e) => {
@@ -42,6 +49,18 @@ const Roles = () => {
             ...prev,
             [name]: value,
         }))
+    }
+
+    const handlePermissionToggle = (permissionId) => {
+        setFormData((prev) => {
+            const isSelected = prev.permission.includes(permissionId)
+            return {
+                ...prev,
+                permission: isSelected
+                    ? prev.permission.filter((id) => id !== permissionId)
+                    : [...prev.permission, permissionId],
+            }
+        })
     }
 
     const handleSubmit = async (e) => {
@@ -66,7 +85,7 @@ const Roles = () => {
             setEditingItemId(null)
             setFormData({
                 name: '',
-                description: '',
+                permission: [],
             })
 
             setSuccessMessage(isEditMode ? 'Роль успешно обновлена' : 'Роль успешно создана')
@@ -81,7 +100,7 @@ const Roles = () => {
         setEditingItemId(item.id)
         setFormData({
             name: item.name,
-            description: item.description || '',
+            permission: item.permissions ? item.permissions.map((p) => p.id) : [],
         })
         setIsModalOpen(true)
     }
@@ -115,7 +134,7 @@ const Roles = () => {
         setEditingItemId(null)
         setFormData({
             name: '',
-            description: '',
+            permission: [],
         })
         setIsModalOpen(true)
     }
@@ -151,9 +170,6 @@ const Roles = () => {
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Название
                                     </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Описание
-                                    </th>
                                     <th className="text-right p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Действия
                                     </th>
@@ -186,11 +202,6 @@ const Roles = () => {
                                             <td className="p-4">
                                                 <div className="text-sm font-bold text-gray-700">
                                                     {item.name}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.description || '-'}
                                                 </div>
                                             </td>
                                             <td className="p-4">
@@ -264,14 +275,41 @@ const Roles = () => {
                                 required
                             />
 
-                            <Input
-                                label="Описание"
-                                type="text"
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                placeholder="Введите описание"
-                            />
+                            <div>
+                                <label className="block mb-2">
+                                    <span className="text-sm font-medium text-gray-700">
+                                        Разрешения
+                                    </span>
+                                </label>
+                                <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                                    {permissions.length > 0 ? (
+                                        permissions.map((permission) => (
+                                            <label
+                                                key={permission.id}
+                                                className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.permission.includes(
+                                                        permission.id
+                                                    )}
+                                                    onChange={() =>
+                                                        handlePermissionToggle(permission.id)
+                                                    }
+                                                    className="checkbox checkbox-sm"
+                                                />
+                                                <span className="text-sm text-gray-700">
+                                                    {permission.name}
+                                                </span>
+                                            </label>
+                                        ))
+                                    ) : (
+                                        <div className="text-sm text-gray-500 text-center py-4">
+                                            Нет доступных разрешений
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">

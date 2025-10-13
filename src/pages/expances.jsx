@@ -2,27 +2,21 @@ import React, { useState, useEffect } from 'react'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
 import Input from '../components/UI/Input'
+import Select from '../components/UI/Select'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
-import ConfirmDialog from '../components/UI/ConfirmDialog'
 import SuccessModal from '../components/UI/SuccessModal'
 
 const Expances = () => {
     const [items, setItems] = useState([])
     const [loading, setLoading] = useState(true)
+    const [users, setUsers] = useState([])
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const [isEditMode, setIsEditMode] = useState(false)
-    const [editingItemId, setEditingItemId] = useState(null)
     const [formData, setFormData] = useState({
+        user_id: '',
         amount: '',
-        category: '',
-        description: '',
-        date: '',
     })
     const [submitting, setSubmitting] = useState(false)
-    const [isConfirmOpen, setIsConfirmOpen] = useState(false)
-    const [deletingItemId, setDeletingItemId] = useState(null)
-    const [deleting, setDeleting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
 
@@ -38,6 +32,16 @@ const Expances = () => {
         fetchItems()
     }, [])
 
+    useEffect(() => {
+        const fetchUsers = async () => {
+            const response = await api('get', {}, '/users/list')
+            if (response?.data) {
+                setUsers(response.data.data || [])
+            }
+        }
+        fetchUsers()
+    }, [])
+
     const handleInputChange = (e) => {
         const { name, value } = e.target
         setFormData((prev) => ({
@@ -46,16 +50,18 @@ const Expances = () => {
         }))
     }
 
+    const handleUserChange = (userId) => {
+        setFormData((prev) => ({
+            ...prev,
+            user_id: userId,
+        }))
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setSubmitting(true)
 
-        let response
-        if (isEditMode) {
-            response = await api('put', formData, `/expances/update/${editingItemId}`)
-        } else {
-            response = await api('post', formData, '/expances/create')
-        }
+        const response = await api('post', formData, '/expances/create')
 
         if (response?.data) {
             const itemsResponse = await api('get', {}, '/expances/list')
@@ -64,66 +70,22 @@ const Expances = () => {
             }
 
             setIsModalOpen(false)
-            setIsEditMode(false)
-            setEditingItemId(null)
             setFormData({
+                user_id: '',
                 amount: '',
-                category: '',
-                description: '',
-                date: '',
             })
 
-            setSuccessMessage(isEditMode ? 'Расход успешно обновлен' : 'Расход успешно создан')
+            setSuccessMessage('Расход успешно создан')
             setIsSuccessOpen(true)
         }
 
         setSubmitting(false)
     }
 
-    const handleEdit = (item) => {
-        setIsEditMode(true)
-        setEditingItemId(item.id)
-        setFormData({
-            amount: item.amount || '',
-            category: item.category || '',
-            description: item.description || '',
-            date: item.date || '',
-        })
-        setIsModalOpen(true)
-    }
-
-    const handleDelete = (itemId) => {
-        setDeletingItemId(itemId)
-        setIsConfirmOpen(true)
-    }
-
-    const confirmDelete = async () => {
-        setDeleting(true)
-        const response = await api('delete', {}, `/expances/delete/${deletingItemId}`)
-
-        if (response?.data) {
-            const itemsResponse = await api('get', {}, '/expances/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
-            }
-
-            setSuccessMessage('Расход успешно удален')
-            setIsSuccessOpen(true)
-        }
-
-        setDeleting(false)
-        setIsConfirmOpen(false)
-        setDeletingItemId(null)
-    }
-
     const handleCreateNew = () => {
-        setIsEditMode(false)
-        setEditingItemId(null)
         setFormData({
+            user_id: '',
             amount: '',
-            category: '',
-            description: '',
-            date: '',
         })
         setIsModalOpen(true)
     }
@@ -157,32 +119,29 @@ const Expances = () => {
                                         ID
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                        Пользователь
+                                    </th>
+                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                        Телефон
+                                    </th>
+                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                        Роли
+                                    </th>
+                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Сумма
-                                    </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Категория
-                                    </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Описание
-                                    </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Дата
-                                    </th>
-                                    <th className="text-right p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Действия
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="6" className="p-8 text-center text-slate-500">
+                                        <td colSpan="5" className="p-8 text-center text-slate-500">
                                             Загрузка...
                                         </td>
                                     </tr>
                                 ) : items.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="p-8 text-center text-slate-500">
+                                        <td colSpan="5" className="p-8 text-center text-slate-500">
                                             Нет данных
                                         </td>
                                     </tr>
@@ -199,68 +158,38 @@ const Expances = () => {
                                             </td>
                                             <td className="p-4">
                                                 <div className="text-sm font-bold text-gray-700">
-                                                    {item.amount}
+                                                    {item.user?.username || '-'}
                                                 </div>
                                             </td>
                                             <td className="p-4">
                                                 <div className="text-sm text-slate-600">
-                                                    {item.category || '-'}
+                                                    {item.user?.phone || '-'}
                                                 </div>
                                             </td>
                                             <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.description || '-'}
+                                                <div className="flex flex-wrap gap-1">
+                                                    {item.user?.roles &&
+                                                    item.user.roles.length > 0 ? (
+                                                        item.user.roles.map((role, index) => (
+                                                            <div
+                                                                key={index}
+                                                                className="inline-block px-3 py-1 rounded-lg bg-blue-100 text-blue-700"
+                                                            >
+                                                                <span className="text-xs font-semibold">
+                                                                    {role}
+                                                                </span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-sm text-slate-400">
+                                                            -
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.date || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex gap-2 justify-end">
-                                                    <Button
-                                                        onClick={() => handleEdit(item)}
-                                                        variant="secondary"
-                                                        className="btn-sm btn-circle"
-                                                        title="Редактировать"
-                                                    >
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            strokeWidth={1.5}
-                                                            stroke="currentColor"
-                                                            className="w-4 h-4"
-                                                        >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                                                            />
-                                                        </svg>
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => handleDelete(item.id)}
-                                                        variant="secondary"
-                                                        className="btn-sm btn-circle hover:bg-red-50"
-                                                        title="Удалить"
-                                                    >
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            strokeWidth={1.5}
-                                                            stroke="currentColor"
-                                                            className="w-4 h-4 text-red-600"
-                                                        >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                                                            />
-                                                        </svg>
-                                                    </Button>
+                                                <div className="text-sm font-bold text-gray-700">
+                                                    {Number(item.amount).toLocaleString()}
                                                 </div>
                                             </td>
                                         </tr>
@@ -274,10 +203,21 @@ const Expances = () => {
                 <Modal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
-                    title={isEditMode ? 'Редактирование расхода' : 'Создание расхода'}
+                    title="Создание расхода"
                 >
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-4">
+                            <Select
+                                label="Пользователь"
+                                options={users.map((user) => ({
+                                    value: user.id,
+                                    label: user.username,
+                                }))}
+                                value={formData.user_id}
+                                onChange={handleUserChange}
+                                placeholder="Выберите пользователя"
+                                required
+                            />
                             <Input
                                 label="Сумма"
                                 type="number"
@@ -286,29 +226,6 @@ const Expances = () => {
                                 onChange={handleInputChange}
                                 placeholder="Введите сумму"
                                 required
-                            />
-                            <Input
-                                label="Категория"
-                                type="text"
-                                name="category"
-                                value={formData.category}
-                                onChange={handleInputChange}
-                                placeholder="Введите категорию"
-                            />
-                            <Input
-                                label="Описание"
-                                type="text"
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                placeholder="Введите описание"
-                            />
-                            <Input
-                                label="Дата"
-                                type="date"
-                                name="date"
-                                value={formData.date}
-                                onChange={handleInputChange}
                             />
                         </div>
 
@@ -325,10 +242,8 @@ const Expances = () => {
                                 {submitting ? (
                                     <span className="flex items-center gap-2">
                                         <span className="loading loading-spinner loading-sm"></span>
-                                        {isEditMode ? 'Сохранение...' : 'Создание...'}
+                                        Создание...
                                     </span>
-                                ) : isEditMode ? (
-                                    'Сохранить'
                                 ) : (
                                     'Создать'
                                 )}
@@ -337,17 +252,6 @@ const Expances = () => {
                     </form>
                 </Modal>
 
-                <ConfirmDialog
-                    isOpen={isConfirmOpen}
-                    onClose={() => setIsConfirmOpen(false)}
-                    onConfirm={confirmDelete}
-                    title="Удаление расхода"
-                    message="Вы уверены, что хотите удалить этот расход? Это действие нельзя отменить."
-                    confirmText="Удалить"
-                    cancelText="Отмена"
-                    confirmVariant="primary"
-                    isLoading={deleting}
-                />
                 <SuccessModal
                     isOpen={isSuccessOpen}
                     onClose={() => setIsSuccessOpen(false)}

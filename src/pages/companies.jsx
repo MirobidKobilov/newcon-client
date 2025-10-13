@@ -16,7 +16,6 @@ const Companies = () => {
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
-        email: '',
         address: '',
     })
     const [submitting, setSubmitting] = useState(false)
@@ -69,7 +68,6 @@ const Companies = () => {
             setFormData({
                 name: '',
                 phone: '',
-                email: '',
                 address: '',
             })
 
@@ -88,7 +86,6 @@ const Companies = () => {
         setFormData({
             name: item.name,
             phone: item.phone || '',
-            email: item.email || '',
             address: item.address || '',
         })
         setIsModalOpen(true)
@@ -124,7 +121,6 @@ const Companies = () => {
         setFormData({
             name: '',
             phone: '',
-            email: '',
             address: '',
         })
         setIsModalOpen(true)
@@ -165,9 +161,6 @@ const Companies = () => {
                                         Телефон
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Email
-                                    </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Адрес
                                     </th>
                                     <th className="text-right p-4 text-slate-400 text-[10px] font-bold uppercase">
@@ -178,13 +171,13 @@ const Companies = () => {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="6" className="p-8 text-center text-slate-500">
+                                        <td colSpan="5" className="p-8 text-center text-slate-500">
                                             Загрузка...
                                         </td>
                                     </tr>
                                 ) : items.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="p-8 text-center text-slate-500">
+                                        <td colSpan="5" className="p-8 text-center text-slate-500">
                                             Нет данных
                                         </td>
                                     </tr>
@@ -207,11 +200,6 @@ const Companies = () => {
                                             <td className="p-4">
                                                 <div className="text-sm text-slate-600">
                                                     {item.phone || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.email || '-'}
                                                 </div>
                                             </td>
                                             <td className="p-4">
@@ -297,15 +285,6 @@ const Companies = () => {
                                 value={formData.phone}
                                 onChange={handleInputChange}
                                 placeholder="+998 (90) 123-45-67"
-                            />
-
-                            <Input
-                                label="Email"
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                                placeholder="email@example.com"
                             />
 
                             <Input

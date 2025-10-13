@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Context } from '../../context'
 import { t } from '../../utils/translations'
 
@@ -21,6 +21,8 @@ const ICON_PATHS = {
         'M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z',
     expances:
         'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
+    settings: 'M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z M10 4h4v16h-4V4z',
+    chevron_down: 'M7 10l5 5 5-5z',
 }
 
 const ICON_MAPPING = {
@@ -34,6 +36,7 @@ const ICON_MAPPING = {
     sales: 'sales',
     payments: 'payments',
     expances: 'expances',
+    settings: 'settings',
 }
 
 function Icon({ name, className = '' }) {
@@ -54,11 +57,25 @@ function Icon({ name, className = '' }) {
 
 const Sidebar = () => {
     const [mounted, setMounted] = useState(false)
+    const location = useLocation()
     const { menu } = useContext(Context)
+
+    const settingsPages = ['products', 'users', 'roles', 'material_types', 'materials']
+    const currentPath = location.pathname.split('/')[1]
+    const isOnSettingsPage = settingsPages.includes(currentPath)
+
+    const [openSubmenu, setOpenSubmenu] = useState(isOnSettingsPage ? 'settings' : null)
 
     useEffect(() => {
         setMounted(true)
     }, [])
+
+    useEffect(() => {
+        const currentPath = location.pathname.split('/')[1]
+        if (settingsPages.includes(currentPath)) {
+            setOpenSubmenu('settings')
+        }
+    }, [location.pathname])
 
     if (!menu?.menu) {
         return (
@@ -89,62 +106,189 @@ const Sidebar = () => {
 
             <nav className="flex-1 px-3 py-4 overflow-y-auto" role="navigation">
                 <ul className="space-y-2">
-                    {Object.entries(menu.menu).map(([sectionKey, section], idx) => (
-                        <li
-                            key={sectionKey}
-                            className={
-                                `transition-all duration-300 ` +
-                                (mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2')
-                            }
-                            style={{ transitionDelay: `${idx * 40}ms` }}
-                        >
-                            <NavLink
-                                to={`/${sectionKey}`}
-                                className={({ isActive }) =>
-                                    `group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold font-['Helvetica'] leading-tight transition-all duration-300 ease-out ` +
-                                    (isActive
-                                        ? 'bg-gray-100 text-gray-900 shadow-sm'
-                                        : 'text-slate-500 hover:bg-gray-50 hover:text-gray-800 hover:shadow-sm')
+                    {Object.entries(menu.menu).map(([sectionKey, section], idx) => {
+                        const isSettings = sectionKey === 'settings'
+                        const isOpen = openSubmenu === 'settings'
+                        const displayTitle =
+                            sectionKey === 'settings' ? 'Справочник' : section.title
+
+                        return (
+                            <li
+                                key={sectionKey}
+                                className={
+                                    `transition-all duration-300 ` +
+                                    (mounted
+                                        ? 'opacity-100 translate-x-0'
+                                        : 'opacity-0 -translate-x-2')
                                 }
+                                style={{ transitionDelay: `${idx * 40}ms` }}
                             >
-                                {({ isActive }) => (
-                                    <>
-                                        <span
-                                            className={
-                                                `absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-teal-500 transition-all duration-300 ` +
-                                                (isActive
-                                                    ? 'opacity-100 h-7 w-0.5'
-                                                    : 'opacity-0 h-5 w-0.5 group-hover:opacity-50 group-hover:h-6')
+                                {isSettings ? (
+                                    <div>
+                                        <button
+                                            onClick={() =>
+                                                setOpenSubmenu(isOpen ? null : 'settings')
                                             }
-                                        />
-                                        <span
                                             className={
-                                                `inline-flex items-center justify-center w-7 h-7 rounded-xl ring-1 ring-black/5 transition-transform duration-300 will-change-transform ` +
-                                                (isActive
-                                                    ? 'bg-teal-400/20 text-teal-600 scale-110 translate-x-[2px] rotate-3 drop-shadow-sm'
-                                                    : 'bg-white text-teal-500 group-hover:scale-105 group-hover:rotate-1')
+                                                `group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold font-['Helvetica'] leading-tight transition-all duration-300 ease-out w-full ` +
+                                                (isOpen
+                                                    ? 'bg-gray-100 text-gray-900 shadow-sm'
+                                                    : 'text-slate-500 hover:bg-gray-50 hover:text-gray-800 hover:shadow-sm')
                                             }
                                         >
-                                            <Icon
-                                                name={ICON_MAPPING[sectionKey] || sectionKey}
-                                                className="w-4 h-4"
+                                            <span
+                                                className={
+                                                    `absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-teal-500 transition-all duration-300 ` +
+                                                    (isOpen
+                                                        ? 'opacity-100 h-7 w-0.5'
+                                                        : 'opacity-0 h-5 w-0.5 group-hover:opacity-50 group-hover:h-6')
+                                                }
                                             />
-                                        </span>
-                                        <span
-                                            className={
-                                                `transition-all duration-300 will-change-transform ` +
-                                                (isActive
-                                                    ? 'translate-x-[3px]'
-                                                    : 'group-hover:translate-x-[2px] group-hover:tracking-wide')
-                                            }
+                                            <span
+                                                className={
+                                                    `inline-flex items-center justify-center w-7 h-7 rounded-xl ring-1 ring-black/5 transition-transform duration-300 will-change-transform ` +
+                                                    (isOpen
+                                                        ? 'bg-teal-400/20 text-teal-600 scale-110 translate-x-[2px] rotate-3 drop-shadow-sm'
+                                                        : 'bg-white text-teal-500 group-hover:scale-105 group-hover:rotate-1')
+                                                }
+                                            >
+                                                <Icon name="settings" className="w-4 h-4" />
+                                            </span>
+                                            <span
+                                                className={
+                                                    `flex-1 text-left transition-all duration-300 will-change-transform ` +
+                                                    (isOpen
+                                                        ? 'translate-x-[3px]'
+                                                        : 'group-hover:translate-x-[2px] group-hover:tracking-wide')
+                                                }
+                                            >
+                                                {displayTitle}
+                                            </span>
+                                            <Icon
+                                                name="chevron_down"
+                                                className={`w-4 h-4 transition-transform duration-300 ${
+                                                    isOpen ? 'rotate-180' : ''
+                                                }`}
+                                            />
+                                        </button>
+                                        <div
+                                            className={`overflow-hidden transition-all duration-200 ${
+                                                isOpen ? 'max-h-[600px] mt-1' : 'max-h-0'
+                                            }`}
                                         >
-                                            {t(`menu.${sectionKey}`, section.title)}
-                                        </span>
-                                    </>
+                                            <ul className="space-y-1 px-1">
+                                                {section.children &&
+                                                    Object.entries(section.children).map(
+                                                        ([childKey, child]) => (
+                                                            <li key={childKey}>
+                                                                <NavLink
+                                                                    to={`/${childKey}`}
+                                                                    className={({ isActive }) =>
+                                                                        `group relative flex items-center gap-2.5 pl-3 pr-3 py-1.5 rounded-lg text-xs font-semibold font-['Helvetica'] leading-tight transition-all duration-200 ease-out ` +
+                                                                        (isActive
+                                                                            ? 'bg-teal-50 text-teal-700'
+                                                                            : 'text-slate-500 hover:bg-gray-50 hover:text-gray-800')
+                                                                    }
+                                                                >
+                                                                    {({ isActive }) => (
+                                                                        <>
+                                                                            <span
+                                                                                className={
+                                                                                    `absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-teal-500 transition-all duration-200 ` +
+                                                                                    (isActive
+                                                                                        ? 'opacity-100 h-5 w-0.5'
+                                                                                        : 'opacity-0 h-4 w-0.5 group-hover:opacity-50')
+                                                                                }
+                                                                            />
+                                                                            <span
+                                                                                className={
+                                                                                    `inline-flex items-center justify-center w-6 h-6 rounded-lg ring-1 ring-black/5 transition-transform duration-200 will-change-transform ` +
+                                                                                    (isActive
+                                                                                        ? 'bg-teal-400/20 text-teal-600 scale-105 drop-shadow-sm'
+                                                                                        : 'bg-white text-teal-500 group-hover:scale-105')
+                                                                                }
+                                                                            >
+                                                                                <Icon
+                                                                                    name={
+                                                                                        ICON_MAPPING[
+                                                                                            childKey
+                                                                                        ] ||
+                                                                                        childKey
+                                                                                    }
+                                                                                    className="w-3.5 h-3.5"
+                                                                                />
+                                                                            </span>
+                                                                            <span
+                                                                                className={
+                                                                                    `transition-all duration-200 will-change-transform ` +
+                                                                                    (isActive
+                                                                                        ? 'translate-x-[2px]'
+                                                                                        : 'group-hover:translate-x-[1px]')
+                                                                                }
+                                                                            >
+                                                                                {child.title}
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+                                                                </NavLink>
+                                                            </li>
+                                                        )
+                                                    )}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <NavLink
+                                        to={`/${sectionKey}`}
+                                        className={({ isActive }) =>
+                                            `group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold font-['Helvetica'] leading-tight transition-all duration-300 ease-out ` +
+                                            (isActive
+                                                ? 'bg-gray-100 text-gray-900 shadow-sm'
+                                                : 'text-slate-500 hover:bg-gray-50 hover:text-gray-800 hover:shadow-sm')
+                                        }
+                                    >
+                                        {({ isActive }) => (
+                                            <>
+                                                <span
+                                                    className={
+                                                        `absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-teal-500 transition-all duration-300 ` +
+                                                        (isActive
+                                                            ? 'opacity-100 h-7 w-0.5'
+                                                            : 'opacity-0 h-5 w-0.5 group-hover:opacity-50 group-hover:h-6')
+                                                    }
+                                                />
+                                                <span
+                                                    className={
+                                                        `inline-flex items-center justify-center w-7 h-7 rounded-xl ring-1 ring-black/5 transition-transform duration-300 will-change-transform ` +
+                                                        (isActive
+                                                            ? 'bg-teal-400/20 text-teal-600 scale-110 translate-x-[2px] rotate-3 drop-shadow-sm'
+                                                            : 'bg-white text-teal-500 group-hover:scale-105 group-hover:rotate-1')
+                                                    }
+                                                >
+                                                    <Icon
+                                                        name={
+                                                            ICON_MAPPING[sectionKey] || sectionKey
+                                                        }
+                                                        className="w-4 h-4"
+                                                    />
+                                                </span>
+                                                <span
+                                                    className={
+                                                        `transition-all duration-300 will-change-transform ` +
+                                                        (isActive
+                                                            ? 'translate-x-[3px]'
+                                                            : 'group-hover:translate-x-[2px] group-hover:tracking-wide')
+                                                    }
+                                                >
+                                                    {t(`menu.${sectionKey}`, displayTitle)}
+                                                </span>
+                                            </>
+                                        )}
+                                    </NavLink>
                                 )}
-                            </NavLink>
-                        </li>
-                    ))}
+                            </li>
+                        )
+                    })}
                 </ul>
             </nav>
         </aside>
