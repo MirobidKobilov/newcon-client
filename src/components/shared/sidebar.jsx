@@ -110,7 +110,9 @@ const Sidebar = () => {
                         const isSettings = sectionKey === 'settings'
                         const isOpen = openSubmenu === 'settings'
                         const displayTitle =
-                            sectionKey === 'settings' ? 'Справочник' : section.title
+                            sectionKey === 'settings'
+                                ? t('menu.settings', 'Справочник')
+                                : section.title
 
                         return (
                             <li
@@ -226,7 +228,10 @@ const Sidebar = () => {
                                                                                         : 'group-hover:translate-x-[1px]')
                                                                                 }
                                                                             >
-                                                                                {child.title}
+                                                                                {t(
+                                                                                    `menu.${childKey}`,
+                                                                                    child.title
+                                                                                )}
                                                                             </span>
                                                                         </>
                                                                     )}

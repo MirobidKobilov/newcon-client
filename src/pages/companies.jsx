@@ -24,6 +24,7 @@ const Companies = () => {
     const [deleting, setDeleting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
+    const [viewMode, setViewMode] = useState('table')
 
     useEffect(() => {
         const fetchItems = async () => {
@@ -143,72 +144,210 @@ const Companies = () => {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden">
-                    <div className="p-6">
-                        <h2 className="text-lg font-bold text-gray-700 mb-4">Компании</h2>
+                    <div className="p-6 border-b border-slate-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-gray-700">Компании</h2>
+
+                            {/* Tab Buttons */}
+                            <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setViewMode('table')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                        viewMode === 'table'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        strokeWidth={1.5}
+                                        stroke="currentColor"
+                                        className="w-5 h-5 inline-block mr-1"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5"
+                                        />
+                                    </svg>
+                                    Таблица
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('cards')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                        viewMode === 'cards'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        strokeWidth={1.5}
+                                        stroke="currentColor"
+                                        className="w-5 h-5 inline-block mr-1"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
+                                        />
+                                    </svg>
+                                    Карточки
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-slate-200">
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        ID
-                                    </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Название
-                                    </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Телефон
-                                    </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Адрес
-                                    </th>
-                                    <th className="text-right p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Действия
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="5" className="p-8 text-center text-slate-500">
-                                            Загрузка...
-                                        </td>
+                    {/* Table View */}
+                    {viewMode === 'table' && (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-slate-200">
+                                        <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                            ID
+                                        </th>
+                                        <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                            Название
+                                        </th>
+                                        <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                            Телефон
+                                        </th>
+                                        <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                            Адрес
+                                        </th>
+                                        <th className="text-right p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                            Действия
+                                        </th>
                                     </tr>
-                                ) : items.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="5" className="p-8 text-center text-slate-500">
-                                            Нет данных
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    items.map((item) => (
-                                        <tr
+                                </thead>
+                                <tbody>
+                                    {loading ? (
+                                        <tr>
+                                            <td
+                                                colSpan="5"
+                                                className="p-8 text-center text-slate-500"
+                                            >
+                                                Загрузка...
+                                            </td>
+                                        </tr>
+                                    ) : items.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan="5"
+                                                className="p-8 text-center text-slate-500"
+                                            >
+                                                Нет данных
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        items.map((item) => (
+                                            <tr
+                                                key={item.id}
+                                                className="border-b border-slate-200 hover:bg-gray-50"
+                                            >
+                                                <td className="p-4">
+                                                    <div className="text-sm font-bold text-gray-700">
+                                                        {item.id}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-sm font-bold text-gray-700">
+                                                        {item.name}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-sm text-slate-600">
+                                                        {item.phone || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-sm text-slate-600">
+                                                        {item.address || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="flex gap-2 justify-end">
+                                                        <Button
+                                                            onClick={() => handleEdit(item)}
+                                                            variant="secondary"
+                                                            className="btn-sm btn-circle"
+                                                            title="Редактировать"
+                                                        >
+                                                            <svg
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                fill="none"
+                                                                viewBox="0 0 24 24"
+                                                                strokeWidth={1.5}
+                                                                stroke="currentColor"
+                                                                className="w-4 h-4"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                                                                />
+                                                            </svg>
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => handleDelete(item.id)}
+                                                            variant="secondary"
+                                                            className="btn-sm btn-circle hover:bg-red-50"
+                                                            title="Удалить"
+                                                        >
+                                                            <svg
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                fill="none"
+                                                                viewBox="0 0 24 24"
+                                                                strokeWidth={1.5}
+                                                                stroke="currentColor"
+                                                                className="w-4 h-4 text-red-600"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                                                                />
+                                                            </svg>
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Cards View */}
+                    {viewMode === 'cards' && (
+                        <div className="p-6">
+                            {loading ? (
+                                <div className="text-center text-slate-500 py-12">Загрузка...</div>
+                            ) : items.length === 0 ? (
+                                <div className="text-center text-slate-500 py-12">Нет данных</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {items.map((item) => (
+                                        <div
                                             key={item.id}
-                                            className="border-b border-slate-200 hover:bg-gray-50"
+                                            className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow"
                                         >
-                                            <td className="p-4">
-                                                <div className="text-sm font-bold text-gray-700">
-                                                    {item.id}
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="flex-1">
+                                                    <div className="text-xs text-slate-400 font-medium mb-1">
+                                                        ID: {item.id}
+                                                    </div>
+                                                    <h3 className="text-lg font-bold text-gray-700 mb-2">
+                                                        {item.name}
+                                                    </h3>
                                                 </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm font-bold text-gray-700">
-                                                    {item.name}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.phone || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.address || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex gap-2 justify-end">
+                                                <div className="flex gap-2">
                                                     <Button
                                                         onClick={() => handleEdit(item)}
                                                         variant="secondary"
@@ -252,13 +391,66 @@ const Companies = () => {
                                                         </svg>
                                                     </Button>
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <div className="text-xs text-slate-400 font-medium uppercase mb-1">
+                                                        Телефон
+                                                    </div>
+                                                    <div className="text-sm text-gray-700 flex items-center gap-2">
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            strokeWidth={1.5}
+                                                            stroke="currentColor"
+                                                            className="w-4 h-4 text-slate-400"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"
+                                                            />
+                                                        </svg>
+                                                        {item.phone || '-'}
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="text-xs text-slate-400 font-medium uppercase mb-1">
+                                                        Адрес
+                                                    </div>
+                                                    <div className="text-sm text-gray-700 flex items-center gap-2">
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            strokeWidth={1.5}
+                                                            stroke="currentColor"
+                                                            className="w-4 h-4 text-slate-400"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+                                                            />
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+                                                            />
+                                                        </svg>
+                                                        {item.address || '-'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <Modal

@@ -10,6 +10,7 @@ export const translations = {
         sales: 'Продажи',
         payments: 'Платежи',
         expances: 'Расходы',
+        settings: 'Справочник',
     },
     actions: {
         list: 'Список',

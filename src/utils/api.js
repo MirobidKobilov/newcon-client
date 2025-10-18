@@ -38,8 +38,8 @@ const api = async (method = 'get', data = {}, path = '', contentType = 'applicat
             error.response.status === 401 &&
             window.location.pathname !== '/login'
         ) {
-            // localStorage.removeItem('token')
-            // window.location.href = '/login'
+            localStorage.removeItem('token')
+            window.location.href = '/login'
         }
 
         return error.response || error

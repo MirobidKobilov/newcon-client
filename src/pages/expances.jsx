@@ -15,6 +15,7 @@ const Expances = () => {
     const [formData, setFormData] = useState({
         user_id: '',
         amount: '',
+        reason: '',
     })
     const [submitting, setSubmitting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
@@ -73,6 +74,7 @@ const Expances = () => {
             setFormData({
                 user_id: '',
                 amount: '',
+                reason: '',
             })
 
             setSuccessMessage('Расход успешно создан')
@@ -86,9 +88,14 @@ const Expances = () => {
         setFormData({
             user_id: '',
             amount: '',
+            reason: '',
         })
         setIsModalOpen(true)
     }
+
+    // Вычисление статистики
+    const totalExpenses = items.reduce((sum, item) => sum + Number(item.amount), 0)
+    const totalCount = items.length
 
     return (
         <Layout>
@@ -106,6 +113,25 @@ const Expances = () => {
                     </div>
                 </div>
 
+                {/* Статистика */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="bg-white rounded-2xl shadow-sm p-6">
+                        <p className="text-slate-500 text-sm font-medium mb-2">Всего расходов</p>
+                        <p className="text-3xl font-bold text-gray-700">
+                            {totalExpenses.toLocaleString()}{' '}
+                            <span className="text-lg text-slate-400">сум</span>
+                        </p>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm p-6">
+                        <p className="text-slate-500 text-sm font-medium mb-2">
+                            Количество транзакций
+                        </p>
+                        <p className="text-3xl font-bold text-gray-700">{totalCount}</p>
+                    </div>
+                </div>
+
+                {/* Таблица расходов */}
                 <div className="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden">
                     <div className="p-6">
                         <h2 className="text-lg font-bold text-gray-700 mb-4">Расходы</h2>
@@ -125,7 +151,7 @@ const Expances = () => {
                                         Телефон
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Роли
+                                        Причина
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Сумма
@@ -167,24 +193,8 @@ const Expances = () => {
                                                 </div>
                                             </td>
                                             <td className="p-4">
-                                                <div className="flex flex-wrap gap-1">
-                                                    {item.user?.roles &&
-                                                    item.user.roles.length > 0 ? (
-                                                        item.user.roles.map((role, index) => (
-                                                            <div
-                                                                key={index}
-                                                                className="inline-block px-3 py-1 rounded-lg bg-blue-100 text-blue-700"
-                                                            >
-                                                                <span className="text-xs font-semibold">
-                                                                    {role}
-                                                                </span>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <span className="text-sm text-slate-400">
-                                                            -
-                                                        </span>
-                                                    )}
+                                                <div className="text-sm text-slate-600 max-w-xs truncate">
+                                                    {item.reason || '-'}
                                                 </div>
                                             </td>
                                             <td className="p-4">
@@ -225,6 +235,15 @@ const Expances = () => {
                                 value={formData.amount}
                                 onChange={handleInputChange}
                                 placeholder="Введите сумму"
+                                required
+                            />
+                            <Input
+                                label="Причина"
+                                type="text"
+                                name="reason"
+                                value={formData.reason}
+                                onChange={handleInputChange}
+                                placeholder="Введите причину расхода"
                                 required
                             />
                         </div>
