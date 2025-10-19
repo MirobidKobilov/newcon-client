@@ -10,6 +10,7 @@ import Companies from './pages/companies'
 import Sales from './pages/sales'
 import Payments from './pages/payments'
 import Expances from './pages/expances'
+import Actions from './pages/actions'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import Login from './pages/login'
 import { Context } from './context'
@@ -24,31 +25,48 @@ const App = () => {
     const [isLogin, setIsLogin] = useState(false)
 
     useEffect(() => {
-        const fetchMenu = async () => {
+        const fetchData = async () => {
             if (localStorage.getItem('token')) {
                 setIsLogin(true)
 
                 try {
                     const menuResponse = await api('get', {}, '/menu')
                     if (menuResponse.status === 200 && menuResponse.data.data) {
-                        setMenu(menuResponse.data.data)
+                        const data = menuResponse.data.data
+                        setMenu(data.menu || {})
+                        setUserInfo({
+                            username: data.username,
+                            phone: data.phone,
+                            id: data.id,
+                            roles: data.roles || [],
+                            permissions: data.permissions || [],
+                        })
                     }
-                } catch (menuError) {
-                    console.error('Ошибка при получении меню:', menuError)
+                } catch (error) {
+                    console.error('Ошибка при получении данных:', error)
                 }
             } else {
                 setIsLogin(false)
                 localStorage.removeItem('token')
                 navigate('/login')
             }
+            setLoading(false)
         }
 
-        fetchMenu()
+        fetchData()
     }, [navigate])
 
     return (
         <Context.Provider
-            value={{ userInfo, setUserInfo, menu, setMenu, loading, isLogin, setIsLogin }}
+            value={{
+                userInfo,
+                setUserInfo,
+                menu,
+                setMenu,
+                loading,
+                isLogin,
+                setIsLogin,
+            }}
         >
             <div className="bg-[#F8F9FA]">
                 <Routes>
@@ -63,6 +81,7 @@ const App = () => {
                     <Route path="/sales" element={<Sales />} />
                     <Route path="/payments" element={<Payments />} />
                     <Route path="/expances" element={<Expances />} />
+                    <Route path="/actions" element={<Actions />} />
                     <Route path="/login" element={<Login />} />
                 </Routes>
             </div>

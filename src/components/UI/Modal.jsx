@@ -1,8 +1,15 @@
-const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-xl' }) => {
+const Modal = ({
+    isOpen,
+    onClose,
+    title,
+    children,
+    maxWidth = 'max-w-xl',
+    maxHeight = '',
+}) => {
     return (
         <dialog className={`modal ${isOpen ? 'modal-open' : ''}`} data-theme="light">
             <div
-                className={`modal-box rounded-2xl ${maxWidth} bg-white p-0 overflow-hidden border-none`}
+                className={`modal-box rounded-2xl ${maxWidth} ${maxHeight} bg-white p-0 overflow-hidden border-none`}
             >
                 {title && (
                     <div className="px-6 py-4 border-b border-gray-200">
@@ -16,7 +23,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-xl' }) => {
                 >
                     ✕
                 </button>
-                <div className="px-6 py-5">{children}</div>
+                <div className="px-6 py-5 h-full">{children}</div>
             </div>
             <form method="dialog" className="modal-backdrop">
                 <button onClick={onClose}>close</button>

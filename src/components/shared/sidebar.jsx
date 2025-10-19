@@ -77,7 +77,7 @@ const Sidebar = () => {
         }
     }, [location.pathname])
 
-    if (!menu?.menu) {
+    if (!menu) {
         return (
             <aside className="w-full max-w-[240px] h-screen flex flex-col bg-white border-r border-neutral-200">
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-neutral-200">
@@ -106,7 +106,57 @@ const Sidebar = () => {
 
             <nav className="flex-1 px-3 py-4 overflow-y-auto" role="navigation">
                 <ul className="space-y-2">
-                    {Object.entries(menu.menu).map(([sectionKey, section], idx) => {
+                    {/* Dashboard Link */}
+                    <li
+                        className={
+                            `transition-all duration-300 ` +
+                            (mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2')
+                        }
+                    >
+                        <NavLink
+                            to="/"
+                            className={({ isActive }) =>
+                                `group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold font-['Helvetica'] leading-tight transition-all duration-300 ease-out ` +
+                                (isActive
+                                    ? 'bg-gray-100 text-gray-900 shadow-sm'
+                                    : 'text-slate-500 hover:bg-gray-50 hover:text-gray-800 hover:shadow-sm')
+                            }
+                        >
+                            {({ isActive }) => (
+                                <>
+                                    <span
+                                        className={
+                                            `absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-teal-500 transition-all duration-300 ` +
+                                            (isActive
+                                                ? 'opacity-100 h-7 w-0.5'
+                                                : 'opacity-0 h-5 w-0.5 group-hover:opacity-50 group-hover:h-6')
+                                        }
+                                    />
+                                    <span
+                                        className={
+                                            `inline-flex items-center justify-center w-7 h-7 rounded-xl ring-1 ring-black/5 transition-transform duration-300 will-change-transform ` +
+                                            (isActive
+                                                ? 'bg-teal-400/20 text-teal-600 scale-110 translate-x-[2px] rotate-3 drop-shadow-sm'
+                                                : 'bg-white text-teal-500 group-hover:scale-105 group-hover:rotate-1')
+                                        }
+                                    >
+                                        <Icon name="dashboard" className="w-4 h-4" />
+                                    </span>
+                                    <span
+                                        className={
+                                            `transition-all duration-300 will-change-transform ` +
+                                            (isActive
+                                                ? 'translate-x-[3px]'
+                                                : 'group-hover:translate-x-[2px] group-hover:tracking-wide')
+                                        }
+                                    >
+                                        {t('menu.dashboard', 'Dashboard')}
+                                    </span>
+                                </>
+                            )}
+                        </NavLink>
+                    </li>
+                    {Object.entries(menu).map(([sectionKey, section], idx) => {
                         const isSettings = sectionKey === 'settings'
                         const isOpen = openSubmenu === 'settings'
                         const displayTitle =

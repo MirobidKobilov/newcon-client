@@ -18,7 +18,7 @@ const Sales = () => {
         company_id: '',
         sales_type_id: '',
         summa: '',
-        products: [{ product_id: '', quantity: '' }],
+        products: [],
     })
     const [submitting, setSubmitting] = useState(false)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
@@ -30,6 +30,22 @@ const Sales = () => {
     const [salesTypes, setSalesTypes] = useState([])
     const [products, setProducts] = useState([])
     const [currentStep, setCurrentStep] = useState(1)
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+    const [viewingItem, setViewingItem] = useState(null)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [createdSaleId, setCreatedSaleId] = useState(null)
+    const [paymentData, setPaymentData] = useState({
+        payment_type_id: '',
+        sales_stage: '',
+    })
+    const [paymentTypes] = useState([
+        { id: 1, name: 'Доллары' },
+        { id: 2, name: 'Сум' },
+    ])
+    const [salesStages] = useState([
+        { value: 'Ожидание платежа', label: 'Ожидание платежа' },
+        { value: 'Оплачено', label: 'Оплачено' },
+    ])
 
     useEffect(() => {
         const fetchData = async () => {
@@ -55,8 +71,8 @@ const Sales = () => {
 
             // Sales types
             setSalesTypes([
-                { id: 1, name: 'cash' },
-                { id: 2, name: 'cart' },
+                { id: 1, name: 'Наличные' },
+                { id: 2, name: 'Карта' },
             ])
 
             setLoading(false)
@@ -64,12 +80,33 @@ const Sales = () => {
         fetchData()
     }, [])
 
+    const formatNumber = (num) => {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    }
+
+    const parseFormattedNumber = (str) => {
+        return str.replace(/\s/g, '')
+    }
+
     const handleInputChange = (e) => {
         const { name, value } = e.target
         setFormData((prev) => ({
             ...prev,
             [name]: value,
         }))
+    }
+
+    const handleSummaChange = (e) => {
+        const value = e.target.value
+        const numericValue = parseFormattedNumber(value)
+
+        // Only allow numbers
+        if (numericValue === '' || /^\d+$/.test(numericValue)) {
+            setFormData((prev) => ({
+                ...prev,
+                summa: numericValue,
+            }))
+        }
     }
 
     const handleProductChange = (index, field, value) => {
@@ -81,25 +118,15 @@ const Sales = () => {
         }))
     }
 
-    const addProduct = () => {
+    const removeProduct = (index) => {
+        const newProducts = formData.products.filter((_, i) => i !== index)
         setFormData((prev) => ({
             ...prev,
-            products: [...prev.products, { product_id: '', quantity: '' }],
+            products: newProducts,
         }))
     }
 
-    const removeProduct = (index) => {
-        if (formData.products.length > 1) {
-            const newProducts = formData.products.filter((_, i) => i !== index)
-            setFormData((prev) => ({
-                ...prev,
-                products: newProducts,
-            }))
-        }
-    }
-
-    const handleSubmit = async (e) => {
-        e.preventDefault()
+    const createSale = async () => {
         setSubmitting(true)
 
         // Prepare data in the correct format
@@ -121,6 +148,49 @@ const Sales = () => {
         }
 
         if (response?.data) {
+            // Store the created sale ID for payment creation
+            setCreatedSaleId(response.data.data?.id || response.data.id)
+
+            // Move to step 4 (payment)
+            setCurrentStep(4)
+        }
+
+        setSubmitting(false)
+    }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        setSubmitting(true)
+
+        // Generate payment name automatically
+        const company = companies.find((c) => c.id === formData.company_id)
+        const companyName = company?.name || 'Компания'
+        const currentDate = new Date().toLocaleDateString('ru-RU')
+        const productsNames = formData.products
+            .map((p) => {
+                const product = products.find((prod) => prod.id === p.product_id)
+                return product?.name || 'Товар'
+            })
+            .join(', ')
+        const generatedName = `${companyName}, ${currentDate}, ${productsNames}`
+
+        // Create payment with the sale from previous step
+        const paymentSubmitData = {
+            name: generatedName,
+            payment_type_id: parseInt(paymentData.payment_type_id),
+            sales_stage: paymentData.sales_stage,
+            sales: [
+                {
+                    sale_id: parseInt(createdSaleId),
+                    amount: parseFloat(formData.summa),
+                },
+            ],
+        }
+
+        const response = await api('post', paymentSubmitData, '/payments/create')
+
+        if (response?.data) {
+            // Refresh sales list
             const itemsResponse = await api('get', {}, '/sales/list')
             if (itemsResponse?.data) {
                 setItems(itemsResponse.data.data)
@@ -130,30 +200,54 @@ const Sales = () => {
             setIsEditMode(false)
             setEditingItemId(null)
             setCurrentStep(1)
+            setSearchQuery('')
+            setCreatedSaleId(null)
             setFormData({
                 company_id: '',
                 sales_type_id: '',
                 summa: '',
-                products: [{ product_id: '', quantity: '' }],
+                products: [],
+            })
+            setPaymentData({
+                payment_type_id: '',
+                sales_stage: '',
             })
 
-            setSuccessMessage(isEditMode ? 'Продажа успешно обновлена' : 'Продажа успешно создана')
+            setSuccessMessage('Продажа и платеж успешно созданы')
             setIsSuccessOpen(true)
         }
 
         setSubmitting(false)
     }
 
+    const handleView = (item) => {
+        setViewingItem(item)
+        setIsViewModalOpen(true)
+    }
+
     const handleEdit = (item) => {
         setIsEditMode(true)
         setEditingItemId(item.id)
+
+        // Convert nested company object to company_id
+        const companyId = item.company?.id || item.company_id || ''
+
+        // Convert products array (might have full objects or just IDs)
+        const productsData = item.products
+            ? item.products.map((p) => ({
+                  product_id: p.id || p.product_id,
+                  quantity: p.quantity,
+              }))
+            : []
+
         setFormData({
-            company_id: item.company_id || '',
+            company_id: companyId,
             sales_type_id: item.sales_type_id || '',
             summa: item.summa || '',
-            products: item.products || [{ product_id: '', quantity: '' }],
+            products: productsData,
         })
         setCurrentStep(1)
+        setSearchQuery('')
         setIsModalOpen(true)
     }
 
@@ -188,14 +282,23 @@ const Sales = () => {
             company_id: '',
             sales_type_id: '',
             summa: '',
-            products: [{ product_id: '', quantity: '' }],
+            products: [],
         })
+        setPaymentData({
+            payment_type_id: '',
+            sales_stage: '',
+        })
+        setCreatedSaleId(null)
         setCurrentStep(1)
+        setSearchQuery('')
         setIsModalOpen(true)
     }
 
-    const nextStep = () => {
-        if (currentStep < 3) {
+    const nextStep = async () => {
+        if (currentStep === 3) {
+            // Create sale before moving to payment step
+            await createSale()
+        } else if (currentStep < 4) {
             setCurrentStep(currentStep + 1)
         }
     }
@@ -211,7 +314,26 @@ const Sales = () => {
     }
 
     const canProceedToStep3 = () => {
-        return formData.products.every((p) => p.product_id && p.quantity)
+        return (
+            formData.products.length > 0 &&
+            formData.products.every((p) => p.product_id && p.quantity)
+        )
+    }
+
+    const canProceedToStep4 = () => {
+        return formData.summa
+    }
+
+    const canSubmitPayment = () => {
+        return paymentData.payment_type_id && paymentData.sales_stage
+    }
+
+    const handlePaymentInputChange = (e) => {
+        const { name, value } = e.target
+        setPaymentData((prev) => ({
+            ...prev,
+            [name]: value,
+        }))
     }
 
     return (
@@ -257,7 +379,7 @@ const Sales = () => {
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Дата
                                     </th>
-                                    <th className="text-right p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Действия
                                     </th>
                                 </tr>
@@ -277,9 +399,10 @@ const Sales = () => {
                                     </tr>
                                 ) : (
                                     items.map((item) => {
-                                        const company = companies.find(
-                                            (c) => c.id === item.company_id
-                                        )
+                                        // Use nested company object or fallback to company_id lookup
+                                        const company =
+                                            item.company ||
+                                            companies.find((c) => c.id === item.company_id)
                                         const salesType = salesTypes.find(
                                             (t) => t.id === item.sales_type_id
                                         )
@@ -295,14 +418,12 @@ const Sales = () => {
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="text-sm font-bold text-gray-700">
-                                                        {company?.name || item.company_name || '-'}
+                                                        {company?.name || '-'}
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="text-sm text-slate-600">
-                                                        {salesType?.name ||
-                                                            item.sales_type_name ||
-                                                            '-'}
+                                                        {salesType?.name || '-'}
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
@@ -310,23 +431,18 @@ const Sales = () => {
                                                         {item.products && item.products.length > 0
                                                             ? item.products
                                                                   .map((p) => {
-                                                                      const product = products.find(
-                                                                          (pr) =>
-                                                                              pr.id === p.product_id
-                                                                      )
+                                                                      // Product object now has name directly
                                                                       return `${
-                                                                          product?.name ||
-                                                                          p.product_name ||
-                                                                          'Товар'
+                                                                          p.name || 'Товар'
                                                                       } (${p.quantity})`
                                                                   })
                                                                   .join(', ')
-                                                            : item.product_name || '-'}
+                                                            : '-'}
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="text-sm text-slate-600 font-semibold">
-                                                        {item.summa || item.total_amount || '-'}
+                                                        {Number(item.summa).toLocaleString() || '-'}
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
@@ -335,50 +451,12 @@ const Sales = () => {
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="flex gap-2 justify-end">
-                                                        <Button
-                                                            onClick={() => handleEdit(item)}
-                                                            variant="secondary"
-                                                            className="btn-sm btn-circle"
-                                                            title="Редактировать"
-                                                        >
-                                                            <svg
-                                                                xmlns="http://www.w3.org/2000/svg"
-                                                                fill="none"
-                                                                viewBox="0 0 24 24"
-                                                                strokeWidth={1.5}
-                                                                stroke="currentColor"
-                                                                className="w-4 h-4"
-                                                            >
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                                                                />
-                                                            </svg>
-                                                        </Button>
-                                                        <Button
-                                                            onClick={() => handleDelete(item.id)}
-                                                            variant="secondary"
-                                                            className="btn-sm btn-circle hover:bg-red-50"
-                                                            title="Удалить"
-                                                        >
-                                                            <svg
-                                                                xmlns="http://www.w3.org/2000/svg"
-                                                                fill="none"
-                                                                viewBox="0 0 24 24"
-                                                                strokeWidth={1.5}
-                                                                stroke="currentColor"
-                                                                className="w-4 h-4 text-red-600"
-                                                            >
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                                                                />
-                                                            </svg>
-                                                        </Button>
-                                                    </div>
+                                                    <button
+                                                        onClick={() => handleView(item)}
+                                                        className="px-3 py-1.5 text-xs cursor-pointer font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                                                    >
+                                                        Просмотр
+                                                    </button>
                                                 </td>
                                             </tr>
                                         )
@@ -394,69 +472,76 @@ const Sales = () => {
                     onClose={() => {
                         setIsModalOpen(false)
                         setCurrentStep(1)
+                        setSearchQuery('')
                     }}
                     title={isEditMode ? 'Редактирование продажи' : 'Создание продажи'}
+                    maxWidth="max-w-6xl"
+                    maxHeight="h-[600px]"
                 >
                     <form onSubmit={handleSubmit}>
-                        {/* Step Indicator */}
-                        <div className="mb-6">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center flex-1">
-                                    <div
-                                        className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                                            currentStep >= 1
-                                                ? 'bg-blue-500 text-white'
-                                                : 'bg-gray-200 text-gray-500'
-                                        }`}
-                                    >
-                                        1
-                                    </div>
-                                    <div className="flex-1 h-1 mx-2 bg-gray-200">
-                                        <div
-                                            className={`h-full transition-all ${
-                                                currentStep > 1 ? 'bg-blue-500' : 'bg-gray-200'
-                                            }`}
-                                        ></div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center flex-1">
-                                    <div
-                                        className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                                            currentStep >= 2
-                                                ? 'bg-blue-500 text-white'
-                                                : 'bg-gray-200 text-gray-500'
-                                        }`}
-                                    >
-                                        2
-                                    </div>
-                                    <div className="flex-1 h-1 mx-2 bg-gray-200">
-                                        <div
-                                            className={`h-full transition-all ${
-                                                currentStep > 2 ? 'bg-blue-500' : 'bg-gray-200'
-                                            }`}
-                                        ></div>
-                                    </div>
-                                </div>
-                                <div
-                                    className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                                        currentStep >= 3
-                                            ? 'bg-blue-500 text-white'
-                                            : 'bg-gray-200 text-gray-500'
-                                    }`}
-                                >
-                                    3
-                                </div>
+                        <div className="absolute top-4 right-12 flex items-center gap-1">
+                            <div
+                                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${
+                                    currentStep >= 1
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-gray-200 text-gray-500'
+                                }`}
+                            >
+                                1
                             </div>
-                            <div className="flex justify-between mt-2">
-                                <span className="text-xs text-gray-600">Основная информация</span>
-                                <span className="text-xs text-gray-600">Товары</span>
-                                <span className="text-xs text-gray-600">Сумма</span>
+                            <div className="w-4 h-0.5 bg-gray-200">
+                                <div
+                                    className={`h-full transition-all ${
+                                        currentStep > 1 ? 'bg-blue-500' : 'bg-gray-200'
+                                    }`}
+                                ></div>
+                            </div>
+                            <div
+                                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${
+                                    currentStep >= 2
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-gray-200 text-gray-500'
+                                }`}
+                            >
+                                2
+                            </div>
+                            <div className="w-4 h-0.5 bg-gray-200">
+                                <div
+                                    className={`h-full transition-all ${
+                                        currentStep > 2 ? 'bg-blue-500' : 'bg-gray-200'
+                                    }`}
+                                ></div>
+                            </div>
+                            <div
+                                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${
+                                    currentStep >= 3
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-gray-200 text-gray-500'
+                                }`}
+                            >
+                                3
+                            </div>
+                            <div className="w-4 h-0.5 bg-gray-200">
+                                <div
+                                    className={`h-full transition-all ${
+                                        currentStep > 3 ? 'bg-blue-500' : 'bg-gray-200'
+                                    }`}
+                                ></div>
+                            </div>
+                            <div
+                                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${
+                                    currentStep >= 4
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-gray-200 text-gray-500'
+                                }`}
+                            >
+                                4
                             </div>
                         </div>
 
                         {/* Step 1: Company and Sales Type */}
                         {currentStep === 1 && (
-                            <div className="space-y-4">
+                            <div className="space-y-4 mt-2">
                                 <Select
                                     label="Компания"
                                     required
@@ -466,6 +551,7 @@ const Sales = () => {
                                         setFormData((prev) => ({ ...prev, company_id: value }))
                                     }
                                     placeholder="Выберите компанию"
+                                    searchable={true}
                                 />
 
                                 <Select
@@ -480,103 +566,163 @@ const Sales = () => {
                                         setFormData((prev) => ({ ...prev, sales_type_id: value }))
                                     }
                                     placeholder="Выберите тип продажи"
+                                    searchable={false}
                                 />
                             </div>
                         )}
 
-                        {/* Step 2: Products */}
+                        {/* Step 2: Products - Card Style */}
                         {currentStep === 2 && (
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-semibold text-gray-700">
-                                        Выберите товары
-                                    </h3>
-                                    <Button
-                                        type="button"
-                                        variant="primary"
-                                        onClick={addProduct}
-                                        className="text-sm"
-                                    >
-                                        + Добавить товар
-                                    </Button>
-                                </div>
-
-                                <div className="space-y-3">
-                                    {formData.products.map((product, index) => (
-                                        <div
-                                            key={index}
-                                            className="p-4 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
+                            <div className="mt-2">
+                                <div className="mb-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-lg font-semibold text-gray-700">
+                                            Выберите товары и укажите количество
+                                        </h3>
+                                        <span className="text-sm text-gray-500">
+                                            Выбрано: {formData.products.length}
+                                        </span>
+                                    </div>
+                                    {/* Search Input */}
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Поиск товара..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                                        />
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            strokeWidth={2}
+                                            stroke="currentColor"
+                                            className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                                         >
-                                            <div className="flex items-start gap-3">
-                                                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold">
-                                                    {index + 1}
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                                            />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2">
+                                    {products
+                                        .filter((product) =>
+                                            product.name
+                                                .toLowerCase()
+                                                .includes(searchQuery.toLowerCase())
+                                        )
+                                        .map((product) => {
+                                            const selectedProduct = formData.products.find(
+                                                (p) => p.product_id === product.id
+                                            )
+                                            const selectedIndex = formData.products.findIndex(
+                                                (p) => p.product_id === product.id
+                                            )
+                                            const isSelected = selectedProduct !== undefined
+
+                                            return (
+                                                <div
+                                                    key={product.id}
+                                                    className={`p-4 border-2 rounded-lg transition-all ${
+                                                        isSelected
+                                                            ? 'border-blue-500 bg-blue-50'
+                                                            : 'border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start justify-between mb-3 relative">
+                                                        <h4 className="font-semibold text-gray-800 text-sm flex-1">
+                                                            {product.name}
+                                                        </h4>
+                                                        {isSelected && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    removeProduct(selectedIndex)
+                                                                }
+                                                                className="p-1 absolute top-0 right-0 text-red-500 hover:bg-red-100 rounded transition-colors"
+                                                                title="Удалить"
+                                                            >
+                                                                <svg
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    fill="none"
+                                                                    viewBox="0 0 24 24"
+                                                                    strokeWidth={2}
+                                                                    stroke="currentColor"
+                                                                    className="w-4 h-4"
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                        d="M6 18L18 6M6 6l12 12"
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mb-3 min-h-[32px]">
+                                                        {product.description || 'Описание товара'}
+                                                    </p>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            placeholder="0"
+                                                            value={selectedProduct?.quantity || ''}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value
+                                                                if (value === '' || value === '0') {
+                                                                    // Remove product if quantity is 0 or empty
+                                                                    if (isSelected) {
+                                                                        removeProduct(selectedIndex)
+                                                                    }
+                                                                } else {
+                                                                    if (isSelected) {
+                                                                        // Update existing product
+                                                                        handleProductChange(
+                                                                            selectedIndex,
+                                                                            'quantity',
+                                                                            value
+                                                                        )
+                                                                    } else {
+                                                                        // Add new product
+                                                                        setFormData((prev) => ({
+                                                                            ...prev,
+                                                                            products: [
+                                                                                ...prev.products,
+                                                                                {
+                                                                                    product_id:
+                                                                                        product.id,
+                                                                                    quantity: value,
+                                                                                },
+                                                                            ],
+                                                                        }))
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className={`flex-1 px-3 py-2 border rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                                                                isSelected
+                                                                    ? 'border-blue-500 focus:ring-blue-200'
+                                                                    : 'border-gray-300 focus:ring-gray-200'
+                                                            }`}
+                                                        />
+                                                        <span className="text-xs text-gray-500">
+                                                            шт.
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1 space-y-3">
-                                                    <Select
-                                                        label="Товар"
-                                                        required
-                                                        options={products.map((p) => ({
-                                                            value: p.id,
-                                                            label: p.name,
-                                                        }))}
-                                                        value={product.product_id}
-                                                        onChange={(value) =>
-                                                            handleProductChange(
-                                                                index,
-                                                                'product_id',
-                                                                value
-                                                            )
-                                                        }
-                                                        placeholder="Выберите товар"
-                                                    />
-                                                    <Input
-                                                        label="Количество"
-                                                        type="number"
-                                                        value={product.quantity}
-                                                        onChange={(e) =>
-                                                            handleProductChange(
-                                                                index,
-                                                                'quantity',
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        placeholder="Введите количество"
-                                                        required
-                                                    />
-                                                </div>
-                                                {formData.products.length > 1 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeProduct(index)}
-                                                        className="flex-shrink-0 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Удалить товар"
-                                                    >
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            strokeWidth={2}
-                                                            stroke="currentColor"
-                                                            className="w-5 h-5"
-                                                        >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                d="M6 18L18 6M6 6l12 12"
-                                                            />
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                                            )
+                                        })}
                                 </div>
                             </div>
                         )}
 
                         {/* Step 3: Total Amount */}
                         {currentStep === 3 && (
-                            <div className="space-y-4">
+                            <div className="space-y-4 mt-2">
                                 <div className="bg-blue-50 p-4 rounded-lg mb-4">
                                     <h3 className="text-lg font-semibold text-gray-700 mb-2">
                                         Итоговая информация
@@ -597,31 +743,71 @@ const Sales = () => {
                                                 )?.name || '-'}
                                             </span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Товаров:</span>
-                                            <span className="font-semibold text-gray-800">
-                                                {formData.products.length}
-                                            </span>
-                                        </div>
                                     </div>
                                 </div>
 
-                                <Input
-                                    label="Общая сумма"
-                                    type="number"
-                                    name="summa"
-                                    value={formData.summa}
-                                    onChange={handleInputChange}
-                                    placeholder="Введите общую сумму"
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Общая сумма <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="summa"
+                                        value={formData.summa ? formatNumber(formData.summa) : ''}
+                                        onChange={handleSummaChange}
+                                        placeholder="Введите общую сумму"
+                                        required
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 4: Payment Information */}
+                        {currentStep === 4 && (
+                            <div className="space-y-4 mt-2">
+                                <div className="bg-green-50 p-3 rounded-lg mb-4">
+                                    <h3 className="text-lg font-semibold text-green-700">
+                                        ✓ Продажа создана
+                                    </h3>
+                                </div>
+
+                                <Select
+                                    label="Тип оплаты"
                                     required
+                                    options={paymentTypes.map((t) => ({
+                                        value: t.id,
+                                        label: t.name,
+                                    }))}
+                                    value={paymentData.payment_type_id}
+                                    onChange={(value) =>
+                                        setPaymentData((prev) => ({
+                                            ...prev,
+                                            payment_type_id: value,
+                                        }))
+                                    }
+                                    placeholder="Выберите тип оплаты"
+                                    searchable={false}
+                                />
+
+                                <Select
+                                    label="Статус продажи"
+                                    required
+                                    options={salesStages}
+                                    value={paymentData.sales_stage}
+                                    onChange={(value) =>
+                                        setPaymentData((prev) => ({ ...prev, sales_stage: value }))
+                                    }
+                                    placeholder="Выберите статус"
+                                    searchable={false}
                                 />
                             </div>
                         )}
 
                         {/* Navigation Buttons */}
-                        <div className="flex justify-between gap-2 mt-6 pt-4 border-t border-gray-200">
+                        <div className="flex justify-between gap-2 mt-6 pt-4">
                             <div>
-                                {currentStep > 1 && (
+                                {currentStep > 1 && currentStep !== 4 && (
                                     <Button
                                         type="button"
                                         variant="secondary"
@@ -639,34 +825,46 @@ const Sales = () => {
                                     onClick={() => {
                                         setIsModalOpen(false)
                                         setCurrentStep(1)
+                                        setSearchQuery('')
                                     }}
                                     disabled={submitting}
                                 >
                                     Отмена
                                 </Button>
-                                {currentStep < 3 ? (
+                                {currentStep < 4 ? (
                                     <Button
                                         type="button"
                                         variant="primary"
                                         onClick={nextStep}
                                         disabled={
+                                            submitting ||
                                             (currentStep === 1 && !canProceedToStep2()) ||
-                                            (currentStep === 2 && !canProceedToStep3())
+                                            (currentStep === 2 && !canProceedToStep3()) ||
+                                            (currentStep === 3 && !canProceedToStep4())
                                         }
                                     >
-                                        Далее →
+                                        {submitting && currentStep === 3 ? (
+                                            <span className="flex items-center gap-2">
+                                                <span className="loading loading-spinner loading-sm"></span>
+                                                Создание продажи...
+                                            </span>
+                                        ) : (
+                                            'Далее →'
+                                        )}
                                     </Button>
                                 ) : (
-                                    <Button type="submit" variant="primary" disabled={submitting}>
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        disabled={submitting || !canSubmitPayment()}
+                                    >
                                         {submitting ? (
                                             <span className="flex items-center gap-2">
                                                 <span className="loading loading-spinner loading-sm"></span>
-                                                {isEditMode ? 'Сохранение...' : 'Создание...'}
+                                                Создание платежа...
                                             </span>
-                                        ) : isEditMode ? (
-                                            'Сохранить'
                                         ) : (
-                                            'Создать'
+                                            'Создать платеж'
                                         )}
                                     </Button>
                                 )}
@@ -693,6 +891,117 @@ const Sales = () => {
                     title="Успешно"
                     message={successMessage}
                 />
+
+                <Modal
+                    isOpen={isViewModalOpen}
+                    onClose={() => {
+                        setIsViewModalOpen(false)
+                        setViewingItem(null)
+                    }}
+                    title="Детали продажи"
+                    maxWidth="max-w-4xl"
+                >
+                    {viewingItem && (
+                        <div className="space-y-6">
+                            {/* Main Info */}
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase">
+                                    Основная информация
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">ID продажи</p>
+                                        <p className="text-sm font-semibold text-gray-800">
+                                            #{viewingItem.id}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">Тип продажи</p>
+                                        <p className="text-sm font-semibold text-gray-800">
+                                            {salesTypes.find(
+                                                (t) => t.id === viewingItem.sales_type_id
+                                            )?.name || '-'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">Сумма</p>
+                                        <p className="text-lg font-bold text-blue-600">
+                                            {Number(viewingItem.summa).toLocaleString()} сум
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">Дата создания</p>
+                                        <p className="text-sm font-semibold text-gray-800">
+                                            {viewingItem.created_at || viewingItem.date || '-'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Company Info */}
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase">
+                                    Информация о компании
+                                </h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">
+                                            Название компании
+                                        </p>
+                                        <p className="text-sm font-semibold text-gray-800">
+                                            {viewingItem.company?.name || '-'}
+                                        </p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-1">Телефон</p>
+                                            <p className="text-sm font-semibold text-gray-800">
+                                                {viewingItem.company?.phone || '-'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-1">Депозит</p>
+                                            <p className="text-sm font-semibold text-gray-800">
+                                                {viewingItem.company?.deposit
+                                                    ? Number(
+                                                          viewingItem.company.deposit
+                                                      ).toLocaleString() + ' сум'
+                                                    : 'Не указан'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">Адрес</p>
+                                        <p className="text-sm font-semibold text-gray-800">
+                                            {viewingItem.company?.address || '-'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Products Info */}
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase">
+                                    Товары
+                                </h3>
+                                {viewingItem.products && viewingItem.products.length > 0 ? (
+                                    <div className="text-sm text-gray-700">
+                                        {viewingItem.products
+                                            .map(
+                                                (product) =>
+                                                    `${product.name || 'Товар'} (${
+                                                        product.quantity
+                                                    } шт.)`
+                                            )
+                                            .join(', ')}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-500">Нет товаров</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </Modal>
             </div>
         </Layout>
     )

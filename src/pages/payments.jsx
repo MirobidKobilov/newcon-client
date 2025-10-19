@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
 import Input from '../components/UI/Input'
+import Select from '../components/UI/Select'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
@@ -14,29 +15,54 @@ const Payments = () => {
     const [isEditMode, setIsEditMode] = useState(false)
     const [editingItemId, setEditingItemId] = useState(null)
     const [formData, setFormData] = useState({
-        amount: '',
-        payment_method: '',
-        description: '',
-        date: '',
+        name: '',
+        payment_type_id: '',
+        sales_stage: '',
+        sales: [],
     })
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+    const [viewingItem, setViewingItem] = useState(null)
     const [submitting, setSubmitting] = useState(false)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
     const [deletingItemId, setDeletingItemId] = useState(null)
     const [deleting, setDeleting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
+    const [salesList, setSalesList] = useState([])
+    const [paymentTypes] = useState([
+        { value: 1, label: 'Доллары' },
+        { value: 2, label: 'Сум' },
+    ])
+    const [salesStages] = useState([
+        { value: 'Ожидание платежа', label: 'Ожидание платежа' },
+        { value: 'Оплачено', label: 'Оплачено' },
+    ])
+    const [useCustomStage, setUseCustomStage] = useState(false)
 
     useEffect(() => {
-        const fetchItems = async () => {
+        const fetchData = async () => {
             setLoading(true)
-            const response = await api('get', {}, '/payments/list')
-            if (response?.data) {
-                setItems(response.data.data)
+
+            // Fetch payments list
+            const paymentsResponse = await api('get', {}, '/payments/list')
+            if (paymentsResponse?.data) {
+                setItems(paymentsResponse.data.data)
             }
+
+            // Fetch sales list
+            const salesResponse = await api('get', {}, '/sales/list')
+            if (salesResponse?.data) {
+                setSalesList(salesResponse.data.data)
+            }
+
             setLoading(false)
         }
-        fetchItems()
+        fetchData()
     }, [])
+
+    const formatNumber = (num) => {
+        return num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    }
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -46,15 +72,59 @@ const Payments = () => {
         }))
     }
 
+    const handleSaleChange = (index, field, value) => {
+        const newSales = [...formData.sales]
+        newSales[index][field] = value
+
+        // If changing sale_id, automatically set the amount from the selected sale
+        if (field === 'sale_id') {
+            const selectedSale = salesList.find((s) => s.id === value)
+            if (selectedSale) {
+                newSales[index].amount = selectedSale.summa || 0
+            }
+        }
+
+        setFormData((prev) => ({
+            ...prev,
+            sales: newSales,
+        }))
+    }
+
+    const addSale = () => {
+        setFormData((prev) => ({
+            ...prev,
+            sales: [...prev.sales, { sale_id: '', amount: '' }],
+        }))
+    }
+
+    const removeSale = (index) => {
+        const newSales = formData.sales.filter((_, i) => i !== index)
+        setFormData((prev) => ({
+            ...prev,
+            sales: newSales,
+        }))
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setSubmitting(true)
 
+        // Prepare data
+        const submitData = {
+            name: formData.name,
+            payment_type_id: parseInt(formData.payment_type_id),
+            sales_stage: formData.sales_stage,
+            sales: formData.sales.map((s) => ({
+                sale_id: parseInt(s.sale_id),
+                amount: parseFloat(s.amount),
+            })),
+        }
+
         let response
         if (isEditMode) {
-            response = await api('put', formData, `/payments/update/${editingItemId}`)
+            response = await api('put', submitData, `/payments/update/${editingItemId}`)
         } else {
-            response = await api('post', formData, '/payments/create')
+            response = await api('post', submitData, '/payments/create')
         }
 
         if (response?.data) {
@@ -66,11 +136,12 @@ const Payments = () => {
             setIsModalOpen(false)
             setIsEditMode(false)
             setEditingItemId(null)
+            setUseCustomStage(false)
             setFormData({
-                amount: '',
-                payment_method: '',
-                description: '',
-                date: '',
+                name: '',
+                payment_type_id: '',
+                sales_stage: '',
+                sales: [],
             })
 
             setSuccessMessage(isEditMode ? 'Платеж успешно обновлен' : 'Платеж успешно создан')
@@ -83,13 +154,23 @@ const Payments = () => {
     const handleEdit = (item) => {
         setIsEditMode(true)
         setEditingItemId(item.id)
+
+        // Check if sales_stage is a custom value
+        const isCustom = !salesStages.some((s) => s.value === item.sales_stage)
+        setUseCustomStage(isCustom)
+
         setFormData({
-            amount: item.amount || '',
-            payment_method: item.payment_method || '',
-            description: item.description || '',
-            date: item.date || '',
+            name: item.name || '',
+            payment_type_id: item.payment_type_id || '',
+            sales_stage: item.sales_stage || '',
+            sales: item.sales || [],
         })
         setIsModalOpen(true)
+    }
+
+    const handleView = (item) => {
+        setViewingItem(item)
+        setIsViewModalOpen(true)
     }
 
     const handleDelete = (itemId) => {
@@ -119,11 +200,12 @@ const Payments = () => {
     const handleCreateNew = () => {
         setIsEditMode(false)
         setEditingItemId(null)
+        setUseCustomStage(false)
         setFormData({
-            amount: '',
-            payment_method: '',
-            description: '',
-            date: '',
+            name: '',
+            payment_type_id: '',
+            sales_stage: '',
+            sales: [],
         })
         setIsModalOpen(true)
     }
@@ -144,7 +226,7 @@ const Payments = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden">
+                <div className="bg-white rounded-2xl shadow-sm mb-6">
                     <div className="p-6">
                         <h2 className="text-lg font-bold text-gray-700 mb-4">Платежи</h2>
                     </div>
@@ -157,18 +239,18 @@ const Payments = () => {
                                         ID
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Сумма
+                                        Название
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Метод оплаты
+                                        Валюта
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Описание
+                                        Статус
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Дата
+                                        Продажи
                                     </th>
-                                    <th className="text-right p-4 text-slate-400 text-[10px] font-bold uppercase">
+                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Действия
                                     </th>
                                 </tr>
@@ -187,84 +269,83 @@ const Payments = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    items.map((item) => (
-                                        <tr
-                                            key={item.id}
-                                            className="border-b border-slate-200 hover:bg-gray-50"
-                                        >
-                                            <td className="p-4">
-                                                <div className="text-sm font-bold text-gray-700">
-                                                    {item.id}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm font-bold text-gray-700">
-                                                    {item.amount}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.payment_method || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.description || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm text-slate-600">
-                                                    {item.date || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex gap-2 justify-end">
-                                                    <Button
-                                                        onClick={() => handleEdit(item)}
-                                                        variant="secondary"
-                                                        className="btn-sm btn-circle"
-                                                        title="Редактировать"
-                                                    >
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            strokeWidth={1.5}
-                                                            stroke="currentColor"
-                                                            className="w-4 h-4"
+                                    items.map((item) => {
+                                        const paymentType = paymentTypes.find(
+                                            (t) => t.value === item.payment_type_id
+                                        )
+                                        return (
+                                            <tr
+                                                key={item.id}
+                                                className="border-b border-slate-200 hover:bg-gray-50"
+                                            >
+                                                <td className="p-4">
+                                                    <div className="text-sm font-bold text-gray-700">
+                                                        {item.id}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-sm font-bold text-gray-700">
+                                                        {item.name || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-sm text-slate-600">
+                                                        {paymentType?.label || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-sm text-slate-600">
+                                                        {item.sales_stage || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-sm text-slate-600">
+                                                        {item.sales && item.sales.length > 0
+                                                            ? item.sales
+                                                                  .map(
+                                                                      (s) =>
+                                                                          `#${
+                                                                              s.id || s.sale_id
+                                                                          } (${formatNumber(
+                                                                              s.summa || s.amount
+                                                                          )})`
+                                                                  )
+                                                                  .join(', ')
+                                                            : '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => handleView(item)}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                            title="Просмотр"
                                                         >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                                                            />
-                                                        </svg>
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => handleDelete(item.id)}
-                                                        variant="secondary"
-                                                        className="btn-sm btn-circle hover:bg-red-50"
-                                                        title="Удалить"
-                                                    >
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            strokeWidth={1.5}
-                                                            stroke="currentColor"
-                                                            className="w-4 h-4 text-red-600"
-                                                        >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                                                            />
-                                                        </svg>
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
+                                                            <svg
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                fill="none"
+                                                                viewBox="0 0 24 24"
+                                                                strokeWidth={2}
+                                                                stroke="currentColor"
+                                                                className="w-5 h-5"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                                                                />
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                                                />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })
                                 )}
                             </tbody>
                         </table>
@@ -273,50 +354,170 @@ const Payments = () => {
 
                 <Modal
                     isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
+                    onClose={() => {
+                        setIsModalOpen(false)
+                        setUseCustomStage(false)
+                    }}
                     title={isEditMode ? 'Редактирование платежа' : 'Создание платежа'}
+                    maxWidth="max-w-4xl"
                 >
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-4">
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Продажи
+                                    </label>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={addSale}
+                                        className="text-xs"
+                                    >
+                                        + Добавить продажу
+                                    </Button>
+                                </div>
+
+                                {formData.sales.length === 0 ? (
+                                    <div className="text-sm text-gray-500 text-center py-4 border border-dashed border-gray-300 rounded-lg">
+                                        Нет продаж. Нажмите "Добавить продажу" чтобы добавить.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3 max-h-60 relative z-40">
+                                        {formData.sales.map((sale, index) => (
+                                            <div
+                                                key={index}
+                                                className="flex gap-2 items-end p-3 bg-gray-50 rounded-lg"
+                                            >
+                                                <div className="flex-1">
+                                                    <Select
+                                                        label="Продажа"
+                                                        required
+                                                        options={salesList.map((s) => ({
+                                                            value: s.id,
+                                                            label: `${s.id} - ${
+                                                                s.company?.name || 'Компания'
+                                                            } (${formatNumber(s.summa || 0)})`,
+                                                        }))}
+                                                        value={sale.sale_id}
+                                                        onChange={(value) =>
+                                                            handleSaleChange(
+                                                                index,
+                                                                'sale_id',
+                                                                value
+                                                            )
+                                                        }
+                                                        placeholder="Выберите продажу"
+                                                        searchable={true}
+                                                    />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="block mb-1.5">
+                                                        <span className="text-sm font-medium text-gray-700">
+                                                            Сумма
+                                                        </span>
+                                                    </label>
+                                                    <div className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-800">
+                                                        {formatNumber(sale.amount || 0)}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeSale(index)}
+                                                    className="mb-2 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Удалить"
+                                                >
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        strokeWidth={2}
+                                                        stroke="currentColor"
+                                                        className="w-5 h-5"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            d="M6 18L18 6M6 6l12 12"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
                             <Input
-                                label="Сумма"
-                                type="number"
-                                name="amount"
-                                value={formData.amount}
+                                label="Название (Чтобы легко найти платеж)"
+                                type="text"
+                                name="name"
+                                value={formData.name}
                                 onChange={handleInputChange}
-                                placeholder="Введите сумму"
+                                placeholder="Введите название платежа"
                                 required
                             />
-                            <Input
-                                label="Метод оплаты"
-                                type="text"
-                                name="payment_method"
-                                value={formData.payment_method}
-                                onChange={handleInputChange}
-                                placeholder="Наличные, карта, и т.д."
+
+                            <Select
+                                label="Валюта"
+                                required
+                                options={paymentTypes}
+                                value={formData.payment_type_id}
+                                onChange={(value) =>
+                                    setFormData((prev) => ({ ...prev, payment_type_id: value }))
+                                }
+                                placeholder="Выберите валюту"
+                                searchable={false}
                             />
-                            <Input
-                                label="Описание"
-                                type="text"
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                placeholder="Введите описание"
-                            />
-                            <Input
-                                label="Дата"
-                                type="date"
-                                name="date"
-                                value={formData.date}
-                                onChange={handleInputChange}
-                            />
+
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Статус продажи <span className="text-red-500">*</span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setUseCustomStage(!useCustomStage)
+                                            setFormData((prev) => ({ ...prev, sales_stage: '' }))
+                                        }}
+                                        className="text-xs text-blue-600 hover:text-blue-700"
+                                    >
+                                        {useCustomStage ? 'Выбрать из списка' : 'Ввести вручную'}
+                                    </button>
+                                </div>
+
+                                {useCustomStage ? (
+                                    <Input
+                                        type="text"
+                                        name="sales_stage"
+                                        value={formData.sales_stage}
+                                        onChange={handleInputChange}
+                                        placeholder="Введите статус вручную"
+                                    />
+                                ) : (
+                                    <Select
+                                        required
+                                        options={salesStages}
+                                        value={formData.sales_stage}
+                                        onChange={(value) =>
+                                            setFormData((prev) => ({ ...prev, sales_stage: value }))
+                                        }
+                                        placeholder="Выберите статус"
+                                        searchable={false}
+                                    />
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
                             <Button
                                 type="button"
                                 variant="secondary"
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={() => {
+                                    setIsModalOpen(false)
+                                    setUseCustomStage(false)
+                                }}
                                 disabled={submitting}
                             >
                                 Отмена
@@ -335,6 +536,168 @@ const Payments = () => {
                             </Button>
                         </div>
                     </form>
+                </Modal>
+
+                <Modal
+                    isOpen={isViewModalOpen}
+                    onClose={() => setIsViewModalOpen(false)}
+                    title="Просмотр платежа"
+                    maxWidth="max-w-4xl"
+                >
+                    {viewingItem && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200">
+                                <div>
+                                    <div className="text-xs text-gray-500 mb-1">ID</div>
+                                    <div className="text-sm font-bold text-gray-700">
+                                        {viewingItem.id}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-xs text-gray-500 mb-1">Название</div>
+                                    <div className="text-sm font-bold text-gray-700">
+                                        {viewingItem.name || '-'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-xs text-gray-500 mb-1">Валюта</div>
+                                    <div className="text-sm text-gray-700">
+                                        {paymentTypes.find(
+                                            (t) => t.value === viewingItem.payment_type_id
+                                        )?.label || '-'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-xs text-gray-500 mb-1">Статус</div>
+                                    <div className="text-sm text-gray-700">
+                                        {viewingItem.sales_stage || '-'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-700 mb-3">Продажи</h3>
+                                {viewingItem.sales && viewingItem.sales.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {viewingItem.sales.map((sale, index) => (
+                                            <div
+                                                key={index}
+                                                className="bg-gray-50 rounded-lg p-4 space-y-3"
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <div className="text-xs text-gray-500 mb-1">
+                                                            ID продажи
+                                                        </div>
+                                                        <div className="text-sm font-bold text-gray-700">
+                                                            #{sale.id}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs text-gray-500 mb-1">
+                                                            Сумма
+                                                        </div>
+                                                        <div className="text-sm font-bold text-gray-700">
+                                                            {formatNumber(sale.summa || 0)}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs text-gray-500 mb-1">
+                                                            Дата
+                                                        </div>
+                                                        <div className="text-sm text-gray-700">
+                                                            {sale.created_at || '-'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {sale.company && (
+                                                    <div className="pt-3 border-t border-gray-200">
+                                                        <div className="text-xs font-bold text-gray-600 mb-2">
+                                                            Компания
+                                                        </div>
+                                                        <div className="flex flex-col gap-3">
+                                                            <div>
+                                                                <div className="text-xs text-gray-500">
+                                                                    Название
+                                                                </div>
+                                                                <div className="text-sm text-gray-700">
+                                                                    {sale.company.name || '-'}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-xs text-gray-500">
+                                                                    Телефон
+                                                                </div>
+                                                                <div className="text-sm text-gray-700">
+                                                                    {sale.company.phone || '-'}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-span-2">
+                                                                <div className="text-xs text-gray-500">
+                                                                    Адрес
+                                                                </div>
+                                                                <div className="text-sm text-gray-700">
+                                                                    {sale.company.address || '-'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {sale.products && sale.products.length > 0 && (
+                                                    <div className="pt-3 border-t border-gray-200">
+                                                        <div className="text-xs font-bold text-gray-600 mb-2">
+                                                            Продукты
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {sale.products.map(
+                                                                (product, pIndex) => (
+                                                                    <div
+                                                                        key={pIndex}
+                                                                        className="bg-white rounded p-3 flex justify-between items-start"
+                                                                    >
+                                                                        <div className="flex-1">
+                                                                            <div className="text-sm font-bold text-gray-700">
+                                                                                {product.name ||
+                                                                                    '-'}
+                                                                            </div>
+                                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                                {product.description ||
+                                                                                    '-'}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="text-sm text-gray-700 ml-4">
+                                                                            Кол-во:{' '}
+                                                                            {product.quantity || 0}
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-gray-500 text-center py-4">
+                                        Нет продаж
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex justify-end pt-4 border-t border-gray-200">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => setIsViewModalOpen(false)}
+                                >
+                                    Закрыть
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </Modal>
 
                 <ConfirmDialog

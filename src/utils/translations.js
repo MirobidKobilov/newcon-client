@@ -1,5 +1,6 @@
 export const translations = {
     menu: {
+        dashboard: 'Главная',
         products: 'Продукты',
         users: 'Пользователи',
         permissions: 'Разрешения',
@@ -22,6 +23,10 @@ export const translations = {
         edit: 'Изменить',
         view: 'Просмотр',
         search: 'Поиск',
+        title: 'Действия и уведомления',
+        description: 'История действий и системных уведомлений',
+        markAllRead: 'Отметить все как прочитанные',
+        noActions: 'Нет уведомлений',
     },
     common: {
         loading: 'Загрузка...',
@@ -30,6 +35,7 @@ export const translations = {
         confirm: 'Подтвердить',
         yes: 'Да',
         no: 'Нет',
+        logout: 'Выйти',
     },
 }
 

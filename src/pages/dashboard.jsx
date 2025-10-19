@@ -1,313 +1,556 @@
-import React from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Layout from '../layout/layout'
+import { api } from '../utils/api'
+import Select from '../components/UI/Select'
 
 const Dashboard = () => {
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+    const [salesData, setSalesData] = useState(null)
+    const [dailySalesData, setDailySalesData] = useState(null)
+    const [loadingMonth, setLoadingMonth] = useState(false)
+    const [loadingDay, setLoadingDay] = useState(false)
+
+    const months = [
+        { value: 1, label: 'Январь' },
+        { value: 2, label: 'Февраль' },
+        { value: 3, label: 'Март' },
+        { value: 4, label: 'Апрель' },
+        { value: 5, label: 'Май' },
+        { value: 6, label: 'Июнь' },
+        { value: 7, label: 'Июль' },
+        { value: 8, label: 'Август' },
+        { value: 9, label: 'Сентябрь' },
+        { value: 10, label: 'Октябрь' },
+        { value: 11, label: 'Ноябрь' },
+        { value: 12, label: 'Декабрь' },
+    ]
+
+    const fetchSalesByMonth = async (month) => {
+        setLoadingMonth(true)
+        try {
+            const response = await api(
+                'post',
+                { month: month.toString() },
+                '/dashboard/get-sale-by-month'
+            )
+            if (response.data) {
+                setSalesData(response.data)
+            }
+        } catch (error) {
+            console.error('Error fetching sales data:', error)
+        } finally {
+            setLoadingMonth(false)
+        }
+    }
+
+    const fetchSalesByDay = async (day) => {
+        setLoadingDay(true)
+        try {
+            const response = await api('post', { day: day }, '/dashboard/get-sale-by-day')
+            if (response.data) {
+                setDailySalesData(response.data)
+            }
+        } catch (error) {
+            console.error('Error fetching daily sales data:', error)
+        } finally {
+            setLoadingDay(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchSalesByMonth(selectedMonth)
+    }, [selectedMonth])
+
+    useEffect(() => {
+        fetchSalesByDay(selectedDate)
+    }, [selectedDate])
+
+    const formatNumber = (num) => {
+        return new Intl.NumberFormat('ru-RU').format(num)
+    }
+
+    // Prepare chart data for daily sales
+    const dailyChartData = useMemo(() => {
+        if (!dailySalesData || !dailySalesData.data) return []
+
+        const salesByDate = {}
+        dailySalesData.data.forEach((sale) => {
+            const date = sale.created_at
+            if (salesByDate[date]) {
+                salesByDate[date] += parseFloat(sale.summa)
+            } else {
+                salesByDate[date] = parseFloat(sale.summa)
+            }
+        })
+
+        const sorted = Object.entries(salesByDate)
+            .sort(([a], [b]) => new Date(a) - new Date(b))
+            .map(([date, summa]) => ({
+                date,
+                summa,
+                label: new Date(date).toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                }),
+            }))
+
+        return sorted
+    }, [dailySalesData])
+
+    // Prepare chart data for monthly sales
+    const monthlyChartData = useMemo(() => {
+        if (!salesData || !salesData.data) return []
+
+        const salesByDate = {}
+        salesData.data.forEach((sale) => {
+            const date = sale.created_at
+            if (salesByDate[date]) {
+                salesByDate[date] += parseFloat(sale.summa)
+            } else {
+                salesByDate[date] = parseFloat(sale.summa)
+            }
+        })
+
+        const sorted = Object.entries(salesByDate)
+            .sort(([a], [b]) => new Date(a) - new Date(b))
+            .map(([date, summa]) => ({
+                date,
+                summa,
+                label: new Date(date).toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                }),
+            }))
+
+        return sorted
+    }, [salesData])
+
+    const dailyMaxValue = useMemo(() => {
+        if (dailyChartData.length === 0) return 0
+        return Math.max(...dailyChartData.map((d) => d.summa))
+    }, [dailyChartData])
+
+    const monthlyMaxValue = useMemo(() => {
+        if (monthlyChartData.length === 0) return 0
+        return Math.max(...monthlyChartData.map((d) => d.summa))
+    }, [monthlyChartData])
+
+    const handleMonthSelect = (value) => {
+        setSelectedMonth(value)
+    }
+
+    const handleDateChange = (e) => {
+        setSelectedDate(e.target.value)
+    }
+
+    const renderChart = (chartData, maxValue, loading) => {
+        if (loading) {
+            return (
+                <div className="h-80 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mb-2"></div>
+                        <div className="text-slate-500 text-sm">Загрузка данных...</div>
+                    </div>
+                </div>
+            )
+        }
+
+        if (chartData.length === 0) {
+            return (
+                <div className="h-80 flex flex-col items-center justify-center">
+                    <svg
+                        className="w-16 h-16 text-slate-300 mb-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                    </svg>
+                    <div className="text-slate-500 text-sm font-medium">
+                        Нет данных для отображения
+                    </div>
+                </div>
+            )
+        }
+
+        return (
+            <div
+                className="relative py-20"
+                style={{ minWidth: `${Math.max(chartData.length * 60, 400)}px` }}
+            >
+                <div className="flex items-end justify-around h-64 px-4 relative">
+                    {chartData.map((item, index) => {
+                        const heightPercent = maxValue > 0 ? (item.summa / maxValue) * 100 : 0
+                        const barHeight = Math.max((heightPercent / 100) * 240, 8)
+
+                        return (
+                            <div
+                                key={index}
+                                className="flex flex-col items-center group relative"
+                                style={{ flex: '0 0 auto', width: '40px' }}
+                            >
+                                {/* Tooltip */}
+                                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[100]">
+                                    <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
+                                        <div className="font-semibold">
+                                            {formatNumber(item.summa)} Сум
+                                        </div>
+                                        <div className="text-gray-300 text-[10px] mt-0.5">
+                                            {item.label}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bar */}
+                                <div className="relative w-full flex items-end justify-center">
+                                    <div
+                                        className="w-10 bg-gradient-to-t from-teal-500 via-teal-400 to-teal-300 rounded-t-lg shadow-sm group-hover:from-teal-600 group-hover:via-teal-500 group-hover:to-teal-400 transition-all duration-300 cursor-pointer"
+                                        style={{ height: `${barHeight}px` }}
+                                    ></div>
+                                </div>
+
+                                {/* Date label */}
+                                <div className="text-slate-600 text-[11px] font-medium mt-2 text-center">
+                                    {item.label}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+
+                {/* Y-axis labels */}
+                <div className="absolute left-0 top-20 bottom-20 flex flex-col justify-between text-slate-500 text-[10px] font-medium">
+                    {[5, 4, 3, 2, 1, 0].map((multiplier) => {
+                        const value = (maxValue / 5) * multiplier
+                        let label = ''
+                        if (value >= 1000000) {
+                            label = `${(value / 1000000).toFixed(1)} млн`
+                        } else if (value >= 1000) {
+                            label = `${Math.round(value / 1000)} т`
+                        } else {
+                            label = Math.round(value).toString()
+                        }
+                        return (
+                            <div key={multiplier} className="text-right pr-2 -translate-y-2">
+                                {label}
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+        )
+    }
+
     return (
         <Layout>
             <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6">
-                <div className="mb-4 sm:mb-6 lg:mb-8">
-                    <h1 className="text-gray-800 tracking-tight font-bold text-base sm:text-lg lg:text-xl">
-                        Панель управления
-                    </h1>
-                </div>
+                <h1 className="text-gray-800 tracking-tight font-bold text-xl mb-6">
+                    Панель управления
+                </h1>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
-                    <div className="bg-white rounded-2xl shadow-sm p-3 sm:p-4 lg:p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-slate-500 text-[10px] sm:text-[11px] uppercase tracking-wide font-bold mb-1.5 sm:mb-2">
-                                    Деньги за сегодня
-                                </p>
-                                <h3 className="text-gray-800 text-lg sm:text-xl font-bold mb-1">
-                                    $53,000
-                                </h3>
-                                <div
-                                    className="flex items-center gap-1 text-emerald-500 text-xs sm:text-sm font-semibold"
-                                    aria-label="Процент роста"
-                                >
-                                    +55%
-                                </div>
-                            </div>
-                            <div
-                                className="w-10 h-10 sm:w-11 sm:h-11 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50 transition-transform duration-200 hover:scale-105 cursor-pointer"
-                                aria-hidden="true"
-                            >
-                                <div className="w-6 h-6 relative">
-                                    <div className="w-4 h-1 bg-white/95 rounded absolute top-1 left-1"></div>
-                                    <div className="w-5 h-3.5 bg-white/95 rounded absolute top-3 left-1"></div>
-                                    <div className="w-1.5 h-2 bg-white/95 rounded absolute top-2 left-1"></div>
-                                </div>
+                {/* Two column layout */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    {/* Left Column - Daily Sales */}
+                    <div className="space-y-4">
+                        {/* Header with date picker */}
+                        <div className="flex items-center justify-between bg-white rounded-xl shadow-sm p-4">
+                            <h2 className="text-gray-800 font-bold text-lg">Продажи по дням</h2>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-slate-600 font-medium">Дата:</span>
+                                <input
+                                    type="date"
+                                    value={selectedDate}
+                                    onChange={handleDateChange}
+                                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                />
                             </div>
                         </div>
-                    </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm p-3 sm:p-4 lg:p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-slate-500 text-[10px] sm:text-[11px] uppercase tracking-wide font-bold mb-1.5 sm:mb-2">
-                                    Пользователи за сегодня
-                                </p>
-                                <h3 className="text-gray-800 text-lg sm:text-xl font-bold mb-1">
-                                    2,300
-                                </h3>
-                                <div
-                                    className="flex items-center gap-1 text-emerald-500 text-xs sm:text-sm font-semibold"
-                                    aria-label="Процент роста"
-                                >
-                                    +5%
-                                </div>
-                            </div>
-                            <div
-                                className="w-10 h-10 sm:w-11 sm:h-11 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50 transition-transform duration-200 hover:scale-105 cursor-pointer"
-                                aria-hidden="true"
-                            >
-                                <div className="w-6 h-6 relative">
-                                    <div className="w-3 h-3 border border-white/95 rounded-sm absolute top-1 left-1"></div>
-                                    <div className="w-2 h-2 border border-white/95 rounded-sm absolute top-1 right-1"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm p-3 sm:p-4 lg:p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-slate-500 text-[10px] sm:text-[11px] uppercase tracking-wide font-bold mb-1.5 sm:mb-2">
-                                    Новые клиенты
-                                </p>
-                                <h3 className="text-gray-800 text-lg sm:text-xl font-bold mb-1">
-                                    +3,052
-                                </h3>
-                                <div
-                                    className="flex items-center gap-1 text-red-500 text-xs sm:text-sm font-semibold"
-                                    aria-label="Процент снижения"
-                                >
-                                    -14%
-                                </div>
-                            </div>
-                            <div
-                                className="w-10 h-10 sm:w-11 sm:h-11 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50 transition-transform duration-200 hover:scale-105 cursor-pointer"
-                                aria-hidden="true"
-                            >
-                                <div className="w-6 h-6 relative">
-                                    <div className="w-4 h-5 border border-white/95 rounded-sm absolute top-1 left-2"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm p-3 sm:p-4 lg:p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-slate-500 text-[10px] sm:text-[11px] uppercase tracking-wide font-bold mb-1.5 sm:mb-2">
-                                    Общие продажи
-                                </p>
-                                <h3 className="text-gray-800 text-lg sm:text-xl font-bold mb-1">
-                                    $173,000
-                                </h3>
-                                <div
-                                    className="flex items-center gap-1 text-emerald-500 text-xs sm:text-sm font-semibold"
-                                    aria-label="Процент роста"
-                                >
-                                    +8%
-                                </div>
-                            </div>
-                            <div
-                                className="w-10 h-10 sm:w-11 sm:h-11 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50 transition-transform duration-200 hover:scale-105 cursor-pointer"
-                                aria-hidden="true"
-                            >
-                                <div className="w-6 h-6 relative">
-                                    <div className="w-5 h-3.5 bg-white/95 rounded absolute top-2 left-1"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-4 sm:mb-6 lg:mb-8">
-                    <div className="bg-white rounded-2xl shadow-sm p-3 sm:p-4 lg:p-6 transition-all duration-200 hover:shadow-md">
-                        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
-                            <div className="lg:w-1/2">
-                                <p className="text-slate-500 text-[10px] sm:text-[11px] uppercase tracking-wide font-bold mb-2">
-                                    Создано разработчиками
-                                </p>
-                                <h2 className="text-gray-800 text-base sm:text-lg font-bold mb-3 sm:mb-4">
-                                    Purity UI Dashboard
-                                </h2>
-                                <p className="text-slate-500 text-sm mb-5 sm:mb-6 leading-relaxed">
-                                    От цветов, карточек и типографики до сложных элементов — здесь
-                                    вы найдёте полную документацию.
-                                </p>
-                                <button className="flex items-center gap-2 text-gray-800 font-bold text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-md px-1 transition-all duration-200 hover:text-teal-700 active:scale-[.98] cursor-pointer">
-                                    Подробнее
-                                    <svg
-                                        className="w-3 h-3"
-                                        viewBox="0 0 12 12"
-                                        fill="currentColor"
-                                        aria-hidden="true"
-                                    >
-                                        <path d="M6.28 2.62L9.66 6L6.28 9.38L5.22 8.32L7.54 6L5.22 3.68L6.28 2.62Z" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div className="lg:w-1/2">
-                                <div
-                                    className="bg-teal-400 rounded-xl h-40 sm:h-48 lg:h-64 relative overflow-hidden transition-transform duration-200 hover:scale-[1.01] cursor-pointer"
-                                    role="img"
-                                    aria-label="Декоративный круговой узор"
-                                >
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-95">
-                                        <div className="w-24 sm:w-32 h-24 sm:h-32 border border-white/95 rounded-full"></div>
-                                        <div className="w-36 sm:w-48 h-36 sm:h-48 border border-white/90 rounded-full absolute"></div>
-                                        <div className="w-48 sm:w-64 h-48 sm:h-64 border border-white/80 rounded-full absolute"></div>
+                        {/* Daily Stats Card */}
+                        <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-slate-500 text-xs uppercase tracking-wide font-bold mb-2">
+                                        Продажи за день
+                                    </p>
+                                    <h3 className="text-gray-800 text-2xl font-bold mb-1">
+                                        {loadingDay
+                                            ? '...'
+                                            : dailySalesData
+                                            ? `${formatNumber(dailySalesData.total_summa)} Сум`
+                                            : '0 Сум'}
+                                    </h3>
+                                    <div className="text-slate-500 text-sm">
+                                        {new Date(selectedDate).toLocaleDateString('ru-RU', {
+                                            day: '2-digit',
+                                            month: 'long',
+                                            year: 'numeric',
+                                        })}
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm p-3 sm:p-4 lg:p-6 overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer">
-                        <div className="relative">
-                            <div className="bg-gradient-to-l from-slate-700 to-gray-900 rounded-xl p-5 sm:p-6 text-white">
-                                <h2 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">
-                                    Работайте с Rockets
-                                </h2>
-                                <p className="text-xs sm:text-sm mb-5 sm:mb-6 leading-relaxed opacity-90">
-                                    Создание богатства — это сравнительно недавняя игра с
-                                    положительной суммой. Всё зависит от того, кто первым
-                                    воспользуется возможностью.
-                                </p>
-                                <button className="flex items-center gap-2 text-white font-bold text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-md px-1 transition-all duration-200 hover:opacity-90 active:scale-[.98] cursor-pointer">
-                                    Подробнее
+                                <div className="w-14 h-14 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50">
                                     <svg
-                                        className="w-3 h-3"
-                                        viewBox="0 0 12 12"
-                                        fill="currentColor"
-                                        aria-hidden="true"
+                                        className="w-8 h-8"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
                                     >
-                                        <path d="M6.28 2.62L9.66 6L6.28 9.38L5.22 8.32L7.54 6L5.22 3.68L6.28 2.62Z" />
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
                                     </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-4 sm:mb-6 lg:mb-8">
-                    <div className="bg-white rounded-2xl shadow-sm p-3 sm:p-4 lg:p-6 transition-all duration-200 hover:shadow-md">
-                        <div className="flex justify-between items-center mb-5 sm:mb-6">
-                            <div>
-                                <h3 className="text-gray-800 text-base sm:text-lg font-bold mb-1">
-                                    Активные пользователи
-                                </h3>
-                                <div className="flex items-center gap-1 text-xs sm:text-sm">
-                                    <span className="text-emerald-500 font-semibold">(+23)</span>
-                                    <span className="text-slate-500">чем на прошлой неделе</span>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <div className="min-w-[560px] bg-gradient-to-l from-slate-700 to-gray-900 rounded-xl p-4 h-64 relative">
-                                <div className="flex items-end justify-between h-40 px-4 gap-2">
-                                    {[24, 16, 9, 24, 40, 32, 36, 24, 12].map((height, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex-1 max-w-3 bg-white rounded-full"
-                                            style={{ height: `${height * 2}px` }}
-                                        ></div>
-                                    ))}
-                                </div>
-
-                                <div className="absolute left-4 top-4 text-white text-[10px] sm:text-xs space-y-8 opacity-90">
-                                    <div>500</div>
-                                    <div>400</div>
-                                    <div>300</div>
-                                    <div>200</div>
-                                    <div>100</div>
-                                    <div>0</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-5 sm:mt-6">
-                            {[
-                                { label: 'Пользователи', value: '32,984', icon: '👥' },
-                                { label: 'Клики', value: '2,42m', icon: '🖱️' },
-                                { label: 'Продажи', value: '2,400$', icon: '💰' },
-                                { label: 'Товары', value: '320', icon: '📦' },
-                            ].map((stat, index) => (
-                                <div key={index} className="text-center">
-                                    <div className="w-6 h-6 bg-teal-400/90 text-white rounded-md mx-auto mb-2 flex items-center justify-center ring-1 ring-teal-300/50">
-                                        <span className="text-xs" aria-hidden="true">
-                                            {stat.icon}
-                                        </span>
-                                    </div>
-                                    <h4 className="text-gray-800 font-bold text-base sm:text-lg">
-                                        {stat.value}
-                                    </h4>
-                                    <p className="text-slate-500 text-[11px] sm:text-xs">
-                                        {stat.label}
+                            <div className="flex gap-4 pt-4 border-t border-slate-100">
+                                <div>
+                                    <p className="text-slate-500 text-xs mb-1">Количество</p>
+                                    <p className="text-gray-800 font-semibold">
+                                        {loadingDay
+                                            ? '...'
+                                            : dailySalesData
+                                            ? formatNumber(dailySalesData.count)
+                                            : '0'}
                                     </p>
                                 </div>
-                            ))}
+                            </div>
                         </div>
+
+                        {/* Daily Chart */}
+                        <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
+                            <h3 className="text-gray-800 text-lg font-bold mb-4">График продаж</h3>
+                            <div className="overflow-x-auto">
+                                {renderChart(dailyChartData, dailyMaxValue, loadingDay)}
+                            </div>
+                        </div>
+
+                        {/* Daily Sales Table */}
+                        {dailySalesData &&
+                            dailySalesData.data &&
+                            dailySalesData.data.length > 0 && (
+                                <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
+                                    <h3 className="text-gray-800 text-lg font-bold mb-4">
+                                        Детали продаж ({dailySalesData.count})
+                                    </h3>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full min-w-[600px]">
+                                            <thead>
+                                                <tr className="border-b border-slate-200">
+                                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                        ID
+                                                    </th>
+                                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                        Компания
+                                                    </th>
+                                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                        Сумма
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {dailySalesData.data.map((sale) => (
+                                                    <tr
+                                                        key={sale.id}
+                                                        className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                                                    >
+                                                        <td className="py-3 px-4 text-sm text-gray-800">
+                                                            #{sale.id}
+                                                        </td>
+                                                        <td className="py-3 px-4">
+                                                            <div className="text-sm font-medium text-gray-800">
+                                                                {sale.company.name}
+                                                            </div>
+                                                            <div className="text-xs text-slate-500">
+                                                                {sale.company.phone}
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-3 px-4">
+                                                            <span className="text-sm font-semibold text-teal-600">
+                                                                {formatNumber(
+                                                                    parseFloat(sale.summa)
+                                                                )}{' '}
+                                                                Сум
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-slate-200 text-right">
+                                        <div className="text-base font-bold text-gray-800">
+                                            Итого: {formatNumber(dailySalesData.total_summa)} Сум
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                        {!loadingDay &&
+                            (!dailySalesData ||
+                                !dailySalesData.data ||
+                                dailySalesData.data.length === 0) && (
+                                <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+                                    <div className="text-slate-500">
+                                        Нет данных о продажах за выбранный день
+                                    </div>
+                                </div>
+                            )}
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm p-3 sm:p-4 lg:p-6 transition-all duration-200 hover:shadow-md">
-                        <div className="flex justify-between items-center mb-5 sm:mb-6">
-                            <h3 className="text-gray-800 text-base sm:text-lg font-bold">
-                                Обзор продаж
-                            </h3>
-                            <div className="flex items-center gap-1 text-xs sm:text-sm">
-                                <span className="text-emerald-500 font-semibold">(+5) больше</span>
-                                <span className="text-slate-500">в 2021</span>
-                            </div>
-                        </div>
-
-                        <div className="overflow-x-auto cursor-pointer">
-                            <div className="h-64 relative min-w-[640px]">
-                                <div className="flex justify-between items-end h-40 px-4 border-b border-l border-slate-200 gap-3">
-                                    {[
-                                        300, 250, 200, 280, 350, 320, 300, 270, 240, 260, 290, 320,
-                                    ].map((height, index) => (
-                                        <div key={index} className="flex flex-col items-center">
-                                            <div
-                                                className="w-3 bg-teal-400/90 rounded-t"
-                                                style={{ height: `${height / 10}px` }}
-                                            ></div>
-                                            <div className="text-slate-400 text-[11px] sm:text-xs mt-2 whitespace-nowrap">
-                                                {
-                                                    [
-                                                        'Янв',
-                                                        'Фев',
-                                                        'Мар',
-                                                        'Апр',
-                                                        'Май',
-                                                        'Июн',
-                                                        'Июл',
-                                                        'Авг',
-                                                        'Сен',
-                                                        'Окт',
-                                                        'Ноя',
-                                                        'Дек',
-                                                    ][index]
-                                                }
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="absolute left-4 top-0 text-slate-400 text-[11px] sm:text-xs space-y-12">
-                                    <div>500</div>
-                                    <div>400</div>
-                                    <div>300</div>
-                                    <div>200</div>
-                                    <div>100</div>
-                                    <div>0</div>
+                    {/* Right Column - Monthly Sales */}
+                    <div className="space-y-4">
+                        {/* Header with month picker */}
+                        <div className="flex items-center justify-between bg-white rounded-xl shadow-sm p-4">
+                            <h2 className="text-gray-800 font-bold text-lg">Продажи по месяцам</h2>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-slate-600 font-medium">Месяц:</span>
+                                <div className="w-48">
+                                    <Select
+                                        options={months}
+                                        value={selectedMonth}
+                                        onChange={handleMonthSelect}
+                                        placeholder="Выберите месяц"
+                                        searchable={false}
+                                    />
                                 </div>
                             </div>
                         </div>
+
+                        {/* Monthly Stats Card */}
+                        <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-slate-500 text-xs uppercase tracking-wide font-bold mb-2">
+                                        Продажи за месяц
+                                    </p>
+                                    <h3 className="text-gray-800 text-2xl font-bold mb-1">
+                                        {loadingMonth
+                                            ? '...'
+                                            : salesData
+                                            ? `${formatNumber(salesData.total_summa)} Сум`
+                                            : '0 Сум'}
+                                    </h3>
+                                    <div className="text-slate-500 text-sm">
+                                        {months.find((m) => m.value === selectedMonth)?.label} 2025
+                                    </div>
+                                </div>
+                                <div className="w-14 h-14 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50">
+                                    <svg
+                                        className="w-8 h-8"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="flex gap-4 pt-4 border-t border-slate-100">
+                                <div>
+                                    <p className="text-slate-500 text-xs mb-1">Количество</p>
+                                    <p className="text-gray-800 font-semibold">
+                                        {loadingMonth
+                                            ? '...'
+                                            : salesData
+                                            ? formatNumber(salesData.count)
+                                            : '0'}
+                                    </p>
+                                </div>
+                                <div className="border-l border-slate-100 pl-4">
+                                    <p className="text-slate-500 text-xs mb-1">Дней с продажами</p>
+                                    <p className="text-gray-800 font-semibold">
+                                        {monthlyChartData.length}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Monthly Chart */}
+                        <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
+                            <h3 className="text-gray-800 text-lg font-bold mb-4">График продаж</h3>
+                            <div className="overflow-x-auto">
+                                {renderChart(monthlyChartData, monthlyMaxValue, loadingMonth)}
+                            </div>
+                        </div>
+
+                        {/* Monthly Sales Table */}
+                        {salesData && salesData.data && salesData.data.length > 0 && (
+                            <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
+                                <h3 className="text-gray-800 text-lg font-bold mb-4">
+                                    Детали продаж ({salesData.count})
+                                </h3>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full min-w-[600px]">
+                                        <thead>
+                                            <tr className="border-b border-slate-200">
+                                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                    ID
+                                                </th>
+                                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                    Компания
+                                                </th>
+                                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                    Сумма
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {salesData.data.map((sale) => (
+                                                <tr
+                                                    key={sale.id}
+                                                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                                                >
+                                                    <td className="py-3 px-4 text-sm text-gray-800">
+                                                        #{sale.id}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <div className="text-sm font-medium text-gray-800">
+                                                            {sale.company.name}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500">
+                                                            {sale.company.phone}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span className="text-sm font-semibold text-teal-600">
+                                                            {formatNumber(parseFloat(sale.summa))}{' '}
+                                                            Сум
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-slate-200 text-right">
+                                    <div className="text-base font-bold text-gray-800">
+                                        Итого: {formatNumber(salesData.total_summa)} Сум
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {!loadingMonth &&
+                            (!salesData || !salesData.data || salesData.data.length === 0) && (
+                                <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+                                    <div className="text-slate-500">
+                                        Нет данных о продажах за выбранный месяц
+                                    </div>
+                                </div>
+                            )}
                     </div>
                 </div>
             </div>
