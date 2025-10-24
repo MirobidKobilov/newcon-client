@@ -18,7 +18,7 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > id_ed25519
           chmod 600 id_ed25519
 
-      - name: Deploy on server (git pull + build to .dist)
+      - name: Deploy on server (git pull + build to dist)
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
@@ -51,8 +51,8 @@ jobs:
             echo \"[deploy] install deps\"
             npm ci
 
-            echo \"[deploy] build (Vite → .dist)\"
+            echo \"[deploy] build (Vite → dist)\"
             npm run build
 
-            test -f \".dist/index.html\" && echo \"[deploy] ✅ build ready\" || (echo \"[deploy] ❌ .dist/index.html missing\" && exit 1)
+            test -f \"dist/index.html\" && echo \"[deploy] ✅ build ready\" || (echo \"[deploy] ❌ dist/index.html missing\" && exit 1)
           '"
