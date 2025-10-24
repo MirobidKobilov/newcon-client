@@ -1,0 +1,45 @@
+name: Auto deploy (git pull + build to .dist)
+
+on:
+  push:
+    branches: [ "main" ]   # change branch if needed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy on server (pull & build)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            # === CONFIG ===
+            APP_DIR="/home/newcon/newcon-client"  # full path to your cloned repo on the server
+            BRANCH="main"
+            INSTALL_CMD="npm ci"                  # reproducible install
+            BUILD_CMD="npm run build"             # builds into .dist via vite.config
+
+            # === DEPLOY ===
+            cd "$APP_DIR"
+
+            echo "[deploy] fetching latest from origin/${BRANCH}"
+            git fetch --all --prune
+            git reset --hard "origin/${BRANCH}"
+
+            echo "[deploy] installing dependencies"
+            $INSTALL_CMD
+
+            echo "[deploy] building (outDir=.dist)"
+            $BUILD_CMD
+
+            # Optional: quick sanity check
+            test -f ".dist/index.html" || (echo "Build failed: .dist/index.html missing" && exit 1)
+
+            echo "[deploy] ✅ done"
