@@ -1,4 +1,4 @@
-name: Auto Deploy via SSH (git pull + build)
+name: Auto Deploy via native SSH
 
 on:
   push:
@@ -8,47 +8,46 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Connect to server via SSH and deploy
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > id_ed25519
+          chmod 600 id_ed25519
+
+      - name: Deploy on server (git pull + build)
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
-          echo "$SSH_PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
+          # Use -tt to force a TTY (fixes "Pseudo-terminal..." + shells that require TTY)
+          # If your server *dislikes* TTY, swap -tt for -T (disable TTY) instead.
+          ssh -tt -i id_ed25519 -o StrictHostKeyChecking=no -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            'bash -lc "
+              set -euo pipefail
 
-          echo "Connecting to $SSH_USER@$SSH_HOST:$SSH_PORT..."
-          ssh -i private_key.pem -o StrictHostKeyChecking=no -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
-            set -euo pipefail
+              APP_DIR=\"/home/ubuntu/newcon-client\"   # <- change to your server path
+              BRANCH=\"main\"
 
-            APP_DIR="/home/ubuntu/newcon-client"  # adjust to your repo path
-            BRANCH="main"
+              cd \"$APP_DIR\"
+              echo [deploy] pulling latest...
+              git fetch --all --prune
+              git reset --hard origin/${BRANCH}
 
-            echo "[deploy] entering $APP_DIR"
-            cd "$APP_DIR"
+              # --- pin Node with nvm if you have .nvmrc ---
+              export NVM_DIR=\$HOME/.nvm
+              [ -s \$NVM_DIR/nvm.sh ] && . \$NVM_DIR/nvm.sh
+              if [ -f .nvmrc ]; then
+                nvm install
+                nvm use
+              fi
+              node -v && npm -v
 
-            echo "[deploy] pulling latest code..."
-            git fetch --all --prune
-            git reset --hard "origin/${BRANCH}"
+              echo [deploy] installing deps...
+              npm ci
 
-            echo "[deploy] loading nvm..."
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-            if [ -f ".nvmrc" ]; then
-              nvm install
-              nvm use
-            fi
+              echo [deploy] building...
+              npm run build
 
-            echo "[deploy] node version: $(node -v)"
-            echo "[deploy] npm version: $(npm -v)"
-
-            echo "[deploy] installing dependencies..."
-            npm ci
-
-            echo "[deploy] building vite app..."
-            npm run build
-
-            echo "[deploy] ✅ done (built into .dist)"
-          EOF
+              test -f .dist/index.html && echo [deploy] ✅ done || (echo Build missing .dist/index.html && exit 1)
+            "'
