@@ -27,7 +27,7 @@ jobs:
           BRANCH:   ${{ env.BRANCH }}
         run: |
           # Use -T to disable TTY (avoids "Pseudo-terminal will not be allocated" issues)
-          ssh -T -i id_ed25519 -o StrictHostKeyChecking=no -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "bash -lc '
+          ssh -T -i id_ed25519 -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "bash -lc '
             set -euo pipefail
 
             echo \"[deploy] APP_DIR: $APP_DIR\"
