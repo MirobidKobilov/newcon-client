@@ -1,45 +1,54 @@
-name: Auto deploy (git pull + build to .dist)
+name: Auto Deploy via SSH (git pull + build)
 
 on:
   push:
-    branches: [ "main" ]   # change branch if needed
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Deploy on server (pull & build)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script_stop: true
-          script: |
+      - name: Connect to server via SSH and deploy
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          echo "$SSH_PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+
+          echo "Connecting to $SSH_USER@$SSH_HOST:$SSH_PORT..."
+          ssh -i private_key.pem -o StrictHostKeyChecking=no -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
             set -euo pipefail
 
-            # === CONFIG ===
-            APP_DIR="/home/newcon/newcon-client"  # full path to your cloned repo on the server
+            APP_DIR="/home/ubuntu/newcon-client"  # adjust to your repo path
             BRANCH="main"
-            INSTALL_CMD="npm ci"                  # reproducible install
-            BUILD_CMD="npm run build"             # builds into .dist via vite.config
 
-            # === DEPLOY ===
+            echo "[deploy] entering $APP_DIR"
             cd "$APP_DIR"
 
-            echo "[deploy] fetching latest from origin/${BRANCH}"
+            echo "[deploy] pulling latest code..."
             git fetch --all --prune
             git reset --hard "origin/${BRANCH}"
 
-            echo "[deploy] installing dependencies"
-            $INSTALL_CMD
+            echo "[deploy] loading nvm..."
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            if [ -f ".nvmrc" ]; then
+              nvm install
+              nvm use
+            fi
 
-            echo "[deploy] building (outDir=.dist)"
-            $BUILD_CMD
+            echo "[deploy] node version: $(node -v)"
+            echo "[deploy] npm version: $(npm -v)"
 
-            # Optional: quick sanity check
-            test -f ".dist/index.html" || (echo "Build failed: .dist/index.html missing" && exit 1)
+            echo "[deploy] installing dependencies..."
+            npm ci
 
-            echo "[deploy] ✅ done"
+            echo "[deploy] building vite app..."
+            npm run build
+
+            echo "[deploy] ✅ done (built into .dist)"
+          EOF
