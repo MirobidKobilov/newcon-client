@@ -1,63 +1,58 @@
-name: Deploy Newcon client
+name: Deploy Frontend (native SSH)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]   # change if needed
   workflow_dispatch:
+
+env:
+  BRANCH: main             # deploy branch (change if needed)
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code (not strictly required here, but ok)
-      uses: actions/checkout@v3
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > id_ed25519
+          chmod 600 id_ed25519
 
-    - name: Setup SSH
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_ed25519
-        chmod 600 ~/.ssh/id_ed25519
-        # Add server to known_hosts to avoid interactive prompt
-        ssh-keyscan -H 144.91.98.161 >> ~/.ssh/known_hosts
+      - name: Deploy on server (git pull + build to .dist)
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          APP_DIR:  ${{ secrets.DEPLOY_PATH }}   # e.g. /home/newcon/newcon-client
+          BRANCH:   ${{ env.BRANCH }}
+        run: |
+          # Use -T to disable TTY (avoids "Pseudo-terminal will not be allocated" issues)
+          ssh -T -i id_ed25519 -o StrictHostKeyChecking=no -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "bash -lc '
+            set -euo pipefail
 
-    - name: Deploy via SSH (git pull + build to .dist)
-      env:
-        APP_DIR: /home/newcon/newcon-client   # <-- your repo path on the server
-        BRANCH: main
-      run: |
-        ssh -i ~/.ssh/id_ed25519 root@144.91.98.161 << 'EOF'
-          set -euo pipefail
+            echo \"[deploy] APP_DIR: $APP_DIR\"
+            cd \"$APP_DIR\"
 
-          APP_DIR="/home/newcon/newcon-client"
-          BRANCH="main"
+            echo \"[deploy] fetch & reset → origin/$BRANCH\"
+            git fetch --all --prune
+            git reset --hard \"origin/$BRANCH\"
 
-          cd "$APP_DIR"
+            # --- Optional: pin Node with nvm if your repo has .nvmrc ---
+            export NVM_DIR=\$HOME/.nvm
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            if [ -f \".nvmrc\" ]; then
+              nvm install
+              nvm use
+            fi
 
-          echo "[deploy] pull latest"
-          git fetch --all --prune
-          git reset --hard "origin/${BRANCH}"
+            # Optional: respect packageManager pin (npm/yarn/pnpm) if you set it in package.json
+            if command -v corepack >/dev/null 2>&1; then corepack enable || true; fi
 
-          # --- Node version pin via nvm (optional but recommended if you have .nvmrc) ---
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-          if [ -f ".nvmrc" ]; then
-            nvm install
-            nvm use
-          fi
+            echo \"[deploy] install deps\"
+            npm ci
 
-          # If you pinned package manager in package.json ("packageManager": "npm@x.y.z"), enable corepack:
-          if command -v corepack >/dev/null 2>&1; then corepack enable || true; fi
+            echo \"[deploy] build (Vite → .dist)\"
+            npm run build
 
-          echo "[deploy] install deps"
-          npm ci
-
-          echo "[deploy] build vite → .dist"
-          npm run build
-
-          # quick sanity check
-          test -f ".dist/index.html" || (echo "Build missing .dist/index.html" && exit 1)
-
-          echo "[deploy] ✅ done"
-        EOF
+            test -f \".dist/index.html\" && echo \"[deploy] ✅ build ready\" || (echo \"[deploy] ❌ .dist/index.html missing\" && exit 1)
+          '"
