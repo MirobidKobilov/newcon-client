@@ -38,6 +38,7 @@ const Payments = () => {
         { value: 'Оплачено', label: 'Оплачено' },
     ])
     const [useCustomStage, setUseCustomStage] = useState(false)
+    const [viewMode, setViewMode] = useState('table')
 
     useEffect(() => {
         const fetchData = async () => {
@@ -226,11 +227,18 @@ const Payments = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-sm mb-6">
-                    <div className="p-6">
-                        <h2 className="text-lg font-bold text-gray-700 mb-4">Платежи</h2>
+                <div className="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden">
+                    <div className="p-6 border-b border-slate-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-gray-700">Платежи</h2>
+                            <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                                <button onClick={() => setViewMode('table')} className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Таблица</button>
+                                <button onClick={() => setViewMode('cards')} className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'cards' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Карточки</button>
+                            </div>
+                        </div>
                     </div>
 
+                    {viewMode === 'table' && (
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
@@ -350,6 +358,51 @@ const Payments = () => {
                             </tbody>
                         </table>
                     </div>
+                    )}
+
+                    {viewMode === 'cards' && (
+                        <div className="p-6">
+                            {loading ? (
+                                <div className="text-center text-slate-500 py-12">Загрузка...</div>
+                            ) : items.length === 0 ? (
+                                <div className="text-center text-slate-500 py-12">Нет данных</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {items.map((item) => {
+                                        const paymentType = paymentTypes.find((t) => t.value === item.payment_type_id)
+                                        return (
+                                            <div key={item.id} className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div>
+                                                        <div className="text-xs text-slate-400 font-medium mb-1">ID: {item.id}</div>
+                                                        <h3 className="text-lg font-bold text-gray-700">{item.name || '-'}</h3>
+                                                        <div className="text-sm text-slate-600 mt-1">{paymentType?.label || '-'}</div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => handleView(item)} className="btn btn-ghost btn-sm" title="Просмотр">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-blue-600"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm text-slate-600">
+                                                    {item.sales && item.sales.length > 0 ? (
+                                                        item.sales.map((s, idx) => (
+                                                            <div key={idx} className="flex justify-between py-1 border-b last:border-b-0 border-gray-100">
+                                                                <span className="text-gray-700">#{s.id || s.sale_id}</span>
+                                                                <span className="font-medium">{formatNumber(s.summa || s.amount)}</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span>-</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <Modal

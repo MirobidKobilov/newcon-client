@@ -20,6 +20,7 @@ const Expances = () => {
     const [submitting, setSubmitting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
+    const [viewMode, setViewMode] = useState('table')
 
     useEffect(() => {
         const fetchItems = async () => {
@@ -131,12 +132,37 @@ const Expances = () => {
                     </div>
                 </div>
 
-                {/* Таблица расходов */}
+                {/* Таблица/Карточки расходов */}
                 <div className="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden">
-                    <div className="p-6">
-                        <h2 className="text-lg font-bold text-gray-700 mb-4">Расходы</h2>
+                    <div className="p-6 border-b border-slate-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-gray-700">Расходы</h2>
+                            <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setViewMode('table')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                        viewMode === 'table'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                >
+                                    Таблица
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('cards')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                        viewMode === 'cards'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                >
+                                    Карточки
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
+                    {viewMode === 'table' && (
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
@@ -208,6 +234,42 @@ const Expances = () => {
                             </tbody>
                         </table>
                     </div>
+                    )}
+
+                    {viewMode === 'cards' && (
+                        <div className="p-6">
+                            {loading ? (
+                                <div className="text-center text-slate-500 py-12">Загрузка...</div>
+                            ) : items.length === 0 ? (
+                                <div className="text-center text-slate-500 py-12">Нет данных</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {items.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow"
+                                        >
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div>
+                                                    <div className="text-xs text-slate-400 font-medium mb-1">ID: {item.id}</div>
+                                                    <h3 className="text-lg font-bold text-gray-700">{item.user?.username || '-'}</h3>
+                                                    <div className="text-sm text-slate-600 mt-1">{item.user?.phone || '-'}</div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-xs text-slate-400 uppercase mb-1">Сумма</div>
+                                                    <div className="text-gray-700 font-semibold">{Number(item.amount).toLocaleString()}</div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-slate-400 uppercase mb-1">Причина</div>
+                                                <div className="text-sm text-gray-700">{item.reason || '-'}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <Modal

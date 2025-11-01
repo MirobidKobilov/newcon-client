@@ -16,7 +16,6 @@ const Sales = () => {
     const [editingItemId, setEditingItemId] = useState(null)
     const [formData, setFormData] = useState({
         company_id: '',
-        sales_type_id: '',
         summa: '',
         products: [],
     })
@@ -27,7 +26,6 @@ const Sales = () => {
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
     const [companies, setCompanies] = useState([])
-    const [salesTypes, setSalesTypes] = useState([])
     const [products, setProducts] = useState([])
     const [currentStep, setCurrentStep] = useState(1)
     const [isViewModalOpen, setIsViewModalOpen] = useState(false)
@@ -46,6 +44,7 @@ const Sales = () => {
         { value: 'Ожидание платежа', label: 'Ожидание платежа' },
         { value: 'Оплачено', label: 'Оплачено' },
     ])
+    const [viewMode, setViewMode] = useState('table')
 
     useEffect(() => {
         const fetchData = async () => {
@@ -69,11 +68,6 @@ const Sales = () => {
                 setProducts(productsResponse.data.data)
             }
 
-            // Sales types
-            setSalesTypes([
-                { id: 1, name: 'Наличные' },
-                { id: 2, name: 'Карта' },
-            ])
 
             setLoading(false)
         }
@@ -132,7 +126,6 @@ const Sales = () => {
         // Prepare data in the correct format
         const submitData = {
             company_id: parseInt(formData.company_id),
-            sales_type_id: parseInt(formData.sales_type_id),
             summa: parseFloat(formData.summa),
             products: formData.products.map((p) => ({
                 product_id: parseInt(p.product_id),
@@ -151,8 +144,8 @@ const Sales = () => {
             // Store the created sale ID for payment creation
             setCreatedSaleId(response.data.data?.id || response.data.id)
 
-            // Move to step 4 (payment)
-            setCurrentStep(4)
+            // Move to step 3 (payment)
+            setCurrentStep(3)
         }
 
         setSubmitting(false)
@@ -204,7 +197,6 @@ const Sales = () => {
             setCreatedSaleId(null)
             setFormData({
                 company_id: '',
-                sales_type_id: '',
                 summa: '',
                 products: [],
             })
@@ -242,7 +234,6 @@ const Sales = () => {
 
         setFormData({
             company_id: companyId,
-            sales_type_id: item.sales_type_id || '',
             summa: item.summa || '',
             products: productsData,
         })
@@ -280,7 +271,6 @@ const Sales = () => {
         setEditingItemId(null)
         setFormData({
             company_id: '',
-            sales_type_id: '',
             summa: '',
             products: [],
         })
@@ -295,10 +285,10 @@ const Sales = () => {
     }
 
     const nextStep = async () => {
-        if (currentStep === 3) {
+        if (currentStep === 2) {
             // Create sale before moving to payment step
             await createSale()
-        } else if (currentStep < 4) {
+        } else if (currentStep < 3) {
             setCurrentStep(currentStep + 1)
         }
     }
@@ -310,19 +300,13 @@ const Sales = () => {
     }
 
     const canProceedToStep2 = () => {
-        return formData.company_id && formData.sales_type_id
+        return formData.company_id && formData.products.length > 0 && formData.products.every((p) => p.product_id && p.quantity)
     }
 
     const canProceedToStep3 = () => {
-        return (
-            formData.products.length > 0 &&
-            formData.products.every((p) => p.product_id && p.quantity)
-        )
-    }
-
-    const canProceedToStep4 = () => {
         return formData.summa
     }
+
 
     const canSubmitPayment = () => {
         return paymentData.payment_type_id && paymentData.sales_stage
@@ -353,10 +337,17 @@ const Sales = () => {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden">
-                    <div className="p-6">
-                        <h2 className="text-lg font-bold text-gray-700 mb-4">Продажи</h2>
+                    <div className="p-6 border-b border-slate-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-gray-700">Продажи</h2>
+                            <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                                <button onClick={() => setViewMode('table')} className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Таблица</button>
+                                <button onClick={() => setViewMode('cards')} className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'cards' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Карточки</button>
+                            </div>
+                        </div>
                     </div>
 
+                    {viewMode === 'table' && (
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
@@ -366,9 +357,6 @@ const Sales = () => {
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Компания
-                                    </th>
-                                    <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
-                                        Тип продажи
                                     </th>
                                     <th className="text-left p-4 text-slate-400 text-[10px] font-bold uppercase">
                                         Товары
@@ -387,13 +375,13 @@ const Sales = () => {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="7" className="p-8 text-center text-slate-500">
+                                        <td colSpan="6" className="p-8 text-center text-slate-500">
                                             Загрузка...
                                         </td>
                                     </tr>
                                 ) : items.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="p-8 text-center text-slate-500">
+                                        <td colSpan="6" className="p-8 text-center text-slate-500">
                                             Нет данных
                                         </td>
                                     </tr>
@@ -403,9 +391,6 @@ const Sales = () => {
                                         const company =
                                             item.company ||
                                             companies.find((c) => c.id === item.company_id)
-                                        const salesType = salesTypes.find(
-                                            (t) => t.id === item.sales_type_id
-                                        )
                                         return (
                                             <tr
                                                 key={item.id}
@@ -419,11 +404,6 @@ const Sales = () => {
                                                 <td className="p-4">
                                                     <div className="text-sm font-bold text-gray-700">
                                                         {company?.name || '-'}
-                                                    </div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="text-sm text-slate-600">
-                                                        {salesType?.name || '-'}
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
@@ -465,6 +445,45 @@ const Sales = () => {
                             </tbody>
                         </table>
                     </div>
+                    )}
+
+                    {viewMode === 'cards' && (
+                        <div className="p-6">
+                            {loading ? (
+                                <div className="text-center text-slate-500 py-12">Загрузка...</div>
+                            ) : items.length === 0 ? (
+                                <div className="text-center text-slate-500 py-12">Нет данных</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {items.map((item) => {
+                                        const company = item.company || companies.find((c) => c.id === item.company_id)
+                                        return (
+                                            <div key={item.id} className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div>
+                                                        <div className="text-xs text-slate-400 font-medium mb-1">ID: {item.id}</div>
+                                                        <h3 className="text-lg font-bold text-gray-700">{company?.name || '-'}</h3>
+                                                        <div className="text-sm text-slate-600 mt-1">{(item.products||[]).map(p => `${p.name || 'Товар'} (${p.quantity})`).join(', ') || '-'}</div>
+                                                    </div>
+                                                    <button onClick={() => handleView(item)} className="px-3 py-1.5 text-xs cursor-pointer font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">Просмотр</button>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                                    <div>
+                                                        <div className="text-xs text-slate-400 uppercase mb-1">Сумма</div>
+                                                        <div className="text-gray-700 font-semibold">{Number(item.summa).toLocaleString() || '-'}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs text-slate-400 uppercase mb-1">Дата</div>
+                                                        <div className="text-gray-700">{item.date || item.created_at || '-'}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <Modal
@@ -521,59 +540,25 @@ const Sales = () => {
                             >
                                 3
                             </div>
-                            <div className="w-4 h-0.5 bg-gray-200">
-                                <div
-                                    className={`h-full transition-all ${
-                                        currentStep > 3 ? 'bg-blue-500' : 'bg-gray-200'
-                                    }`}
-                                ></div>
-                            </div>
-                            <div
-                                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${
-                                    currentStep >= 4
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-gray-200 text-gray-500'
-                                }`}
-                            >
-                                4
-                            </div>
                         </div>
 
-                        {/* Step 1: Company and Sales Type */}
+                        {/* Step 1: Company and Products */}
                         {currentStep === 1 && (
-                            <div className="space-y-4 mt-2">
-                                <Select
-                                    label="Компания"
-                                    required
-                                    options={companies.map((c) => ({ value: c.id, label: c.name }))}
-                                    value={formData.company_id}
-                                    onChange={(value) =>
-                                        setFormData((prev) => ({ ...prev, company_id: value }))
-                                    }
-                                    placeholder="Выберите компанию"
-                                    searchable={true}
-                                />
-
-                                <Select
-                                    label="Тип продажи"
-                                    required
-                                    options={salesTypes.map((t) => ({
-                                        value: t.id,
-                                        label: t.name,
-                                    }))}
-                                    value={formData.sales_type_id}
-                                    onChange={(value) =>
-                                        setFormData((prev) => ({ ...prev, sales_type_id: value }))
-                                    }
-                                    placeholder="Выберите тип продажи"
-                                    searchable={false}
-                                />
-                            </div>
-                        )}
-
-                        {/* Step 2: Products - Card Style */}
-                        {currentStep === 2 && (
                             <div className="mt-2">
+                                <div className="mb-4">
+                                    <Select
+                                        label="Компания"
+                                        required
+                                        options={companies.map((c) => ({ value: c.id, label: c.name }))}
+                                        value={formData.company_id}
+                                        onChange={(value) =>
+                                            setFormData((prev) => ({ ...prev, company_id: value }))
+                                        }
+                                        placeholder="Выберите компанию"
+                                        searchable={true}
+                                    />
+                                </div>
+                                
                                 <div className="mb-4">
                                     <div className="flex items-center justify-between mb-3">
                                         <h3 className="text-lg font-semibold text-gray-700">
@@ -608,7 +593,7 @@ const Sales = () => {
                                         </svg>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2">
+                                <div className="grid grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2">
                                     {products
                                         .filter((product) =>
                                             product.name
@@ -720,8 +705,8 @@ const Sales = () => {
                             </div>
                         )}
 
-                        {/* Step 3: Total Amount */}
-                        {currentStep === 3 && (
+                        {/* Step 2: Total Amount */}
+                        {currentStep === 2 && (
                             <div className="space-y-4 mt-2">
                                 <div className="bg-blue-50 p-4 rounded-lg mb-4">
                                     <h3 className="text-lg font-semibold text-gray-700 mb-2">
@@ -733,14 +718,6 @@ const Sales = () => {
                                             <span className="font-semibold text-gray-800">
                                                 {companies.find((c) => c.id === formData.company_id)
                                                     ?.name || '-'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Тип продажи:</span>
-                                            <span className="font-semibold text-gray-800">
-                                                {salesTypes.find(
-                                                    (t) => t.id === formData.sales_type_id
-                                                )?.name || '-'}
                                             </span>
                                         </div>
                                     </div>
@@ -763,8 +740,8 @@ const Sales = () => {
                             </div>
                         )}
 
-                        {/* Step 4: Payment Information */}
-                        {currentStep === 4 && (
+                        {/* Step 3: Payment Information */}
+                        {currentStep === 3 && (
                             <div className="space-y-4 mt-2">
                                 <div className="bg-green-50 p-3 rounded-lg mb-4">
                                     <h3 className="text-lg font-semibold text-green-700">
@@ -807,7 +784,7 @@ const Sales = () => {
                         {/* Navigation Buttons */}
                         <div className="flex justify-between gap-2 mt-6 pt-4">
                             <div>
-                                {currentStep > 1 && currentStep !== 4 && (
+                                {currentStep > 1 && currentStep !== 3 && (
                                     <Button
                                         type="button"
                                         variant="secondary"
@@ -831,7 +808,7 @@ const Sales = () => {
                                 >
                                     Отмена
                                 </Button>
-                                {currentStep < 4 ? (
+                                {currentStep < 3 ? (
                                     <Button
                                         type="button"
                                         variant="primary"
@@ -839,11 +816,10 @@ const Sales = () => {
                                         disabled={
                                             submitting ||
                                             (currentStep === 1 && !canProceedToStep2()) ||
-                                            (currentStep === 2 && !canProceedToStep3()) ||
-                                            (currentStep === 3 && !canProceedToStep4())
+                                            (currentStep === 2 && !canProceedToStep3())
                                         }
                                     >
-                                        {submitting && currentStep === 3 ? (
+                                        {submitting && currentStep === 2 ? (
                                             <span className="flex items-center gap-2">
                                                 <span className="loading loading-spinner loading-sm"></span>
                                                 Создание продажи...
@@ -913,14 +889,6 @@ const Sales = () => {
                                         <p className="text-xs text-gray-500 mb-1">ID продажи</p>
                                         <p className="text-sm font-semibold text-gray-800">
                                             #{viewingItem.id}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500 mb-1">Тип продажи</p>
-                                        <p className="text-sm font-semibold text-gray-800">
-                                            {salesTypes.find(
-                                                (t) => t.id === viewingItem.sales_type_id
-                                            )?.name || '-'}
                                         </p>
                                     </div>
                                     <div>
