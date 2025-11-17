@@ -366,10 +366,10 @@ const Dashboard = () => {
                                                         </td>
                                                         <td className="py-3 px-4">
                                                             <div className="text-sm font-medium text-gray-800">
-                                                                {sale.company.name}
+                                                                {sale.company?.name || 'N/A'}
                                                             </div>
                                                             <div className="text-xs text-slate-500">
-                                                                {sale.company.phone}
+                                                                {sale.company?.phone || 'N/A'}
                                                             </div>
                                                         </td>
                                                         <td className="py-3 px-4">
@@ -518,10 +518,10 @@ const Dashboard = () => {
                                                     </td>
                                                     <td className="py-3 px-4">
                                                         <div className="text-sm font-medium text-gray-800">
-                                                            {sale.company.name}
+                                                            {sale.company?.name || 'N/A'}
                                                         </div>
                                                         <div className="text-xs text-slate-500">
-                                                            {sale.company.phone}
+                                                            {sale.company?.phone || 'N/A'}
                                                         </div>
                                                     </td>
                                                     <td className="py-3 px-4">

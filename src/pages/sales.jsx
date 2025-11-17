@@ -53,19 +53,19 @@ const Sales = () => {
             // Fetch sales list
             const salesResponse = await api('get', {}, '/sales/list')
             if (salesResponse?.data) {
-                setItems(salesResponse.data.data)
+                setItems(salesResponse.data.data || [])
             }
 
             // Fetch companies
             const companiesResponse = await api('get', {}, '/companies/list')
             if (companiesResponse?.data) {
-                setCompanies(companiesResponse.data.data)
+                setCompanies(companiesResponse.data.data || [])
             }
 
             // Fetch products
             const productsResponse = await api('get', {}, '/products/list')
             if (productsResponse?.data) {
-                setProducts(productsResponse.data.data)
+                setProducts(productsResponse.data.data || [])
             }
 
 
@@ -186,7 +186,7 @@ const Sales = () => {
             // Refresh sales list
             const itemsResponse = await api('get', {}, '/sales/list')
             if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
+                setItems(itemsResponse.data.data || [])
             }
 
             setIsModalOpen(false)
@@ -379,7 +379,7 @@ const Sales = () => {
                                             Загрузка...
                                         </td>
                                     </tr>
-                                ) : items.length === 0 ? (
+                                ) : !items || items.length === 0 ? (
                                     <tr>
                                         <td colSpan="6" className="p-8 text-center text-slate-500">
                                             Нет данных
@@ -549,7 +549,7 @@ const Sales = () => {
                                     <Select
                                         label="Компания"
                                         required
-                                        options={companies.map((c) => ({ value: c.id, label: c.name }))}
+                                        options={(companies || []).map((c) => ({ value: c.id, label: c.name }))}
                                         value={formData.company_id}
                                         onChange={(value) =>
                                             setFormData((prev) => ({ ...prev, company_id: value }))
@@ -558,7 +558,7 @@ const Sales = () => {
                                         searchable={true}
                                     />
                                 </div>
-                                
+
                                 <div className="mb-4">
                                     <div className="flex items-center justify-between mb-3">
                                         <h3 className="text-lg font-semibold text-gray-700">
@@ -594,7 +594,7 @@ const Sales = () => {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2">
-                                    {products
+                                    {(products || [])
                                         .filter((product) =>
                                             product.name
                                                 .toLowerCase()

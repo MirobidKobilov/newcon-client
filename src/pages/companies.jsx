@@ -31,7 +31,7 @@ const Companies = () => {
             setLoading(true)
             const response = await api('get', {}, '/companies/list')
             if (response?.data) {
-                setItems(response.data.data)
+                setItems(response.data.data || [])
             }
             setLoading(false)
         }
@@ -60,7 +60,7 @@ const Companies = () => {
         if (response?.data) {
             const itemsResponse = await api('get', {}, '/companies/list')
             if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
+                setItems(itemsResponse.data.data || [])
             }
 
             setIsModalOpen(false)
@@ -104,7 +104,7 @@ const Companies = () => {
         if (response?.data) {
             const itemsResponse = await api('get', {}, '/companies/list')
             if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
+                setItems(itemsResponse.data.data || [])
             }
 
             setSuccessMessage('Компания успешно удалена')
@@ -258,7 +258,7 @@ const Companies = () => {
                                                 Загрузка...
                                             </td>
                                         </tr>
-                                    ) : items.length === 0 ? (
+                                    ) : !items || items.length === 0 ? (
                                         <tr>
                                             <td
                                                 colSpan="5"

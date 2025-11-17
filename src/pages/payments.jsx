@@ -47,13 +47,13 @@ const Payments = () => {
             // Fetch payments list
             const paymentsResponse = await api('get', {}, '/payments/list')
             if (paymentsResponse?.data) {
-                setItems(paymentsResponse.data.data)
+                setItems(paymentsResponse.data.data || [])
             }
 
             // Fetch sales list
             const salesResponse = await api('get', {}, '/sales/list')
             if (salesResponse?.data) {
-                setSalesList(salesResponse.data.data)
+                setSalesList(salesResponse.data.data || [])
             }
 
             setLoading(false)
@@ -131,7 +131,7 @@ const Payments = () => {
         if (response?.data) {
             const itemsResponse = await api('get', {}, '/payments/list')
             if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
+                setItems(itemsResponse.data.data || [])
             }
 
             setIsModalOpen(false)
@@ -186,7 +186,7 @@ const Payments = () => {
         if (response?.data) {
             const itemsResponse = await api('get', {}, '/payments/list')
             if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
+                setItems(itemsResponse.data.data || [])
             }
 
             setSuccessMessage('Платеж успешно удален')
@@ -270,7 +270,7 @@ const Payments = () => {
                                             Загрузка...
                                         </td>
                                     </tr>
-                                ) : items.length === 0 ? (
+                                ) : !items || items.length === 0 ? (
                                     <tr>
                                         <td colSpan="6" className="p-8 text-center text-slate-500">
                                             Нет данных
@@ -446,7 +446,7 @@ const Payments = () => {
                                                     <Select
                                                         label="Продажа"
                                                         required
-                                                        options={salesList.map((s) => ({
+                                                        options={(salesList || []).map((s) => ({
                                                             value: s.id,
                                                             label: `${s.id} - ${
                                                                 s.company?.name || 'Компания'
