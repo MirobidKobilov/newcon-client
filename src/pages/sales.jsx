@@ -31,15 +31,10 @@ const Sales = () => {
     const [searchQuery, setSearchQuery] = useState('')
     const [paymentData, setPaymentData] = useState({
         payment_type_id: '',
-        sales_stage: '',
     })
     const [paymentTypes] = useState([
         { id: 1, name: 'Доллары' },
         { id: 2, name: 'Сум' },
-    ])
-    const [salesStages] = useState([
-        { value: 'Ожидание платежа', label: 'Ожидание платежа' },
-        { value: 'Оплачено', label: 'Оплачено' },
     ])
     const [viewMode, setViewMode] = useState('table')
     const [currentStep, setCurrentStep] = useState(1)
@@ -180,7 +175,6 @@ const Sales = () => {
                     })
                     setPaymentData({
                         payment_type_id: '',
-                        sales_stage: '',
                     })
 
                     setSuccessMessage('Продажа успешно обновлена')
@@ -218,7 +212,6 @@ const Sales = () => {
                     const paymentSubmitData = {
                         name: generatedName,
                         payment_type_id: parseInt(paymentData.payment_type_id),
-                        sales_stage: paymentData.sales_stage,
                         sales: [
                             {
                                 company_id: parseInt(formData.company_id),
@@ -249,7 +242,6 @@ const Sales = () => {
                         })
                         setPaymentData({
                             payment_type_id: '',
-                            sales_stage: '',
                         })
 
                         setSuccessMessage('Продажа и платеж успешно созданы')
@@ -295,7 +287,6 @@ const Sales = () => {
         // Note: This assumes the sale might have payment info, adjust based on your API
         setPaymentData({
             payment_type_id: item.payment_type_id || '',
-            sales_stage: item.sales_stage || '',
         })
 
         setSearchQuery('')
@@ -338,7 +329,6 @@ const Sales = () => {
         })
         setPaymentData({
             payment_type_id: '',
-            sales_stage: '',
         })
         setSearchQuery('')
         setIsModalOpen(true)
@@ -362,7 +352,7 @@ const Sales = () => {
 
         // Step 2: payment fields are required
         if (currentStep === 2) {
-            return paymentData.payment_type_id && paymentData.sales_stage
+            return paymentData.payment_type_id
         }
 
         return false
@@ -967,21 +957,6 @@ const Sales = () => {
                                                     placeholder='Выберите тип оплаты'
                                                     searchable={false}
                                                 />
-
-                                                <Select
-                                                    label='Статус продажи'
-                                                    required
-                                                    options={salesStages}
-                                                    value={paymentData.sales_stage}
-                                                    onChange={(value) =>
-                                                        setPaymentData((prev) => ({
-                                                            ...prev,
-                                                            sales_stage: value,
-                                                        }))
-                                                    }
-                                                    placeholder='Выберите статус'
-                                                    searchable={false}
-                                                />
                                             </div>
                                         </div>
                                     )}
@@ -1136,12 +1111,6 @@ const Sales = () => {
                                                                   )
                                                           )?.name || '-'
                                                         : 'Не выбран'}
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span className='text-gray-500'>Статус: </span>
-                                                <span className='font-semibold text-gray-800'>
-                                                    {paymentData.sales_stage || 'Не выбран'}
                                                 </span>
                                             </div>
                                         </div>

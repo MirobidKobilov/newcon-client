@@ -17,13 +17,13 @@ const Modal = ({
                     </div>
                 )}
                 <button
-                    className="absolute right-4 top-4 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+                    className="absolute right-4 top-4 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all z-50"
                     onClick={onClose}
                     type="button"
                 >
                     ✕
                 </button>
-                <div className="px-6 py-5 h-full">{children}</div>
+                <div className="px-6 py-5 h-full overflow-visible">{children}</div>
             </div>
             <form method="dialog" className="modal-backdrop">
                 <button onClick={onClose}>close</button>
