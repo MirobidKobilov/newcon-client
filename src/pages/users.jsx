@@ -424,55 +424,94 @@ const Users = () => {
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     title={isEditMode ? 'Редактирование пользователя' : 'Создание пользователя'}
+                    maxWidth="max-w-6xl"
                 >
                     <form onSubmit={handleSubmit}>
-                        <div className="space-y-4">
-                            <Input
-                                label="Имя пользователя"
-                                type="text"
-                                name="username"
-                                value={formData.username}
-                                onChange={handleInputChange}
-                                placeholder="Введите имя пользователя"
-                                required
-                            />
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <Input
+                                    label="Имя пользователя"
+                                    type="text"
+                                    name="username"
+                                    value={formData.username}
+                                    onChange={handleInputChange}
+                                    placeholder="Введите имя пользователя"
+                                    required
+                                />
 
-                            <Input
-                                label="Номер телефона"
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleInputChange}
-                                maskType="uz-phone"
-                                placeholder="+998 (90) 123-45-67"
-                                required
-                            />
+                                <Input
+                                    label="Номер телефона"
+                                    type="tel"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleInputChange}
+                                    maskType="uz-phone"
+                                    placeholder="+998 (90) 123-45-67"
+                                    required
+                                />
 
-                            <Input
-                                label={
-                                    isEditMode
-                                        ? 'Пароль (оставьте пустым, если не хотите менять)'
-                                        : 'Пароль'
-                                }
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleInputChange}
-                                placeholder="Введите пароль"
-                                required={!isEditMode}
-                            />
+                                <Input
+                                    label={
+                                        isEditMode
+                                            ? 'Пароль (оставьте пустым, если не хотите менять)'
+                                            : 'Пароль'
+                                    }
+                                    type="password"
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleInputChange}
+                                    placeholder="Введите пароль"
+                                    required={!isEditMode}
+                                />
 
-                            <Select
-                                label="Роль"
-                                options={roles.map((role) => ({
-                                    value: role.id,
-                                    label: role.name,
-                                }))}
-                                value={formData.role}
-                                onChange={handleRoleChange}
-                                placeholder="Выберите роль"
-                                required
-                            />
+                                <Select
+                                    label="Роль"
+                                    options={roles.map((role) => ({
+                                        value: role.id,
+                                        label: role.name,
+                                    }))}
+                                    value={formData.role}
+                                    onChange={handleRoleChange}
+                                    placeholder="Выберите роль"
+                                    required
+                                />
+                            </div>
+
+                            {!isEditMode && (
+                                <div className="border-l border-gray-200 pl-6">
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                                        Данные для отправки:
+                                    </h3>
+                                    <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+                                        <div>
+                                            <span className="text-gray-500">username:</span>{' '}
+                                            <span className="font-mono text-gray-800">
+                                                {formData.username || '(не указано)'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-500">phone:</span>{' '}
+                                            <span className="font-mono text-gray-800">
+                                                {formData.phone || '(не указано)'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-500">password:</span>{' '}
+                                            <span className="font-mono text-gray-800">
+                                                {formData.password ? '••••••••' : '(не указано)'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-500">role:</span>{' '}
+                                            <span className="font-mono text-gray-800">
+                                                {formData.role
+                                                    ? `[${roles.find((r) => r.id === formData.role)?.name || formData.role}]`
+                                                    : '(не указано)'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
