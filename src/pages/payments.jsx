@@ -28,7 +28,7 @@ const Payments = () => {
     const [deleting, setDeleting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
-    const [salesList, setSalesList] = useState([])
+    const [companiesList, setCompaniesList] = useState([])
     const [paymentTypes] = useState([
         { value: 1, label: 'Доллары' },
         { value: 2, label: 'Сум' },
@@ -50,10 +50,10 @@ const Payments = () => {
                 setItems(paymentsResponse.data.data || [])
             }
 
-            // Fetch sales list
-            const salesResponse = await api('get', {}, '/sales/list')
-            if (salesResponse?.data) {
-                setSalesList(salesResponse.data.data || [])
+            // Fetch companies list
+            const companiesResponse = await api('get', {}, '/companies/list')
+            if (companiesResponse?.data) {
+                setCompaniesList(companiesResponse.data.data || [])
             }
 
             setLoading(false)
@@ -62,7 +62,8 @@ const Payments = () => {
     }, [])
 
     const formatNumber = (num) => {
-        return num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+        if (num === null || num === undefined || num === '' || isNaN(num)) return ''
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
     }
 
     const handleInputChange = (e) => {
@@ -76,15 +77,6 @@ const Payments = () => {
     const handleSaleChange = (index, field, value) => {
         const newSales = [...formData.sales]
         newSales[index][field] = value
-
-        // If changing sale_id, automatically set the amount from the selected sale
-        if (field === 'sale_id') {
-            const selectedSale = salesList.find((s) => s.id === value)
-            if (selectedSale) {
-                newSales[index].amount = selectedSale.summa || 0
-            }
-        }
-
         setFormData((prev) => ({
             ...prev,
             sales: newSales,
@@ -94,7 +86,7 @@ const Payments = () => {
     const addSale = () => {
         setFormData((prev) => ({
             ...prev,
-            sales: [...prev.sales, { sale_id: '', amount: '' }],
+            sales: [...prev.sales, { company_id: '', amount: '' }],
         }))
     }
 
@@ -116,7 +108,7 @@ const Payments = () => {
             payment_type_id: parseInt(formData.payment_type_id),
             sales_stage: formData.sales_stage,
             sales: formData.sales.map((s) => ({
-                sale_id: parseInt(s.sale_id),
+                company_id: parseInt(s.company_id),
                 amount: parseFloat(s.amount),
             })),
         }
@@ -436,7 +428,7 @@ const Payments = () => {
                                         Нет продаж. Нажмите "Добавить продажу" чтобы добавить.
                                     </div>
                                 ) : (
-                                    <div className="space-y-3 max-h-60 relative z-40">
+                                    <div className="space-y-3 max-h-60 relative z-40 overflow-y-auto">
                                         {formData.sales.map((sale, index) => (
                                             <div
                                                 key={index}
@@ -444,35 +436,38 @@ const Payments = () => {
                                             >
                                                 <div className="flex-1">
                                                     <Select
-                                                        label="Продажа"
+                                                        label="Компания"
                                                         required
-                                                        options={(salesList || []).map((s) => ({
-                                                            value: s.id,
-                                                            label: `${s.id} - ${
-                                                                s.company?.name || 'Компания'
-                                                            } (${formatNumber(s.summa || 0)})`,
+                                                        options={(companiesList || []).map((c) => ({
+                                                            value: c.id,
+                                                            label: `${c.name || 'Компания'}${c.phone ? ` (${c.phone})` : ''}`,
                                                         }))}
-                                                        value={sale.sale_id}
+                                                        value={sale.company_id}
                                                         onChange={(value) =>
                                                             handleSaleChange(
                                                                 index,
-                                                                'sale_id',
+                                                                'company_id',
                                                                 value
                                                             )
                                                         }
-                                                        placeholder="Выберите продажу"
+                                                        placeholder="Выберите компанию"
                                                         searchable={true}
                                                     />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <label className="block mb-1.5">
-                                                        <span className="text-sm font-medium text-gray-700">
-                                                            Сумма
-                                                        </span>
-                                                    </label>
-                                                    <div className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-800">
-                                                        {formatNumber(sale.amount || 0)}
-                                                    </div>
+                                                    <Input
+                                                        label="Сумма"
+                                                        type="text"
+                                                        required
+                                                        value={sale.amount !== '' && sale.amount !== undefined && sale.amount !== null ? formatNumber(sale.amount) : ''}
+                                                        onChange={(e) => {
+                                                            const numericValue = e.target.value.replace(/\s/g, '')
+                                                            if (numericValue === '' || /^\d*\.?\d*$/.test(numericValue)) {
+                                                                handleSaleChange(index, 'amount', numericValue)
+                                                            }
+                                                        }}
+                                                        placeholder="Введите сумму"
+                                                    />
                                                 </div>
                                                 <button
                                                     type="button"

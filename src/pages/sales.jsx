@@ -26,11 +26,9 @@ const Sales = () => {
     const [successMessage, setSuccessMessage] = useState('')
     const [companies, setCompanies] = useState([])
     const [products, setProducts] = useState([])
-    const [currentStep, setCurrentStep] = useState(1)
     const [isViewModalOpen, setIsViewModalOpen] = useState(false)
     const [viewingItem, setViewingItem] = useState(null)
     const [searchQuery, setSearchQuery] = useState('')
-    const [createdSaleId, setCreatedSaleId] = useState(null)
     const [paymentData, setPaymentData] = useState({
         payment_type_id: '',
         sales_stage: '',
@@ -44,32 +42,34 @@ const Sales = () => {
         { value: 'Оплачено', label: 'Оплачено' },
     ])
     const [viewMode, setViewMode] = useState('table')
+    const [currentStep, setCurrentStep] = useState(1)
+    const [createdSaleId, setCreatedSaleId] = useState(null)
 
     const productsPayload = useMemo(() => {
         return (formData.products || [])
-            .filter((p) => p.product_id && p.quantity)
+            .filter((p) => p.product_id && p.quantity && p.price)
             .map((p) => {
                 const productId = Number(p.product_id)
                 const quantity = Number(p.quantity)
-                const productData = products.find((prod) => Number(prod.id) === productId)
-                const unitPrice = Number(productData?.price) || 0
+                const price = Number(p.price) || 0
 
                 return {
                     product_id: productId,
                     quantity: quantity || 0,
-                    price: unitPrice * (quantity || 0),
+                    price: price,
                 }
             })
-    }, [formData.products, products])
+    }, [formData.products])
 
-    const computedSumma = useMemo(() => {
+    // Automatically calculate summa from products (quantity * price for each product)
+    const saleTotalAmount = useMemo(() => {
         if (!productsPayload.length) return 0
-        return productsPayload.reduce((total, product) => total + (Number(product.price) || 0), 0)
+        return productsPayload.reduce((total, product) => {
+            const quantity = Number(product.quantity) || 0
+            const price = Number(product.price) || 0
+            return total + quantity * price
+        }, 0)
     }, [productsPayload])
-
-    const manualSumma = formData.summa ? parseFloat(formData.summa) : 0
-    const saleTotalAmount = computedSumma > 0 ? computedSumma : manualSumma
-    const isAutoSumAvailable = computedSumma > 0
 
     useEffect(() => {
         const fetchData = async () => {
@@ -99,7 +99,10 @@ const Sales = () => {
     }, [])
 
     const formatNumber = (num) => {
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+        if (num === null || num === undefined || isNaN(num)) return '0'
+        // Округляем до целого числа для сум
+        const roundedNum = Math.round(Number(num))
+        return roundedNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
     }
 
     const parseFormattedNumber = (str) => {
@@ -114,22 +117,20 @@ const Sales = () => {
         }))
     }
 
-    const handleSummaChange = (e) => {
-        const value = e.target.value
-        const numericValue = parseFormattedNumber(value)
-
-        // Only allow numbers
-        if (numericValue === '' || /^\d+$/.test(numericValue)) {
-            setFormData((prev) => ({
-                ...prev,
-                summa: numericValue,
-            }))
-        }
-    }
-
     const handleProductChange = (index, field, value) => {
         const newProducts = [...formData.products]
-        newProducts[index][field] = value
+        // Remove spaces for numeric fields (price) before storing
+        if (field === 'price') {
+            const numericValue = parseFormattedNumber(value)
+            // Only allow numbers
+            if (numericValue === '' || /^\d+$/.test(numericValue)) {
+                newProducts[index][field] = numericValue
+            } else {
+                return // Don't update if invalid
+            }
+        } else {
+            newProducts[index][field] = value
+        }
         setFormData((prev) => ({
             ...prev,
             products: newProducts,
@@ -144,93 +145,123 @@ const Sales = () => {
         }))
     }
 
-    const createSale = async () => {
-        setSubmitting(true)
-
-        // Prepare data in the correct format
-        const submitData = {
-            company_id: parseInt(formData.company_id),
-            summa: saleTotalAmount,
-            products: productsPayload,
-        }
-
-        let response
-        if (isEditMode) {
-            response = await api('put', submitData, `/sales/update/${editingItemId}`)
-        } else {
-            response = await api('post', submitData, '/sales/create')
-        }
-
-        if (response?.data) {
-            // Store the created sale ID for payment creation
-            setCreatedSaleId(response.data.data?.id || response.data.id)
-
-            // Move to step 3 (payment)
-            setCurrentStep(3)
-        }
-
-        setSubmitting(false)
-    }
-
     const handleSubmit = async (e) => {
         e.preventDefault()
         setSubmitting(true)
 
-        // Generate payment name automatically
-        const company = companies.find((c) => c.id === formData.company_id)
-        const companyName = company?.name || 'Компания'
-        const currentDate = new Date().toLocaleDateString('ru-RU')
-        const productsNames = formData.products
-            .map((p) => {
-                const product = products.find((prod) => prod.id === p.product_id)
-                return product?.name || 'Товар'
-            })
-            .join(', ')
-        const generatedName = `${companyName}, ${currentDate}, ${productsNames}`
+        try {
+            if (isEditMode) {
+                // In edit mode, only update the sale
+                const saleData = {
+                    company_id: parseInt(formData.company_id),
+                    summa: saleTotalAmount,
+                    products: productsPayload,
+                }
 
-        // Create payment with the sale from previous step
-        const paymentSubmitData = {
-            name: generatedName,
-            payment_type_id: parseInt(paymentData.payment_type_id),
-            sales_stage: paymentData.sales_stage,
-            sales: [
-                {
-                    sale_id: parseInt(createdSaleId),
-                    amount: saleTotalAmount,
-                },
-            ],
-        }
+                const saleResponse = await api('put', saleData, `/sales/update/${editingItemId}`)
 
-        const response = await api('post', paymentSubmitData, '/payments/create')
+                if (saleResponse?.data) {
+                    // Refresh sales list
+                    const itemsResponse = await api('get', {}, '/sales/list')
+                    if (itemsResponse?.data) {
+                        setItems(itemsResponse.data.data || [])
+                    }
 
-        if (response?.data) {
-            // Refresh sales list
-            const itemsResponse = await api('get', {}, '/sales/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data || [])
+                    setIsModalOpen(false)
+                    setIsEditMode(false)
+                    setEditingItemId(null)
+                    setSearchQuery('')
+                    setCurrentStep(1)
+                    setCreatedSaleId(null)
+                    setFormData({
+                        company_id: '',
+                        summa: '',
+                        products: [],
+                    })
+                    setPaymentData({
+                        payment_type_id: '',
+                        sales_stage: '',
+                    })
+
+                    setSuccessMessage('Продажа успешно обновлена')
+                    setIsSuccessOpen(true)
+                }
+            } else {
+                // In create mode, step 1: create sale
+                if (currentStep === 1) {
+                    const saleData = {
+                        company_id: parseInt(formData.company_id),
+                        summa: saleTotalAmount,
+                        products: productsPayload,
+                    }
+
+                    const saleResponse = await api('post', saleData, '/sales/create')
+
+                    if (saleResponse?.data) {
+                        const newSaleId = saleResponse.data.data?.id || saleResponse.data.id
+                        setCreatedSaleId(newSaleId)
+                        setCurrentStep(2)
+                    }
+                } else if (currentStep === 2) {
+                    // Step 2: create payment
+                    const company = companies.find((c) => c.id === formData.company_id)
+                    const companyName = company?.name || 'Компания'
+                    const currentDate = new Date().toLocaleDateString('ru-RU')
+                    const productsNames = formData.products
+                        .map((p) => {
+                            const product = products.find((prod) => prod.id === p.product_id)
+                            return product?.name || 'Товар'
+                        })
+                        .join(', ')
+                    const generatedName = `${companyName}, ${currentDate}, ${productsNames}`
+
+                    const paymentSubmitData = {
+                        name: generatedName,
+                        payment_type_id: parseInt(paymentData.payment_type_id),
+                        sales_stage: paymentData.sales_stage,
+                        sales: [
+                            {
+                                company_id: parseInt(formData.company_id),
+                                amount: saleTotalAmount,
+                            },
+                        ],
+                    }
+
+                    const paymentResponse = await api('post', paymentSubmitData, '/payments/create')
+
+                    if (paymentResponse?.data) {
+                        // Refresh sales list
+                        const itemsResponse = await api('get', {}, '/sales/list')
+                        if (itemsResponse?.data) {
+                            setItems(itemsResponse.data.data || [])
+                        }
+
+                        setIsModalOpen(false)
+                        setIsEditMode(false)
+                        setEditingItemId(null)
+                        setSearchQuery('')
+                        setCurrentStep(1)
+                        setCreatedSaleId(null)
+                        setFormData({
+                            company_id: '',
+                            summa: '',
+                            products: [],
+                        })
+                        setPaymentData({
+                            payment_type_id: '',
+                            sales_stage: '',
+                        })
+
+                        setSuccessMessage('Продажа и платеж успешно созданы')
+                        setIsSuccessOpen(true)
+                    }
+                }
             }
-
-            setIsModalOpen(false)
-            setIsEditMode(false)
-            setEditingItemId(null)
-            setCurrentStep(1)
-            setSearchQuery('')
-            setCreatedSaleId(null)
-            setFormData({
-                company_id: '',
-                summa: '',
-                products: [],
-            })
-            setPaymentData({
-                payment_type_id: '',
-                sales_stage: '',
-            })
-
-            setSuccessMessage('Продажа и платеж успешно созданы')
-            setIsSuccessOpen(true)
+        } catch (error) {
+            console.error('Error submitting sale:', error)
+        } finally {
+            setSubmitting(false)
         }
-
-        setSubmitting(false)
     }
 
     const handleView = (item) => {
@@ -250,6 +281,7 @@ const Sales = () => {
             ? item.products.map((p) => ({
                   product_id: p.id || p.product_id,
                   quantity: p.quantity,
+                  price: p.price || '',
               }))
             : []
 
@@ -258,7 +290,14 @@ const Sales = () => {
             summa: item.summa || '',
             products: productsData,
         })
-        setCurrentStep(1)
+
+        // Try to get payment data if available (from related payment)
+        // Note: This assumes the sale might have payment info, adjust based on your API
+        setPaymentData({
+            payment_type_id: item.payment_type_id || '',
+            sales_stage: item.sales_stage || '',
+        })
+
         setSearchQuery('')
         setIsModalOpen(true)
     }
@@ -290,6 +329,8 @@ const Sales = () => {
     const handleCreateNew = () => {
         setIsEditMode(false)
         setEditingItemId(null)
+        setCurrentStep(1)
+        setCreatedSaleId(null)
         setFormData({
             company_id: '',
             summa: '',
@@ -299,41 +340,32 @@ const Sales = () => {
             payment_type_id: '',
             sales_stage: '',
         })
-        setCreatedSaleId(null)
-        setCurrentStep(1)
         setSearchQuery('')
         setIsModalOpen(true)
     }
 
-    const nextStep = async () => {
-        if (currentStep === 2) {
-            // Create sale before moving to payment step
-            await createSale()
-        } else if (currentStep < 3) {
-            setCurrentStep(currentStep + 1)
-        }
-    }
-
-    const prevStep = () => {
-        if (currentStep > 1) {
-            setCurrentStep(currentStep - 1)
-        }
-    }
-
-    const canProceedToStep2 = () => {
-        return (
+    const canSubmit = () => {
+        const hasValidProducts =
             formData.company_id &&
             formData.products.length > 0 &&
-            formData.products.every((p) => p.product_id && p.quantity)
-        )
-    }
+            formData.products.every((p) => p.product_id && p.quantity && p.price)
 
-    const canProceedToStep3 = () => {
-        return saleTotalAmount > 0
-    }
+        // In edit mode, payment fields are optional
+        if (isEditMode) {
+            return hasValidProducts
+        }
 
-    const canSubmitPayment = () => {
-        return paymentData.payment_type_id && paymentData.sales_stage
+        // In create mode, step 1: only sale data required
+        if (currentStep === 1) {
+            return hasValidProducts
+        }
+
+        // Step 2: payment fields are required
+        if (currentStep === 2) {
+            return paymentData.payment_type_id && paymentData.sales_stage
+        }
+
+        return false
     }
 
     const handlePaymentInputChange = (e) => {
@@ -572,349 +604,581 @@ const Sales = () => {
                     isOpen={isModalOpen}
                     onClose={() => {
                         setIsModalOpen(false)
-                        setCurrentStep(1)
                         setSearchQuery('')
+                        setCurrentStep(1)
+                        setCreatedSaleId(null)
                     }}
                     title={isEditMode ? 'Редактирование продажи' : 'Создание продажи'}
-                    maxWidth='max-w-6xl'
-                    maxHeight='h-[600px]'
+                    maxWidth='max-w-7xl'
+                    maxHeight='h-[90vh]'
                 >
                     <form onSubmit={handleSubmit}>
-                        <div className='absolute top-4 right-12 flex items-center gap-1'>
-                            <div
-                                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${
-                                    currentStep >= 1
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-gray-200 text-gray-500'
-                                }`}
-                            >
-                                1
-                            </div>
-                            <div className='w-4 h-0.5 bg-gray-200'>
-                                <div
-                                    className={`h-full transition-all ${
-                                        currentStep > 1 ? 'bg-blue-500' : 'bg-gray-200'
-                                    }`}
-                                ></div>
-                            </div>
-                            <div
-                                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${
-                                    currentStep >= 2
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-gray-200 text-gray-500'
-                                }`}
-                            >
-                                2
-                            </div>
-                            <div className='w-4 h-0.5 bg-gray-200'>
-                                <div
-                                    className={`h-full transition-all ${
-                                        currentStep > 2 ? 'bg-blue-500' : 'bg-gray-200'
-                                    }`}
-                                ></div>
-                            </div>
-                            <div
-                                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${
-                                    currentStep >= 3
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-gray-200 text-gray-500'
-                                }`}
-                            >
-                                3
-                            </div>
-                        </div>
-
-                        {/* Step 1: Company and Products */}
-                        {currentStep === 1 && (
-                            <div className='mt-2'>
-                                <div className='mb-4'>
-                                    <Select
-                                        label='Компания'
-                                        required
-                                        options={(companies || []).map((c) => ({
-                                            value: c.id,
-                                            label: c.name,
-                                        }))}
-                                        value={formData.company_id}
-                                        onChange={(value) =>
-                                            setFormData((prev) => ({ ...prev, company_id: value }))
-                                        }
-                                        placeholder='Выберите компанию'
-                                        searchable={true}
-                                    />
-                                </div>
-
-                                <div className='mb-4'>
-                                    <div className='flex items-center justify-between mb-3'>
-                                        <h3 className='text-lg font-semibold text-gray-700'>
-                                            Выберите товары и укажите количество
-                                        </h3>
-                                        <span className='text-sm text-gray-500'>
-                                            Выбрано: {formData.products.length}
+                        {/* Step Indicator - Only show in create mode */}
+                        {!isEditMode && (
+                            <div className='mb-6'>
+                                <div className='flex items-center justify-center gap-4'>
+                                    <div className='flex items-center gap-2'>
+                                        <div
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                                                currentStep >= 1
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-gray-200 text-gray-500'
+                                            }`}
+                                        >
+                                            1
+                                        </div>
+                                        <span
+                                            className={`text-sm font-medium ${
+                                                currentStep >= 1 ? 'text-blue-600' : 'text-gray-500'
+                                            }`}
+                                        >
+                                            Создание продажи
                                         </span>
                                     </div>
-                                    {/* Search Input */}
-                                    <div className='relative'>
-                                        <input
-                                            type='text'
-                                            placeholder='Поиск товара...'
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className='w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500'
-                                        />
-                                        <svg
-                                            xmlns='http://www.w3.org/2000/svg'
-                                            fill='none'
-                                            viewBox='0 0 24 24'
-                                            strokeWidth={2}
-                                            stroke='currentColor'
-                                            className='w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
-                                        >
-                                            <path
-                                                strokeLinecap='round'
-                                                strokeLinejoin='round'
-                                                d='M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
-                                            />
-                                        </svg>
+                                    <div className='w-16 h-0.5 bg-gray-200'>
+                                        <div
+                                            className={`h-full transition-all ${
+                                                currentStep >= 2
+                                                    ? 'bg-blue-600 w-full'
+                                                    : 'bg-gray-200 w-0'
+                                            }`}
+                                        ></div>
                                     </div>
-                                </div>
-                                <div className='grid grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2'>
-                                    {(products || [])
-                                        .filter((product) =>
-                                            product.name
-                                                .toLowerCase()
-                                                .includes(searchQuery.toLowerCase())
-                                        )
-                                        .map((product) => {
-                                            const selectedProduct = formData.products.find(
-                                                (p) => Number(p.product_id) === Number(product.id)
-                                            )
-                                            const selectedIndex = formData.products.findIndex(
-                                                (p) => Number(p.product_id) === Number(product.id)
-                                            )
-                                            const isSelected = selectedProduct !== undefined
-                                            const unitPrice = Number(product.price)
-                                            const selectedQuantity =
-                                                Number(selectedProduct?.quantity) || 0
-                                            const selectedTotal = isSelected
-                                                ? (Number.isFinite(unitPrice) ? unitPrice : 0) *
-                                                  selectedQuantity
-                                                : 0
-                                            const formattedUnitPrice = Number.isFinite(unitPrice)
-                                                ? unitPrice.toLocaleString()
-                                                : '-'
-                                            const formattedSelectedTotal = Number.isFinite(
-                                                selectedTotal
-                                            )
-                                                ? selectedTotal.toLocaleString()
-                                                : '0'
-
-                                            return (
-                                                <div
-                                                    key={product.id}
-                                                    className={`p-4 border-2 rounded-lg transition-all ${
-                                                        isSelected
-                                                            ? 'border-blue-500 bg-blue-50'
-                                                            : 'border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                                >
-                                                    <div className='flex items-start justify-between mb-3 relative'>
-                                                        <h4 className='font-semibold text-gray-800 text-sm flex-1'>
-                                                            {product.name}
-                                                        </h4>
-                                                        {isSelected && (
-                                                            <button
-                                                                type='button'
-                                                                onClick={() =>
-                                                                    removeProduct(selectedIndex)
-                                                                }
-                                                                className='p-1 absolute top-0 right-0 text-red-500 hover:bg-red-100 rounded transition-colors'
-                                                                title='Удалить'
-                                                            >
-                                                                <svg
-                                                                    xmlns='http://www.w3.org/2000/svg'
-                                                                    fill='none'
-                                                                    viewBox='0 0 24 24'
-                                                                    strokeWidth={2}
-                                                                    stroke='currentColor'
-                                                                    className='w-4 h-4'
-                                                                >
-                                                                    <path
-                                                                        strokeLinecap='round'
-                                                                        strokeLinejoin='round'
-                                                                        d='M6 18L18 6M6 6l12 12'
-                                                                    />
-                                                                </svg>
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                    <p className='text-xs text-gray-500 mb-2 min-h-[32px]'>
-                                                        {product.description || 'Описание товара'}
-                                                    </p>
-                                                    <div className='text-xs text-gray-500 mb-2'>
-                                                        Цена: {formattedUnitPrice} сум
-                                                    </div>
-                                                    {isSelected && (
-                                                        <div className='text-xs font-semibold text-gray-700 mb-2'>
-                                                            Сумма: {formattedSelectedTotal} сум
-                                                        </div>
-                                                    )}
-                                                    <div className='flex items-center gap-2'>
-                                                        <input
-                                                            type='number'
-                                                            min='0'
-                                                            placeholder='0'
-                                                            value={selectedProduct?.quantity || ''}
-                                                            onChange={(e) => {
-                                                                const value = e.target.value
-                                                                if (value === '' || value === '0') {
-                                                                    // Remove product if quantity is 0 or empty
-                                                                    if (isSelected) {
-                                                                        removeProduct(selectedIndex)
-                                                                    }
-                                                                } else {
-                                                                    if (isSelected) {
-                                                                        // Update existing product
-                                                                        handleProductChange(
-                                                                            selectedIndex,
-                                                                            'quantity',
-                                                                            value
-                                                                        )
-                                                                    } else {
-                                                                        // Add new product
-                                                                        setFormData((prev) => ({
-                                                                            ...prev,
-                                                                            products: [
-                                                                                ...prev.products,
-                                                                                {
-                                                                                    product_id:
-                                                                                        product.id,
-                                                                                    quantity: value,
-                                                                                },
-                                                                            ],
-                                                                        }))
-                                                                    }
-                                                                }
-                                                            }}
-                                                            className={`flex-1 px-3 py-2 border rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                                                                isSelected
-                                                                    ? 'border-blue-500 focus:ring-blue-200'
-                                                                    : 'border-gray-300 focus:ring-gray-200'
-                                                            }`}
-                                                        />
-                                                        <span className='text-xs text-gray-500'>
-                                                            шт.
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
+                                    <div className='flex items-center gap-2'>
+                                        <div
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                                                currentStep >= 2
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-gray-200 text-gray-500'
+                                            }`}
+                                        >
+                                            2
+                                        </div>
+                                        <span
+                                            className={`text-sm font-medium ${
+                                                currentStep >= 2 ? 'text-blue-600' : 'text-gray-500'
+                                            }`}
+                                        >
+                                            Создание платежа
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Step 2: Total Amount */}
-                        {currentStep === 2 && (
-                            <div className='space-y-4 mt-2'>
-                                <div className='bg-blue-50 p-4 rounded-lg mb-4'>
-                                    <h3 className='text-lg font-semibold text-gray-700 mb-2'>
-                                        Итоговая информация
-                                    </h3>
-                                    <div className='space-y-2 text-sm'>
-                                        <div className='flex justify-between'>
-                                            <span className='text-gray-600'>Компания:</span>
-                                            <span className='font-semibold text-gray-800'>
-                                                {companies.find((c) => c.id === formData.company_id)
-                                                    ?.name || '-'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div className='grid grid-cols-3 gap-6'>
+                            {/* Left Side - Form Content */}
+                            <div className='col-span-2'>
+                                <div className='space-y-6'>
+                                    {/* Step 1: Sale Creation or Edit Mode */}
+                                    {(currentStep === 1 || isEditMode) && (
+                                        <>
+                                            <div>
+                                                <Select
+                                                    label='Компания'
+                                                    required
+                                                    options={(companies || []).map((c) => ({
+                                                        value: c.id,
+                                                        label: c.name,
+                                                    }))}
+                                                    value={formData.company_id}
+                                                    onChange={(value) =>
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            company_id: value,
+                                                        }))
+                                                    }
+                                                    placeholder='Выберите компанию'
+                                                    searchable={true}
+                                                    disabled={currentStep === 2}
+                                                />
+                                            </div>
 
-                                <div>
-                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                        Общая сумма <span className='text-red-500'>*</span>
-                                    </label>
-                                    <input
-                                        type='text'
-                                        name='summa'
-                                        value={
-                                            isAutoSumAvailable
-                                                ? formatNumber(saleTotalAmount)
-                                                : formData.summa
-                                                ? formatNumber(formData.summa)
-                                                : ''
-                                        }
-                                        onChange={
-                                            isAutoSumAvailable ? undefined : handleSummaChange
-                                        }
-                                        placeholder='Общая сумма'
-                                        required
-                                        readOnly={isAutoSumAvailable}
-                                        className='w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500'
-                                    />
-                                    {isAutoSumAvailable && (
-                                        <p className='text-xs text-gray-500 mt-1'>
-                                            Сумма рассчитывается автоматически на основе цены и
-                                            количества выбранных товаров.
-                                        </p>
+                                            <div>
+                                                <div className='flex items-center justify-between mb-3'>
+                                                    <h3 className='text-lg font-semibold text-gray-700'>
+                                                        Выберите товары и укажите количество
+                                                    </h3>
+                                                    <span className='text-sm text-gray-500'>
+                                                        Выбрано: {formData.products.length}
+                                                    </span>
+                                                </div>
+                                                {/* Search Input */}
+                                                <div className='relative mb-4'>
+                                                    <input
+                                                        type='text'
+                                                        placeholder='Поиск товара...'
+                                                        value={searchQuery}
+                                                        onChange={(e) =>
+                                                            setSearchQuery(e.target.value)
+                                                        }
+                                                        className='w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500'
+                                                        disabled={currentStep === 2}
+                                                    />
+                                                    <svg
+                                                        xmlns='http://www.w3.org/2000/svg'
+                                                        fill='none'
+                                                        viewBox='0 0 24 24'
+                                                        strokeWidth={2}
+                                                        stroke='currentColor'
+                                                        className='w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
+                                                    >
+                                                        <path
+                                                            strokeLinecap='round'
+                                                            strokeLinejoin='round'
+                                                            d='M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
+                                                        />
+                                                    </svg>
+                                                </div>
+                                                <div className='grid grid-cols-3 gap-4 max-h-[350px] overflow-y-auto pr-2'>
+                                                    {(products || [])
+                                                        .filter((product) =>
+                                                            product.name
+                                                                .toLowerCase()
+                                                                .includes(searchQuery.toLowerCase())
+                                                        )
+                                                        .map((product) => {
+                                                            const selectedProduct =
+                                                                formData.products.find(
+                                                                    (p) =>
+                                                                        Number(p.product_id) ===
+                                                                        Number(product.id)
+                                                                )
+                                                            const selectedIndex =
+                                                                formData.products.findIndex(
+                                                                    (p) =>
+                                                                        Number(p.product_id) ===
+                                                                        Number(product.id)
+                                                                )
+                                                            const isSelected =
+                                                                selectedProduct !== undefined
+                                                            const unitPrice = Number(product.price)
+                                                            const selectedQuantity =
+                                                                Number(selectedProduct?.quantity) ||
+                                                                0
+                                                            const selectedTotal = isSelected
+                                                                ? (Number.isFinite(unitPrice)
+                                                                      ? unitPrice
+                                                                      : 0) * selectedQuantity
+                                                                : 0
+                                                            const formattedUnitPrice =
+                                                                Number.isFinite(unitPrice)
+                                                                    ? unitPrice.toLocaleString()
+                                                                    : '-'
+                                                            const formattedSelectedTotal =
+                                                                Number.isFinite(selectedTotal)
+                                                                    ? selectedTotal.toLocaleString()
+                                                                    : '0'
+
+                                                            return (
+                                                                <div
+                                                                    key={product.id}
+                                                                    className={`p-4 border-2 rounded-lg transition-all ${
+                                                                        isSelected
+                                                                            ? 'border-blue-500 bg-blue-50'
+                                                                            : 'border-gray-200 hover:border-gray-300'
+                                                                    }`}
+                                                                >
+                                                                    <div className='flex items-start justify-between mb-3 relative'>
+                                                                        <h4 className='font-semibold text-gray-800 text-sm flex-1'>
+                                                                            {product.name}
+                                                                        </h4>
+                                                                        {isSelected && (
+                                                                            <button
+                                                                                type='button'
+                                                                                onClick={() =>
+                                                                                    removeProduct(
+                                                                                        selectedIndex
+                                                                                    )
+                                                                                }
+                                                                                className='p-1 absolute top-0 right-0 text-red-500 hover:bg-red-100 rounded transition-colors'
+                                                                                title='Удалить'
+                                                                                disabled={
+                                                                                    currentStep ===
+                                                                                    2
+                                                                                }
+                                                                            >
+                                                                                <svg
+                                                                                    xmlns='http://www.w3.org/2000/svg'
+                                                                                    fill='none'
+                                                                                    viewBox='0 0 24 24'
+                                                                                    strokeWidth={2}
+                                                                                    stroke='currentColor'
+                                                                                    className='w-4 h-4'
+                                                                                >
+                                                                                    <path
+                                                                                        strokeLinecap='round'
+                                                                                        strokeLinejoin='round'
+                                                                                        d='M6 18L18 6M6 6l12 12'
+                                                                                    />
+                                                                                </svg>
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className='text-xs text-gray-500 mb-2 min-h-[32px]'>
+                                                                        {product.description ||
+                                                                            'Описание товара'}
+                                                                    </p>
+                                                                    <div className='text-xs text-gray-500 mb-2'>
+                                                                        Рекомендуемая цена:{' '}
+                                                                        {formattedUnitPrice} сум
+                                                                    </div>
+                                                                    <div className='space-y-2'>
+                                                                        <div className='flex items-center gap-2'>
+                                                                            <input
+                                                                                type='number'
+                                                                                min='0'
+                                                                                placeholder='0'
+                                                                                value={
+                                                                                    selectedProduct?.quantity ||
+                                                                                    ''
+                                                                                }
+                                                                                onChange={(e) => {
+                                                                                    const value =
+                                                                                        e.target
+                                                                                            .value
+                                                                                    if (
+                                                                                        value ===
+                                                                                            '' ||
+                                                                                        value ===
+                                                                                            '0'
+                                                                                    ) {
+                                                                                        // Remove product if quantity is 0 or empty
+                                                                                        if (
+                                                                                            isSelected
+                                                                                        ) {
+                                                                                            removeProduct(
+                                                                                                selectedIndex
+                                                                                            )
+                                                                                        }
+                                                                                    } else {
+                                                                                        if (
+                                                                                            isSelected
+                                                                                        ) {
+                                                                                            // Update existing product
+                                                                                            handleProductChange(
+                                                                                                selectedIndex,
+                                                                                                'quantity',
+                                                                                                value
+                                                                                            )
+                                                                                        } else {
+                                                                                            // Add new product
+                                                                                            setFormData(
+                                                                                                (
+                                                                                                    prev
+                                                                                                ) => ({
+                                                                                                    ...prev,
+                                                                                                    products:
+                                                                                                        [
+                                                                                                            ...prev.products,
+                                                                                                            {
+                                                                                                                product_id:
+                                                                                                                    product.id,
+                                                                                                                quantity:
+                                                                                                                    value,
+                                                                                                                price: '',
+                                                                                                            },
+                                                                                                        ],
+                                                                                                })
+                                                                                            )
+                                                                                        }
+                                                                                    }
+                                                                                }}
+                                                                                className={`flex-1 px-3 py-2 border rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                                                                                    isSelected
+                                                                                        ? 'border-blue-500 focus:ring-blue-200'
+                                                                                        : 'border-gray-300 focus:ring-gray-200'
+                                                                                }`}
+                                                                                disabled={
+                                                                                    currentStep ===
+                                                                                    2
+                                                                                }
+                                                                            />
+                                                                            <span className='text-xs text-gray-500'>
+                                                                                шт.
+                                                                            </span>
+                                                                        </div>
+                                                                        {isSelected && (
+                                                                            <div className='flex items-center gap-2'>
+                                                                                <input
+                                                                                    type='text'
+                                                                                    placeholder='Цена'
+                                                                                    value={
+                                                                                        selectedProduct?.price
+                                                                                            ? formatNumber(
+                                                                                                  selectedProduct.price
+                                                                                              )
+                                                                                            : ''
+                                                                                    }
+                                                                                    onChange={(
+                                                                                        e
+                                                                                    ) => {
+                                                                                        const value =
+                                                                                            e.target
+                                                                                                .value
+                                                                                        handleProductChange(
+                                                                                            selectedIndex,
+                                                                                            'price',
+                                                                                            value
+                                                                                        )
+                                                                                    }}
+                                                                                    className='flex-1 px-3 py-2 border border-blue-500 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all'
+                                                                                    required
+                                                                                    disabled={
+                                                                                        currentStep ===
+                                                                                        2
+                                                                                    }
+                                                                                />
+                                                                                <span className='text-xs text-gray-500'>
+                                                                                    сум
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Step 2: Payment Creation - Only show in create mode */}
+                                    {!isEditMode && currentStep === 2 && (
+                                        <div className='border-t border-gray-200 pt-6'>
+                                            <h3 className='text-lg font-semibold text-gray-700 mb-4'>
+                                                Информация об оплате
+                                            </h3>
+                                            <div className='space-y-4'>
+                                                <Select
+                                                    label='Тип оплаты'
+                                                    required
+                                                    options={paymentTypes.map((t) => ({
+                                                        value: t.id,
+                                                        label: t.name,
+                                                    }))}
+                                                    value={paymentData.payment_type_id}
+                                                    onChange={(value) =>
+                                                        setPaymentData((prev) => ({
+                                                            ...prev,
+                                                            payment_type_id: value,
+                                                        }))
+                                                    }
+                                                    placeholder='Выберите тип оплаты'
+                                                    searchable={false}
+                                                />
+
+                                                <Select
+                                                    label='Статус продажи'
+                                                    required
+                                                    options={salesStages}
+                                                    value={paymentData.sales_stage}
+                                                    onChange={(value) =>
+                                                        setPaymentData((prev) => ({
+                                                            ...prev,
+                                                            sales_stage: value,
+                                                        }))
+                                                    }
+                                                    placeholder='Выберите статус'
+                                                    searchable={false}
+                                                />
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
-                        )}
 
-                        {/* Step 3: Payment Information */}
-                        {currentStep === 3 && (
-                            <div className='space-y-4 mt-2'>
-                                <div className='bg-green-50 p-3 rounded-lg mb-4'>
-                                    <h3 className='text-lg font-semibold text-green-700'>
-                                        ✓ Продажа создана
-                                    </h3>
+                            {/* Right Side - Information Panel */}
+                            <div className='col-span-1 bg-gray-50 rounded-lg p-4 h-full overflow-y-auto max-h-[70vh]'>
+                                <h3 className='text-sm font-bold text-gray-700 mb-4 uppercase'>
+                                    Информация о продаже
+                                </h3>
+
+                                {/* Company Info */}
+                                <div className='mb-4 pb-4 border-b border-gray-200'>
+                                    <p className='text-xs text-gray-500 mb-1 uppercase'>Компания</p>
+                                    {formData.company_id ? (
+                                        <>
+                                            <p className='text-sm font-semibold text-gray-800 mb-2'>
+                                                {companies.find((c) => c.id === formData.company_id)
+                                                    ?.name || '-'}
+                                            </p>
+                                            {(() => {
+                                                const company = companies.find(
+                                                    (c) => c.id === formData.company_id
+                                                )
+                                                return company ? (
+                                                    <div className='space-y-1 text-xs text-gray-600'>
+                                                        {company.phone && <p>📞 {company.phone}</p>}
+                                                        {company.address && (
+                                                            <p>� {company.address}</p>
+                                                        )}
+                                                        {company.deposit !== undefined && (
+                                                            <p>
+                                                                💰 Депозит:{' '}
+                                                                {Number(
+                                                                    company.deposit
+                                                                ).toLocaleString()}{' '}
+                                                                сум
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                ) : null
+                                            })()}
+                                        </>
+                                    ) : (
+                                        <p className='text-xs text-gray-400'>Не выбрана</p>
+                                    )}
                                 </div>
 
-                                <Select
-                                    label='Тип оплаты'
-                                    required
-                                    options={paymentTypes.map((t) => ({
-                                        value: t.id,
-                                        label: t.name,
-                                    }))}
-                                    value={paymentData.payment_type_id}
-                                    onChange={(value) =>
-                                        setPaymentData((prev) => ({
-                                            ...prev,
-                                            payment_type_id: value,
-                                        }))
-                                    }
-                                    placeholder='Выберите тип оплаты'
-                                    searchable={false}
-                                />
+                                {/* Products List */}
+                                <div className='mb-4 pb-4 border-b border-gray-200'>
+                                    <div className='flex items-center justify-between mb-2'>
+                                        <p className='text-xs text-gray-500 uppercase'>Товары</p>
+                                        <span className='text-xs text-gray-400'>
+                                            {formData.products?.length || 0} шт.
+                                        </span>
+                                    </div>
+                                    {formData.products && formData.products.length > 0 ? (
+                                        <div className='space-y-3'>
+                                            {formData.products.map((product, index) => {
+                                                const productInfo = products.find(
+                                                    (p) =>
+                                                        Number(p.id) === Number(product.product_id)
+                                                )
+                                                const quantity = Number(product.quantity) || 0
+                                                const price = Number(product.price) || 0
+                                                const total = quantity * price
+                                                const unitPrice = productInfo?.price || 0
+                                                const recommendedTotal = quantity * unitPrice
 
-                                <Select
-                                    label='Статус продажи'
-                                    required
-                                    options={salesStages}
-                                    value={paymentData.sales_stage}
-                                    onChange={(value) =>
-                                        setPaymentData((prev) => ({ ...prev, sales_stage: value }))
-                                    }
-                                    placeholder='Выберите статус'
-                                    searchable={false}
-                                />
+                                                return (
+                                                    <div
+                                                        key={index}
+                                                        className='bg-white p-3 rounded-lg border border-gray-200 shadow-sm'
+                                                    >
+                                                        <div className='flex items-start justify-between mb-2'>
+                                                            <p className='text-xs font-semibold text-gray-800 flex-1'>
+                                                                {productInfo?.name || 'Товар'}
+                                                            </p>
+                                                            {productInfo?.price && (
+                                                                <span className='text-xs text-gray-400 ml-2'>
+                                                                    Рек. цена:{' '}
+                                                                    {formatNumber(unitPrice)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {productInfo?.description && (
+                                                            <p className='text-xs text-gray-500 mb-2 line-clamp-2'>
+                                                                {productInfo.description}
+                                                            </p>
+                                                        )}
+                                                        <div className='space-y-1'>
+                                                            <div className='flex justify-between text-xs text-gray-600'>
+                                                                <span>
+                                                                    Количество:{' '}
+                                                                    <strong>{quantity}</strong> шт.
+                                                                </span>
+                                                                <span>
+                                                                    Цена:{' '}
+                                                                    <strong>
+                                                                        {price
+                                                                            ? formatNumber(price)
+                                                                            : '0'}
+                                                                    </strong>{' '}
+                                                                    сум
+                                                                </span>
+                                                            </div>
+                                                            <div className='flex justify-between items-center pt-1 border-t border-gray-100'>
+                                                                <span className='text-xs text-gray-500'>
+                                                                    Сумма:
+                                                                </span>
+                                                                <span className='text-xs font-bold text-blue-600'>
+                                                                    {formatNumber(total)} сум
+                                                                </span>
+                                                            </div>
+                                                            {productInfo?.price &&
+                                                                price !== unitPrice && (
+                                                                    <div className='text-xs text-gray-400'>
+                                                                        Рекомендуемая:{' '}
+                                                                        {formatNumber(
+                                                                            recommendedTotal
+                                                                        )}{' '}
+                                                                        сум
+                                                                    </div>
+                                                                )}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p className='text-xs text-gray-400'>Нет товаров</p>
+                                    )}
+                                </div>
+
+                                {/* Payment Info - Only show in create mode */}
+                                {!isEditMode && (
+                                    <div className='mb-4 pb-4 border-b border-gray-200'>
+                                        <p className='text-xs text-gray-500 mb-2 uppercase'>
+                                            Оплата
+                                        </p>
+                                        <div className='space-y-2 text-xs'>
+                                            <div>
+                                                <span className='text-gray-500'>Тип оплаты: </span>
+                                                <span className='font-semibold text-gray-800'>
+                                                    {paymentData.payment_type_id
+                                                        ? paymentTypes.find(
+                                                              (t) =>
+                                                                  t.id ===
+                                                                  Number(
+                                                                      paymentData.payment_type_id
+                                                                  )
+                                                          )?.name || '-'
+                                                        : 'Не выбран'}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className='text-gray-500'>Статус: </span>
+                                                <span className='font-semibold text-gray-800'>
+                                                    {paymentData.sales_stage || 'Не выбран'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Total Amount */}
+                                <div className='pt-2'>
+                                    <div className='bg-blue-50 rounded-lg p-3 border border-blue-200'>
+                                        <div className='flex justify-between items-center mb-1'>
+                                            <p className='text-sm font-bold text-gray-700'>
+                                                Итого:
+                                            </p>
+                                            <p className='text-xl font-bold text-blue-600'>
+                                                {formatNumber(saleTotalAmount)} сум
+                                            </p>
+                                        </div>
+                                        <div className='text-xs text-gray-500'>
+                                            {formData.products?.length || 0}{' '}
+                                            {formData.products?.length === 1 ? 'товар' : 'товаров'}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        )}
+                        </div>
 
                         {/* Navigation Buttons */}
-                        <div className='flex justify-between gap-2 mt-6 pt-4'>
+                        <div className='flex justify-between gap-2 mt-6 pt-4 border-t border-gray-200'>
                             <div>
-                                {currentStep > 1 && currentStep !== 3 && (
+                                {!isEditMode && currentStep === 2 && (
                                     <Button
                                         type='button'
                                         variant='secondary'
-                                        onClick={prevStep}
+                                        onClick={() => setCurrentStep(1)}
                                         disabled={submitting}
                                     >
-                                        ← Назад
+                                        Назад
                                     </Button>
                                 )}
                             </div>
@@ -924,49 +1188,36 @@ const Sales = () => {
                                     variant='secondary'
                                     onClick={() => {
                                         setIsModalOpen(false)
-                                        setCurrentStep(1)
                                         setSearchQuery('')
+                                        setCurrentStep(1)
+                                        setCreatedSaleId(null)
                                     }}
                                     disabled={submitting}
                                 >
                                     Отмена
                                 </Button>
-                                {currentStep < 3 ? (
-                                    <Button
-                                        type='button'
-                                        variant='primary'
-                                        onClick={nextStep}
-                                        disabled={
-                                            submitting ||
-                                            (currentStep === 1 && !canProceedToStep2()) ||
-                                            (currentStep === 2 && !canProceedToStep3())
-                                        }
-                                    >
-                                        {submitting && currentStep === 2 ? (
-                                            <span className='flex items-center gap-2'>
-                                                <span className='loading loading-spinner loading-sm'></span>
-                                                Создание продажи...
-                                            </span>
-                                        ) : (
-                                            'Далее →'
-                                        )}
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        type='submit'
-                                        variant='primary'
-                                        disabled={submitting || !canSubmitPayment()}
-                                    >
-                                        {submitting ? (
-                                            <span className='flex items-center gap-2'>
-                                                <span className='loading loading-spinner loading-sm'></span>
-                                                Создание платежа...
-                                            </span>
-                                        ) : (
-                                            'Создать платеж'
-                                        )}
-                                    </Button>
-                                )}
+                                <Button
+                                    type='submit'
+                                    variant='primary'
+                                    disabled={submitting || !canSubmit()}
+                                >
+                                    {submitting ? (
+                                        <span className='flex items-center gap-2'>
+                                            <span className='loading loading-spinner loading-sm'></span>
+                                            {isEditMode
+                                                ? 'Обновление...'
+                                                : currentStep === 1
+                                                ? 'Создание продажи...'
+                                                : 'Создание платежа...'}
+                                        </span>
+                                    ) : isEditMode ? (
+                                        'Обновить продажу'
+                                    ) : currentStep === 1 ? (
+                                        'Создать продажу'
+                                    ) : (
+                                        'Создать платеж'
+                                    )}
+                                </Button>
                             </div>
                         </div>
                     </form>
