@@ -4,26 +4,27 @@ import ConfirmDialog from '../components/UI/ConfirmDialog'
 import ErrorModal from '../components/UI/ErrorModal'
 import Input from '../components/UI/Input'
 import Modal from '../components/UI/Modal'
-import Select from '../components/UI/Select'
 import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
 
-const Products = () => {
-    const [items, setItems] = useState([])
+const Workers = () => {
+    const [workers, setWorkers] = useState([])
     const [loading, setLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isEditMode, setIsEditMode] = useState(false)
-    const [editingItemId, setEditingItemId] = useState(null)
+    const [editingWorkerId, setEditingWorkerId] = useState(null)
     const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        status: '',
-        quantity: 0,
+        full_name: '',
+        phone: '',
+        position: '',
+        address: '',
+        date_of_birth: '',
+        salary: '',
     })
     const [submitting, setSubmitting] = useState(false)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
-    const [deletingItemId, setDeletingItemId] = useState(null)
+    const [deletingWorkerId, setDeletingWorkerId] = useState(null)
     const [deleting, setDeleting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
@@ -32,14 +33,14 @@ const Products = () => {
     const [isErrorOpen, setIsErrorOpen] = useState(false)
 
     useEffect(() => {
-        const fetchItems = async () => {
+        const fetchWorkers = async () => {
             setLoading(true)
-            const response = await api('get', {}, '/products/list')
+            const response = await api('get', {}, '/workers/list')
             if (response.success && response.data) {
-                setItems(response.data.data || [])
+                setWorkers(response.data.data || [])
             } else {
                 setError({
-                    message: response.error || 'Ошибка при загрузке продуктов',
+                    message: response.error || 'Ошибка при загрузке работников',
                     statusCode: response.statusCode,
                     errors: response.errors,
                 })
@@ -47,15 +48,42 @@ const Products = () => {
             }
             setLoading(false)
         }
-        fetchItems()
+        fetchWorkers()
     }, [])
+
+    const formatDateInput = (value) => {
+        // Remove all non-digit characters
+        const digits = value.replace(/\D/g, '')
+
+        // Limit to 8 digits (yyyyMMdd)
+        const limited = digits.slice(0, 8)
+
+        // Format as yyyy-mm-dd
+        if (limited.length <= 4) {
+            return limited
+        } else if (limited.length <= 6) {
+            return `${limited.slice(0, 4)}-${limited.slice(4)}`
+        } else {
+            return `${limited.slice(0, 4)}-${limited.slice(4, 6)}-${limited.slice(6, 8)}`
+        }
+    }
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }))
+
+        // Auto-format date_of_birth field
+        if (name === 'date_of_birth') {
+            const formatted = formatDateInput(value)
+            setFormData((prev) => ({
+                ...prev,
+                [name]: formatted,
+            }))
+        } else {
+            setFormData((prev) => ({
+                ...prev,
+                [name]: value,
+            }))
+        }
     }
 
     const handleSubmit = async (e) => {
@@ -63,44 +91,64 @@ const Products = () => {
         setSubmitting(true)
         setError(null)
 
-        // Prepare form data with numeric quantity
-        const submitData = {
-            ...formData,
-            quantity: Number(formData.quantity) || 0,
+        // Validate date_of_birth format (yyyy-mm-dd)
+        if (formData.date_of_birth) {
+            const datePattern = /^\d{4}-\d{2}-\d{2}$/
+            if (!datePattern.test(formData.date_of_birth)) {
+                setError({
+                    message: 'Дата рождения должна быть в формате yyyy-mm-dd',
+                    statusCode: 400,
+                    errors: { date_of_birth: ['Формат должен быть yyyy-mm-dd'] },
+                })
+                setIsErrorOpen(true)
+                setSubmitting(false)
+                return
+            }
+        }
+
+        const payload = {
+            full_name: formData.full_name,
+            phone: formData.phone,
+            position: formData.position || null,
+            address: formData.address || null,
+            date_of_birth: String(formData.date_of_birth),
+            salary: formData.salary ? Number(formData.salary) : null,
         }
 
         let response
         if (isEditMode) {
-            response = await api('put', submitData, `/products/update/${editingItemId}`)
+            response = await api('put', payload, `/workers/update/${editingWorkerId}`)
         } else {
-            response = await api('post', submitData, '/products/create')
+            response = await api('post', payload, '/workers/create')
         }
 
         if (response.success && response.data) {
-            const itemsResponse = await api('get', {}, '/products/list')
-            if (itemsResponse.success && itemsResponse.data) {
-                setItems(itemsResponse.data.data || [])
+            const workersResponse = await api('get', {}, '/workers/list')
+            if (workersResponse.success && workersResponse.data) {
+                setWorkers(workersResponse.data.data || [])
             }
 
             setIsModalOpen(false)
             setIsEditMode(false)
-            setEditingItemId(null)
+            setEditingWorkerId(null)
             setFormData({
-                name: '',
-                description: '',
-                status: '',
-                quantity: 0,
+                full_name: '',
+                phone: '',
+                position: '',
+                address: '',
+                date_of_birth: '',
+                salary: '',
             })
 
-            setSuccessMessage(isEditMode ? 'Продукт успешно обновлен' : 'Продукт успешно создан')
+            setSuccessMessage(isEditMode ? 'Работник успешно обновлен' : 'Работник успешно создан')
             setIsSuccessOpen(true)
         } else {
             setError({
                 message:
                     response.error ||
                     (isEditMode
-                        ? 'Ошибка при обновлении продукта'
-                        : 'Ошибка при создании продукта'),
+                        ? 'Ошибка при обновлении работника'
+                        : 'Ошибка при создании работника'),
                 statusCode: response.statusCode,
                 errors: response.errors,
             })
@@ -110,39 +158,41 @@ const Products = () => {
         setSubmitting(false)
     }
 
-    const handleEdit = (item) => {
+    const handleEdit = (worker) => {
         setIsEditMode(true)
-        setEditingItemId(item.id)
+        setEditingWorkerId(worker.id)
         setFormData({
-            name: item.name || '',
-            description: item.description || '',
-            status: item.status || '',
-            quantity: item.quantity || 0,
+            full_name: worker.full_name || '',
+            phone: worker.phone || '',
+            position: worker.position || '',
+            address: worker.address || '',
+            date_of_birth: worker.date_of_birth || '',
+            salary: worker.salary ? String(worker.salary) : '',
         })
         setIsModalOpen(true)
     }
 
-    const handleDelete = (itemId) => {
-        setDeletingItemId(itemId)
+    const handleDelete = (workerId) => {
+        setDeletingWorkerId(workerId)
         setIsConfirmOpen(true)
     }
 
     const confirmDelete = async () => {
         setDeleting(true)
         setError(null)
-        const response = await api('delete', {}, `/products/delete/${deletingItemId}`)
+        const response = await api('delete', {}, `/workers/delete/${deletingWorkerId}`)
 
         if (response.success && response.data) {
-            const itemsResponse = await api('get', {}, '/products/list')
-            if (itemsResponse.success && itemsResponse.data) {
-                setItems(itemsResponse.data.data || [])
+            const workersResponse = await api('get', {}, '/workers/list')
+            if (workersResponse.success && workersResponse.data) {
+                setWorkers(workersResponse.data.data || [])
             }
 
-            setSuccessMessage('Продукт успешно удален')
+            setSuccessMessage('Работник успешно удален')
             setIsSuccessOpen(true)
         } else {
             setError({
-                message: response.error || 'Ошибка при удалении продукта',
+                message: response.error || 'Ошибка при удалении работника',
                 statusCode: response.statusCode,
                 errors: response.errors,
             })
@@ -151,19 +201,59 @@ const Products = () => {
 
         setDeleting(false)
         setIsConfirmOpen(false)
-        setDeletingItemId(null)
+        setDeletingWorkerId(null)
     }
 
     const handleCreateNew = () => {
         setIsEditMode(false)
-        setEditingItemId(null)
+        setEditingWorkerId(null)
         setFormData({
-            name: '',
-            description: '',
-            status: 1,
-            quantity: 0,
+            full_name: '',
+            phone: '',
+            position: '',
+            address: '',
+            date_of_birth: '',
+            salary: '',
         })
         setIsModalOpen(true)
+    }
+
+    const formatUzPhoneDisplay = (raw) => {
+        if (!raw) return ''
+        const digits = String(raw).replace(/\D/g, '')
+        if (!digits) return ''
+
+        let rest = digits
+        if (rest.startsWith('998')) rest = rest.slice(3)
+        rest = rest.slice(0, 9)
+
+        const a = rest.slice(0, 2)
+        const b = rest.slice(2, 5)
+        const c = rest.slice(5, 7)
+        const d = rest.slice(7, 9)
+
+        let out = '+998'
+        if (a) out += ` (${a}`
+        if (a.length === 2) out += ')'
+        if (b) out += ` ${b}`
+        if (c) out += `-${c}`
+        if (d) out += `-${d}`
+        return out
+    }
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '-'
+        try {
+            const date = new Date(dateString)
+            return date.toLocaleDateString('ru-RU')
+        } catch {
+            return dateString
+        }
+    }
+
+    const formatSalary = (salary) => {
+        if (!salary) return '-'
+        return new Intl.NumberFormat('ru-RU').format(salary) + ' сум'
     }
 
     return (
@@ -173,11 +263,11 @@ const Products = () => {
                     <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6'>
                         <div>
                             <div className='text-2xl text-slate-400'>
-                                NEWCON <span className='text-gray-700'>/ Продукты</span>
+                                NEWCON <span className='text-gray-700'>/ Работники</span>
                             </div>
                         </div>
                         <Button onClick={handleCreateNew} variant='primary'>
-                            + Создать продукт
+                            + Создать работника
                         </Button>
                     </div>
                 </div>
@@ -185,7 +275,7 @@ const Products = () => {
                 <div className='bg-white rounded-2xl shadow-sm mb-6 overflow-hidden'>
                     <div className='p-6 border-b border-slate-200'>
                         <div className='flex items-center justify-between mb-4'>
-                            <h2 className='text-lg font-bold text-gray-700'>Продукты</h2>
+                            <h2 className='text-lg font-bold text-gray-700'>Работники</h2>
                             <div className='flex gap-2 bg-gray-100 p-1 rounded-lg'>
                                 <button
                                     onClick={() => setViewMode('table')}
@@ -220,13 +310,22 @@ const Products = () => {
                                             ID
                                         </th>
                                         <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
-                                            Название
+                                            ФИО
                                         </th>
                                         <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
-                                            Описание
+                                            Телефон
                                         </th>
                                         <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
-                                            Статус
+                                            Должность
+                                        </th>
+                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            Адрес
+                                        </th>
+                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            Дата рождения
+                                        </th>
+                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            Зарплата
                                         </th>
                                         <th className='text-right p-4 text-slate-400 text-[10px] font-bold uppercase'>
                                             Действия
@@ -237,61 +336,66 @@ const Products = () => {
                                     {loading ? (
                                         <tr>
                                             <td
-                                                colSpan='5'
+                                                colSpan='8'
                                                 className='p-8 text-center text-slate-500'
                                             >
                                                 Загрузка...
                                             </td>
                                         </tr>
-                                    ) : items.length === 0 ? (
+                                    ) : workers.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan='5'
+                                                colSpan='8'
                                                 className='p-8 text-center text-slate-500'
                                             >
                                                 Нет данных
                                             </td>
                                         </tr>
                                     ) : (
-                                        items.map((item) => (
+                                        workers.map((worker) => (
                                             <tr
-                                                key={item.id}
+                                                key={worker.id}
                                                 className='border-b border-slate-200 hover:bg-gray-50'
                                             >
                                                 <td className='p-4'>
                                                     <div className='text-sm font-bold text-gray-700'>
-                                                        {item.id}
+                                                        {worker.id}
                                                     </div>
                                                 </td>
                                                 <td className='p-4'>
                                                     <div className='text-sm font-bold text-gray-700'>
-                                                        {item.name}
+                                                        {worker.full_name || '-'}
                                                     </div>
                                                 </td>
                                                 <td className='p-4'>
                                                     <div className='text-sm text-slate-600'>
-                                                        {item.description || '-'}
+                                                        {formatUzPhoneDisplay(worker.phone) || '-'}
                                                     </div>
                                                 </td>
                                                 <td className='p-4'>
-                                                    {item.status === 1 ? (
-                                                        <span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800'>
-                                                            Активно
-                                                        </span>
-                                                    ) : item.status === 2 ? (
-                                                        <span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800'>
-                                                            Неактивно
-                                                        </span>
-                                                    ) : (
-                                                        <span className='text-sm text-slate-600'>
-                                                            -
-                                                        </span>
-                                                    )}
+                                                    <div className='text-sm text-slate-600'>
+                                                        {worker.position || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className='p-4'>
+                                                    <div className='text-sm text-slate-600'>
+                                                        {worker.address || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className='p-4'>
+                                                    <div className='text-sm text-slate-600'>
+                                                        {formatDate(worker.date_of_birth)}
+                                                    </div>
+                                                </td>
+                                                <td className='p-4'>
+                                                    <div className='text-sm font-semibold text-gray-700'>
+                                                        {formatSalary(worker.salary)}
+                                                    </div>
                                                 </td>
                                                 <td className='p-4'>
                                                     <div className='flex gap-2 justify-end'>
                                                         <Button
-                                                            onClick={() => handleEdit(item)}
+                                                            onClick={() => handleEdit(worker)}
                                                             variant='secondary'
                                                             className='btn-sm btn-circle'
                                                             title='Редактировать'
@@ -312,7 +416,7 @@ const Products = () => {
                                                             </svg>
                                                         </Button>
                                                         <Button
-                                                            onClick={() => handleDelete(item.id)}
+                                                            onClick={() => handleDelete(worker.id)}
                                                             variant='secondary'
                                                             className='btn-sm btn-circle hover:bg-red-50'
                                                             title='Удалить'
@@ -346,30 +450,30 @@ const Products = () => {
                         <div className='p-6'>
                             {loading ? (
                                 <div className='text-center text-slate-500 py-12'>Загрузка...</div>
-                            ) : items.length === 0 ? (
+                            ) : workers.length === 0 ? (
                                 <div className='text-center text-slate-500 py-12'>Нет данных</div>
                             ) : (
                                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                                    {items.map((item) => (
+                                    {workers.map((worker) => (
                                         <div
-                                            key={item.id}
+                                            key={worker.id}
                                             className='bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow'
                                         >
                                             <div className='flex justify-between items-start mb-3'>
                                                 <div>
                                                     <div className='text-xs text-slate-400 font-medium mb-1'>
-                                                        ID: {item.id}
+                                                        ID: {worker.id}
                                                     </div>
                                                     <h3 className='text-lg font-bold text-gray-700'>
-                                                        {item.name}
+                                                        {worker.full_name || '-'}
                                                     </h3>
                                                     <div className='text-sm text-slate-600 mt-1'>
-                                                        {item.description || '-'}
+                                                        {formatUzPhoneDisplay(worker.phone) || '-'}
                                                     </div>
                                                 </div>
                                                 <div className='flex gap-2'>
                                                     <Button
-                                                        onClick={() => handleEdit(item)}
+                                                        onClick={() => handleEdit(worker)}
                                                         variant='secondary'
                                                         className='btn-sm btn-circle'
                                                         title='Редактировать'
@@ -390,7 +494,7 @@ const Products = () => {
                                                         </svg>
                                                     </Button>
                                                     <Button
-                                                        onClick={() => handleDelete(item.id)}
+                                                        onClick={() => handleDelete(worker.id)}
                                                         variant='secondary'
                                                         className='btn-sm btn-circle hover:bg-red-50'
                                                         title='Удалить'
@@ -412,16 +516,38 @@ const Products = () => {
                                                     </Button>
                                                 </div>
                                             </div>
-                                            <div className='text-sm'>
-                                                <div className='text-xs text-slate-400 uppercase mb-1'>
-                                                    Статус
+                                            <div className='mt-4 space-y-2'>
+                                                <div>
+                                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
+                                                        Должность
+                                                    </div>
+                                                    <div className='text-sm text-gray-700'>
+                                                        {worker.position || '-'}
+                                                    </div>
                                                 </div>
-                                                <div className='text-gray-700'>
-                                                    {item.status === 1
-                                                        ? 'Активно'
-                                                        : item.status === 2
-                                                        ? 'Неактивно'
-                                                        : '-'}
+                                                <div>
+                                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
+                                                        Адрес
+                                                    </div>
+                                                    <div className='text-sm text-gray-700'>
+                                                        {worker.address || '-'}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
+                                                        Дата рождения
+                                                    </div>
+                                                    <div className='text-sm text-gray-700'>
+                                                        {formatDate(worker.date_of_birth)}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
+                                                        Зарплата
+                                                    </div>
+                                                    <div className='text-sm font-semibold text-gray-700'>
+                                                        {formatSalary(worker.salary)}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -435,43 +561,68 @@ const Products = () => {
                 <Modal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
-                    title={isEditMode ? 'Редактирование продукта' : 'Создание продукта'}
+                    title={isEditMode ? 'Редактирование работника' : 'Создание работника'}
                 >
                     <form onSubmit={handleSubmit}>
                         <div className='space-y-4'>
                             <Input
-                                label='Название'
+                                label='ФИО'
                                 type='text'
-                                name='name'
-                                value={formData.name}
+                                name='full_name'
+                                value={formData.full_name}
                                 onChange={handleInputChange}
-                                placeholder='Введите название'
+                                placeholder='Введите ФИО'
                                 required
                             />
 
                             <Input
-                                label='Описание'
-                                type='text'
-                                name='description'
-                                value={formData.description}
+                                label='Номер телефона'
+                                type='tel'
+                                name='phone'
+                                value={formData.phone}
                                 onChange={handleInputChange}
-                                placeholder='Введите описание'
+                                maskType='uz-phone'
+                                placeholder='+998 (90) 123-45-67'
+                                required
                             />
 
-                            {isEditMode && (
-                                <Select
-                                    label='Статус'
-                                    value={formData.status}
-                                    onChange={(value) =>
-                                        setFormData((prev) => ({ ...prev, status: value }))
-                                    }
-                                    options={[
-                                        { value: 1, label: 'Активно' },
-                                        { value: 2, label: 'Неактивно' },
-                                    ]}
-                                    placeholder='Выберите статус'
-                                />
-                            )}
+                            <Input
+                                label='Должность'
+                                type='text'
+                                name='position'
+                                value={formData.position}
+                                onChange={handleInputChange}
+                                placeholder='Введите должность'
+                            />
+
+                            <Input
+                                label='Адрес'
+                                type='text'
+                                name='address'
+                                value={formData.address}
+                                onChange={handleInputChange}
+                                placeholder='Введите адрес'
+                            />
+
+                            <Input
+                                label='Дата рождения'
+                                type='text'
+                                name='date_of_birth'
+                                value={formData.date_of_birth}
+                                onChange={handleInputChange}
+                                placeholder='Дата рождения'
+                                pattern='^\d{4}-\d{2}-\d{2}$'
+                                required
+                            />
+
+                            <Input
+                                label='Зарплата'
+                                type='number'
+                                name='salary'
+                                value={formData.salary}
+                                onChange={handleInputChange}
+                                placeholder='Введите зарплату'
+                            />
                         </div>
 
                         <div className='flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200'>
@@ -503,8 +654,8 @@ const Products = () => {
                     isOpen={isConfirmOpen}
                     onClose={() => setIsConfirmOpen(false)}
                     onConfirm={confirmDelete}
-                    title='Удаление продукта'
-                    message='Вы уверены, что хотите удалить этот продукт? Это действие нельзя отменить.'
+                    title='Удаление работника'
+                    message='Вы уверены, что хотите удалить этого работника? Это действие нельзя отменить.'
                     confirmText='Удалить'
                     cancelText='Отмена'
                     confirmVariant='primary'
@@ -531,4 +682,4 @@ const Products = () => {
     )
 }
 
-export default Products
+export default Workers

@@ -1,15 +1,35 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import Select from '../components/UI/Select'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
-import Select from '../components/UI/Select'
+import ErrorModal from '../components/UI/ErrorModal'
 
 const Dashboard = () => {
+    // Format date to yyyy-mm-dd string format
+    const formatDateToYYYYMMDD = (dateValue) => {
+        if (!dateValue) return ''
+        // If already in yyyy-mm-dd format string, return as is
+        if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+            return dateValue
+        }
+        // Otherwise, format it to yyyy-mm-dd string
+        const d = new Date(dateValue)
+        if (isNaN(d.getTime())) return ''
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}` // Always returns string in yyyy-mm-dd format
+    }
+
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+    // Ensure initial date is always yyyy-mm-dd string format
+    const [selectedDate, setSelectedDate] = useState(formatDateToYYYYMMDD(new Date()))
     const [salesData, setSalesData] = useState(null)
     const [dailySalesData, setDailySalesData] = useState(null)
     const [loadingMonth, setLoadingMonth] = useState(false)
     const [loadingDay, setLoadingDay] = useState(false)
+    const [error, setError] = useState(null)
+    const [isErrorOpen, setIsErrorOpen] = useState(false)
 
     const months = [
         { value: 1, label: 'Январь' },
@@ -28,17 +48,29 @@ const Dashboard = () => {
 
     const fetchSalesByMonth = async (month) => {
         setLoadingMonth(true)
+        setError(null)
         try {
             const response = await api(
                 'post',
                 { month: month.toString() },
                 '/dashboard/get-sale-by-month'
             )
-            if (response.data) {
+            if (response.success && response.data) {
                 setSalesData(response.data)
+            } else {
+                setError({
+                    message: response.error || 'Ошибка при загрузке данных о продажах за месяц',
+                    statusCode: response.statusCode,
+                    errors: response.errors,
+                })
+                setIsErrorOpen(true)
             }
         } catch (error) {
-            console.error('Error fetching sales data:', error)
+            setError({
+                message: 'Произошла ошибка при загрузке данных',
+                statusCode: null,
+            })
+            setIsErrorOpen(true)
         } finally {
             setLoadingMonth(false)
         }
@@ -46,13 +78,25 @@ const Dashboard = () => {
 
     const fetchSalesByDay = async (day) => {
         setLoadingDay(true)
+        setError(null)
         try {
             const response = await api('post', { day: day }, '/dashboard/get-sale-by-day')
-            if (response.data) {
+            if (response.success && response.data) {
                 setDailySalesData(response.data)
+            } else {
+                setError({
+                    message: response.error || 'Ошибка при загрузке данных о продажах за день',
+                    statusCode: response.statusCode,
+                    errors: response.errors,
+                })
+                setIsErrorOpen(true)
             }
         } catch (error) {
-            console.error('Error fetching daily sales data:', error)
+            setError({
+                message: 'Произошла ошибка при загрузке данных',
+                statusCode: null,
+            })
+            setIsErrorOpen(true)
         } finally {
             setLoadingDay(false)
         }
@@ -141,16 +185,40 @@ const Dashboard = () => {
     }
 
     const handleDateChange = (e) => {
-        setSelectedDate(e.target.value)
+        let dateValue = e.target.value
+
+        // Remove all non-digit characters
+        dateValue = dateValue.replace(/\D/g, '')
+
+        // Format as yyyy-mm-dd while typing
+        if (dateValue.length > 0) {
+            if (dateValue.length <= 4) {
+                // Just year: yyyy
+                dateValue = dateValue
+            } else if (dateValue.length <= 6) {
+                // Year and month: yyyy-mm
+                dateValue = dateValue.slice(0, 4) + '-' + dateValue.slice(4, 6)
+            } else {
+                // Full date: yyyy-mm-dd (limit to 8 digits)
+                dateValue =
+                    dateValue.slice(0, 4) +
+                    '-' +
+                    dateValue.slice(4, 6) +
+                    '-' +
+                    dateValue.slice(6, 8)
+            }
+        }
+
+        setSelectedDate(dateValue)
     }
 
     const renderChart = (chartData, maxValue, loading) => {
         if (loading) {
             return (
-                <div className="h-80 flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mb-2"></div>
-                        <div className="text-slate-500 text-sm">Загрузка данных...</div>
+                <div className='h-80 flex items-center justify-center'>
+                    <div className='text-center'>
+                        <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mb-2'></div>
+                        <div className='text-slate-500 text-sm'>Загрузка данных...</div>
                     </div>
                 </div>
             )
@@ -158,21 +226,21 @@ const Dashboard = () => {
 
         if (chartData.length === 0) {
             return (
-                <div className="h-80 flex flex-col items-center justify-center">
+                <div className='h-80 flex flex-col items-center justify-center'>
                     <svg
-                        className="w-16 h-16 text-slate-300 mb-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                        className='w-16 h-16 text-slate-300 mb-4'
+                        fill='none'
+                        viewBox='0 0 24 24'
+                        stroke='currentColor'
                     >
                         <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
                             strokeWidth={1.5}
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                            d='M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'
                         />
                     </svg>
-                    <div className="text-slate-500 text-sm font-medium">
+                    <div className='text-slate-500 text-sm font-medium'>
                         Нет данных для отображения
                     </div>
                 </div>
@@ -181,10 +249,10 @@ const Dashboard = () => {
 
         return (
             <div
-                className="relative py-20"
+                className='relative py-20'
                 style={{ minWidth: `${Math.max(chartData.length * 60, 400)}px` }}
             >
-                <div className="flex items-end justify-around h-64 px-4 relative">
+                <div className='flex items-end justify-around h-64 px-4 relative'>
                     {chartData.map((item, index) => {
                         const heightPercent = maxValue > 0 ? (item.summa / maxValue) * 100 : 0
                         const barHeight = Math.max((heightPercent / 100) * 240, 8)
@@ -192,31 +260,31 @@ const Dashboard = () => {
                         return (
                             <div
                                 key={index}
-                                className="flex flex-col items-center group relative"
+                                className='flex flex-col items-center group relative'
                                 style={{ flex: '0 0 auto', width: '40px' }}
                             >
                                 {/* Tooltip */}
-                                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[100]">
-                                    <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
-                                        <div className="font-semibold">
+                                <div className='absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[100]'>
+                                    <div className='bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl whitespace-nowrap'>
+                                        <div className='font-semibold'>
                                             {formatNumber(item.summa)} Сум
                                         </div>
-                                        <div className="text-gray-300 text-[10px] mt-0.5">
+                                        <div className='text-gray-300 text-[10px] mt-0.5'>
                                             {item.label}
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Bar */}
-                                <div className="relative w-full flex items-end justify-center">
+                                <div className='relative w-full flex items-end justify-center'>
                                     <div
-                                        className="w-10 bg-gradient-to-t from-teal-500 via-teal-400 to-teal-300 rounded-t-lg shadow-sm group-hover:from-teal-600 group-hover:via-teal-500 group-hover:to-teal-400 transition-all duration-300 cursor-pointer"
+                                        className='w-10 bg-gradient-to-t from-teal-500 via-teal-400 to-teal-300 rounded-t-lg shadow-sm group-hover:from-teal-600 group-hover:via-teal-500 group-hover:to-teal-400 transition-all duration-300 cursor-pointer'
                                         style={{ height: `${barHeight}px` }}
                                     ></div>
                                 </div>
 
                                 {/* Date label */}
-                                <div className="text-slate-600 text-[11px] font-medium mt-2 text-center">
+                                <div className='text-slate-600 text-[11px] font-medium mt-2 text-center'>
                                     {item.label}
                                 </div>
                             </div>
@@ -225,7 +293,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Y-axis labels */}
-                <div className="absolute left-0 top-20 bottom-20 flex flex-col justify-between text-slate-500 text-[10px] font-medium">
+                <div className='absolute left-0 top-20 bottom-20 flex flex-col justify-between text-slate-500 text-[10px] font-medium'>
                     {[5, 4, 3, 2, 1, 0].map((multiplier) => {
                         const value = (maxValue / 5) * multiplier
                         let label = ''
@@ -237,7 +305,7 @@ const Dashboard = () => {
                             label = Math.round(value).toString()
                         }
                         return (
-                            <div key={multiplier} className="text-right pr-2 -translate-y-2">
+                            <div key={multiplier} className='text-right pr-2 -translate-y-2'>
                                 {label}
                             </div>
                         )
@@ -249,44 +317,45 @@ const Dashboard = () => {
 
     return (
         <Layout>
-            <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6">
-                <h1 className="text-gray-800 tracking-tight font-bold text-xl mb-6">
+            <div className='min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6'>
+                <h1 className='text-gray-800 tracking-tight font-bold text-xl mb-6'>
                     Панель управления
                 </h1>
 
                 {/* Two column layout */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className='grid grid-cols-1 xl:grid-cols-2 gap-6'>
                     {/* Left Column - Daily Sales */}
-                    <div className="space-y-4">
+                    <div className='space-y-4'>
                         {/* Header with date picker */}
-                        <div className="flex items-center justify-between bg-white rounded-xl shadow-sm p-4">
-                            <h2 className="text-gray-800 font-bold text-lg">Продажи по дням</h2>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-slate-600 font-medium">Дата:</span>
+                        <div className='flex items-center justify-between bg-white rounded-xl shadow-sm p-4'>
+                            <h2 className='text-gray-800 font-bold text-lg'>Продажи по дням</h2>
+                            <div className='flex items-center gap-2'>
+                                <span className='text-sm text-slate-600 font-medium'>Дата:</span>
                                 <input
-                                    type="date"
-                                    value={selectedDate}
+                                    type='text'
+                                    value={selectedDate || ''}
                                     onChange={handleDateChange}
-                                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                    placeholder='yyyy-mm-dd'
+                                    className='px-3 py-2 border border-slate-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent'
                                 />
                             </div>
                         </div>
 
                         {/* Daily Stats Card */}
-                        <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
-                            <div className="flex justify-between items-start mb-4">
+                        <div className='bg-white rounded-2xl shadow-sm p-4 lg:p-6'>
+                            <div className='flex justify-between items-start mb-4'>
                                 <div>
-                                    <p className="text-slate-500 text-xs uppercase tracking-wide font-bold mb-2">
+                                    <p className='text-slate-500 text-xs uppercase tracking-wide font-bold mb-2'>
                                         Продажи за день
                                     </p>
-                                    <h3 className="text-gray-800 text-2xl font-bold mb-1">
+                                    <h3 className='text-gray-800 text-2xl font-bold mb-1'>
                                         {loadingDay
                                             ? '...'
                                             : dailySalesData
                                             ? `${formatNumber(dailySalesData.total_summa)} Сум`
                                             : '0 Сум'}
                                     </h3>
-                                    <div className="text-slate-500 text-sm">
+                                    <div className='text-slate-500 text-sm'>
                                         {new Date(selectedDate).toLocaleDateString('ru-RU', {
                                             day: '2-digit',
                                             month: 'long',
@@ -294,26 +363,26 @@ const Dashboard = () => {
                                         })}
                                     </div>
                                 </div>
-                                <div className="w-14 h-14 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50">
+                                <div className='w-14 h-14 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50'>
                                     <svg
-                                        className="w-8 h-8"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
+                                        className='w-8 h-8'
+                                        fill='none'
+                                        viewBox='0 0 24 24'
+                                        stroke='currentColor'
                                     >
                                         <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
+                                            strokeLinecap='round'
+                                            strokeLinejoin='round'
                                             strokeWidth={2}
-                                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                            d='M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
                                         />
                                     </svg>
                                 </div>
                             </div>
-                            <div className="flex gap-4 pt-4 border-t border-slate-100">
+                            <div className='flex gap-4 pt-4 border-t border-slate-100'>
                                 <div>
-                                    <p className="text-slate-500 text-xs mb-1">Количество</p>
-                                    <p className="text-gray-800 font-semibold">
+                                    <p className='text-slate-500 text-xs mb-1'>Количество</p>
+                                    <p className='text-gray-800 font-semibold'>
                                         {loadingDay
                                             ? '...'
                                             : dailySalesData
@@ -325,9 +394,9 @@ const Dashboard = () => {
                         </div>
 
                         {/* Daily Chart */}
-                        <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
-                            <h3 className="text-gray-800 text-lg font-bold mb-4">График продаж</h3>
-                            <div className="overflow-x-auto">
+                        <div className='bg-white rounded-2xl shadow-sm p-4 lg:p-6'>
+                            <h3 className='text-gray-800 text-lg font-bold mb-4'>График продаж</h3>
+                            <div className='overflow-x-auto'>
                                 {renderChart(dailyChartData, dailyMaxValue, loadingDay)}
                             </div>
                         </div>
@@ -336,21 +405,21 @@ const Dashboard = () => {
                         {dailySalesData &&
                             dailySalesData.data &&
                             dailySalesData.data.length > 0 && (
-                                <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
-                                    <h3 className="text-gray-800 text-lg font-bold mb-4">
+                                <div className='bg-white rounded-2xl shadow-sm p-4 lg:p-6'>
+                                    <h3 className='text-gray-800 text-lg font-bold mb-4'>
                                         Детали продаж ({dailySalesData.count})
                                     </h3>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full min-w-[600px]">
+                                    <div className='overflow-x-auto'>
+                                        <table className='w-full min-w-[600px]'>
                                             <thead>
-                                                <tr className="border-b border-slate-200">
-                                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                <tr className='border-b border-slate-200'>
+                                                    <th className='text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase'>
                                                         ID
                                                     </th>
-                                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                    <th className='text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase'>
                                                         Компания
                                                     </th>
-                                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                    <th className='text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase'>
                                                         Сумма
                                                     </th>
                                                 </tr>
@@ -359,21 +428,21 @@ const Dashboard = () => {
                                                 {dailySalesData.data.map((sale) => (
                                                     <tr
                                                         key={sale.id}
-                                                        className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                                                        className='border-b border-slate-100 hover:bg-slate-50 transition-colors'
                                                     >
-                                                        <td className="py-3 px-4 text-sm text-gray-800">
+                                                        <td className='py-3 px-4 text-sm text-gray-800'>
                                                             #{sale.id}
                                                         </td>
-                                                        <td className="py-3 px-4">
-                                                            <div className="text-sm font-medium text-gray-800">
+                                                        <td className='py-3 px-4'>
+                                                            <div className='text-sm font-medium text-gray-800'>
                                                                 {sale.company?.name || 'N/A'}
                                                             </div>
-                                                            <div className="text-xs text-slate-500">
+                                                            <div className='text-xs text-slate-500'>
                                                                 {sale.company?.phone || 'N/A'}
                                                             </div>
                                                         </td>
-                                                        <td className="py-3 px-4">
-                                                            <span className="text-sm font-semibold text-teal-600">
+                                                        <td className='py-3 px-4'>
+                                                            <span className='text-sm font-semibold text-teal-600'>
                                                                 {formatNumber(
                                                                     parseFloat(sale.summa)
                                                                 )}{' '}
@@ -385,8 +454,8 @@ const Dashboard = () => {
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div className="mt-4 pt-4 border-t border-slate-200 text-right">
-                                        <div className="text-base font-bold text-gray-800">
+                                    <div className='mt-4 pt-4 border-t border-slate-200 text-right'>
+                                        <div className='text-base font-bold text-gray-800'>
                                             Итого: {formatNumber(dailySalesData.total_summa)} Сум
                                         </div>
                                     </div>
@@ -397,8 +466,8 @@ const Dashboard = () => {
                             (!dailySalesData ||
                                 !dailySalesData.data ||
                                 dailySalesData.data.length === 0) && (
-                                <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
-                                    <div className="text-slate-500">
+                                <div className='bg-white rounded-2xl shadow-sm p-8 text-center'>
+                                    <div className='text-slate-500'>
                                         Нет данных о продажах за выбранный день
                                     </div>
                                 </div>
@@ -406,18 +475,18 @@ const Dashboard = () => {
                     </div>
 
                     {/* Right Column - Monthly Sales */}
-                    <div className="space-y-4">
+                    <div className='space-y-4'>
                         {/* Header with month picker */}
-                        <div className="flex items-center justify-between bg-white rounded-xl shadow-sm p-4">
-                            <h2 className="text-gray-800 font-bold text-lg">Продажи по месяцам</h2>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-slate-600 font-medium">Месяц:</span>
-                                <div className="w-48">
+                        <div className='flex items-center justify-between bg-white rounded-xl shadow-sm p-4'>
+                            <h2 className='text-gray-800 font-bold text-lg'>Продажи по месяцам</h2>
+                            <div className='flex items-center gap-2'>
+                                <span className='text-sm text-slate-600 font-medium'>Месяц:</span>
+                                <div className='w-48'>
                                     <Select
                                         options={months}
                                         value={selectedMonth}
                                         onChange={handleMonthSelect}
-                                        placeholder="Выберите месяц"
+                                        placeholder='Выберите месяц'
                                         searchable={false}
                                     />
                                 </div>
@@ -425,43 +494,43 @@ const Dashboard = () => {
                         </div>
 
                         {/* Monthly Stats Card */}
-                        <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
-                            <div className="flex justify-between items-start mb-4">
+                        <div className='bg-white rounded-2xl shadow-sm p-4 lg:p-6'>
+                            <div className='flex justify-between items-start mb-4'>
                                 <div>
-                                    <p className="text-slate-500 text-xs uppercase tracking-wide font-bold mb-2">
+                                    <p className='text-slate-500 text-xs uppercase tracking-wide font-bold mb-2'>
                                         Продажи за месяц
                                     </p>
-                                    <h3 className="text-gray-800 text-2xl font-bold mb-1">
+                                    <h3 className='text-gray-800 text-2xl font-bold mb-1'>
                                         {loadingMonth
                                             ? '...'
                                             : salesData
                                             ? `${formatNumber(salesData.total_summa)} Сум`
                                             : '0 Сум'}
                                     </h3>
-                                    <div className="text-slate-500 text-sm">
+                                    <div className='text-slate-500 text-sm'>
                                         {months.find((m) => m.value === selectedMonth)?.label} 2025
                                     </div>
                                 </div>
-                                <div className="w-14 h-14 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50">
+                                <div className='w-14 h-14 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50'>
                                     <svg
-                                        className="w-8 h-8"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
+                                        className='w-8 h-8'
+                                        fill='none'
+                                        viewBox='0 0 24 24'
+                                        stroke='currentColor'
                                     >
                                         <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
+                                            strokeLinecap='round'
+                                            strokeLinejoin='round'
                                             strokeWidth={2}
-                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                            d='M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'
                                         />
                                     </svg>
                                 </div>
                             </div>
-                            <div className="flex gap-4 pt-4 border-t border-slate-100">
+                            <div className='flex gap-4 pt-4 border-t border-slate-100'>
                                 <div>
-                                    <p className="text-slate-500 text-xs mb-1">Количество</p>
-                                    <p className="text-gray-800 font-semibold">
+                                    <p className='text-slate-500 text-xs mb-1'>Количество</p>
+                                    <p className='text-gray-800 font-semibold'>
                                         {loadingMonth
                                             ? '...'
                                             : salesData
@@ -469,9 +538,9 @@ const Dashboard = () => {
                                             : '0'}
                                     </p>
                                 </div>
-                                <div className="border-l border-slate-100 pl-4">
-                                    <p className="text-slate-500 text-xs mb-1">Дней с продажами</p>
-                                    <p className="text-gray-800 font-semibold">
+                                <div className='border-l border-slate-100 pl-4'>
+                                    <p className='text-slate-500 text-xs mb-1'>Дней с продажами</p>
+                                    <p className='text-gray-800 font-semibold'>
                                         {monthlyChartData.length}
                                     </p>
                                 </div>
@@ -479,30 +548,30 @@ const Dashboard = () => {
                         </div>
 
                         {/* Monthly Chart */}
-                        <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
-                            <h3 className="text-gray-800 text-lg font-bold mb-4">График продаж</h3>
-                            <div className="overflow-x-auto">
+                        <div className='bg-white rounded-2xl shadow-sm p-4 lg:p-6'>
+                            <h3 className='text-gray-800 text-lg font-bold mb-4'>График продаж</h3>
+                            <div className='overflow-x-auto'>
                                 {renderChart(monthlyChartData, monthlyMaxValue, loadingMonth)}
                             </div>
                         </div>
 
                         {/* Monthly Sales Table */}
                         {salesData && salesData.data && salesData.data.length > 0 && (
-                            <div className="bg-white rounded-2xl shadow-sm p-4 lg:p-6">
-                                <h3 className="text-gray-800 text-lg font-bold mb-4">
+                            <div className='bg-white rounded-2xl shadow-sm p-4 lg:p-6'>
+                                <h3 className='text-gray-800 text-lg font-bold mb-4'>
                                     Детали продаж ({salesData.count})
                                 </h3>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full min-w-[600px]">
+                                <div className='overflow-x-auto'>
+                                    <table className='w-full min-w-[600px]'>
                                         <thead>
-                                            <tr className="border-b border-slate-200">
-                                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                            <tr className='border-b border-slate-200'>
+                                                <th className='text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase'>
                                                     ID
                                                 </th>
-                                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                <th className='text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase'>
                                                     Компания
                                                 </th>
-                                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">
+                                                <th className='text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase'>
                                                     Сумма
                                                 </th>
                                             </tr>
@@ -511,21 +580,21 @@ const Dashboard = () => {
                                             {salesData.data.map((sale) => (
                                                 <tr
                                                     key={sale.id}
-                                                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                                                    className='border-b border-slate-100 hover:bg-slate-50 transition-colors'
                                                 >
-                                                    <td className="py-3 px-4 text-sm text-gray-800">
+                                                    <td className='py-3 px-4 text-sm text-gray-800'>
                                                         #{sale.id}
                                                     </td>
-                                                    <td className="py-3 px-4">
-                                                        <div className="text-sm font-medium text-gray-800">
+                                                    <td className='py-3 px-4'>
+                                                        <div className='text-sm font-medium text-gray-800'>
                                                             {sale.company?.name || 'N/A'}
                                                         </div>
-                                                        <div className="text-xs text-slate-500">
+                                                        <div className='text-xs text-slate-500'>
                                                             {sale.company?.phone || 'N/A'}
                                                         </div>
                                                     </td>
-                                                    <td className="py-3 px-4">
-                                                        <span className="text-sm font-semibold text-teal-600">
+                                                    <td className='py-3 px-4'>
+                                                        <span className='text-sm font-semibold text-teal-600'>
                                                             {formatNumber(parseFloat(sale.summa))}{' '}
                                                             Сум
                                                         </span>
@@ -535,8 +604,8 @@ const Dashboard = () => {
                                         </tbody>
                                     </table>
                                 </div>
-                                <div className="mt-4 pt-4 border-t border-slate-200 text-right">
-                                    <div className="text-base font-bold text-gray-800">
+                                <div className='mt-4 pt-4 border-t border-slate-200 text-right'>
+                                    <div className='text-base font-bold text-gray-800'>
                                         Итого: {formatNumber(salesData.total_summa)} Сум
                                     </div>
                                 </div>
@@ -545,8 +614,8 @@ const Dashboard = () => {
 
                         {!loadingMonth &&
                             (!salesData || !salesData.data || salesData.data.length === 0) && (
-                                <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
-                                    <div className="text-slate-500">
+                                <div className='bg-white rounded-2xl shadow-sm p-8 text-center'>
+                                    <div className='text-slate-500'>
                                         Нет данных о продажах за выбранный месяц
                                     </div>
                                 </div>
@@ -554,6 +623,15 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
+            <ErrorModal
+                isOpen={isErrorOpen}
+                onClose={() => setIsErrorOpen(false)}
+                title="Xatolik"
+                message={error?.message || 'Noma\'lum xatolik yuz berdi'}
+                statusCode={error?.statusCode}
+                errors={error?.errors}
+            />
         </Layout>
     )
 }

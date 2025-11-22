@@ -39,12 +39,12 @@ const Login = () => {
         try {
             const response = await api('post', formData, '/login')
 
-            if (response.status === 200 && response.data) {
-                if (response.data.data.token) {
+            if (response.success && response.status === 200 && response.data) {
+                if (response.data.data?.token) {
                     localStorage.setItem('token', response.data.data.token)
                 }
 
-                if (response.data.data.user) {
+                if (response.data.data?.user) {
                     setUserInfo(response.data.data.user)
                 }
 
@@ -52,7 +52,7 @@ const Login = () => {
 
                 navigate('/')
             } else {
-                setError(response.data?.message || 'Ошибка входа. Проверьте ваши данные.')
+                setError(response.error || response.data?.message || 'Ошибка входа. Проверьте ваши данные.')
             }
         } catch (err) {
             setError('Произошла ошибка. Попробуйте еще раз.')

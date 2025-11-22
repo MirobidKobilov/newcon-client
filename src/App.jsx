@@ -11,6 +11,7 @@ import Sales from './pages/sales'
 import Payments from './pages/payments'
 import Expances from './pages/expances'
 import Actions from './pages/actions'
+import Workers from './pages/workers'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import Login from './pages/login'
 import { Context } from './context'
@@ -31,7 +32,7 @@ const App = () => {
 
                 try {
                     const menuResponse = await api('get', {}, '/menu')
-                    if (menuResponse.status === 200 && menuResponse.data.data) {
+                    if (menuResponse.success && menuResponse.status === 200 && menuResponse.data?.data) {
                         const data = menuResponse.data.data
                         setMenu(data.menu || {})
                         setUserInfo({
@@ -41,6 +42,8 @@ const App = () => {
                             roles: data.roles || [],
                             permissions: data.permissions || [],
                         })
+                    } else {
+                        console.error('Ошибка при получении данных:', menuResponse.error, 'Status:', menuResponse.statusCode)
                     }
                 } catch (error) {
                     console.error('Ошибка при получении данных:', error)
@@ -81,6 +84,7 @@ const App = () => {
                     <Route path="/sales" element={<Sales />} />
                     <Route path="/payments" element={<Payments />} />
                     <Route path="/expances" element={<Expances />} />
+                    <Route path="/workers" element={<Workers />} />
                     <Route path="/actions" element={<Actions />} />
                     <Route path="/login" element={<Login />} />
                 </Routes>

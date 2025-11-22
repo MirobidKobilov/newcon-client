@@ -7,6 +7,7 @@ import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import SuccessModal from '../components/UI/SuccessModal'
+import ErrorModal from '../components/UI/ErrorModal'
 
 const Users = () => {
     const [users, setUsers] = useState([])
@@ -28,13 +29,22 @@ const Users = () => {
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
     const [viewMode, setViewMode] = useState('table')
+    const [error, setError] = useState(null)
+    const [isErrorOpen, setIsErrorOpen] = useState(false)
 
     useEffect(() => {
         const fetchUsers = async () => {
             setLoading(true)
             const response = await api('get', {}, '/users/list')
-            if (response?.data) {
-                setUsers(response.data.data)
+            if (response.success && response.data) {
+                setUsers(response.data.data || [])
+            } else {
+                setError({
+                    message: response.error || 'Ошибка при загрузке пользователей',
+                    statusCode: response.statusCode,
+                    errors: response.errors,
+                })
+                setIsErrorOpen(true)
             }
             setLoading(false)
         }
@@ -44,8 +54,15 @@ const Users = () => {
     useEffect(() => {
         const fetchRoles = async () => {
             const response = await api('get', {}, '/roles/list')
-            if (response?.data) {
+            if (response.success && response.data) {
                 setRoles(response.data.data || [])
+            } else {
+                setError({
+                    message: response.error || 'Ошибка при загрузке ролей',
+                    statusCode: response.statusCode,
+                    errors: response.errors,
+                })
+                setIsErrorOpen(true)
             }
         }
         fetchRoles()
@@ -69,6 +86,7 @@ const Users = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
         setSubmitting(true)
+        setError(null)
 
         const payload = {
             username: formData.username,
@@ -88,10 +106,10 @@ const Users = () => {
             response = await api('post', payload, '/users/create')
         }
 
-        if (response?.data) {
+        if (response.success && response.data) {
             const usersResponse = await api('get', {}, '/users/list')
-            if (usersResponse?.data) {
-                setUsers(usersResponse.data.data)
+            if (usersResponse.success && usersResponse.data) {
+                setUsers(usersResponse.data.data || [])
             }
 
             setIsModalOpen(false)
@@ -108,6 +126,13 @@ const Users = () => {
                 isEditMode ? 'Пользователь успешно обновлен' : 'Пользователь успешно создан'
             )
             setIsSuccessOpen(true)
+        } else {
+            setError({
+                message: response.error || (isEditMode ? 'Ошибка при обновлении пользователя' : 'Ошибка при создании пользователя'),
+                statusCode: response.statusCode,
+                errors: response.errors,
+            })
+            setIsErrorOpen(true)
         }
 
         setSubmitting(false)
@@ -132,16 +157,24 @@ const Users = () => {
 
     const confirmDelete = async () => {
         setDeleting(true)
+        setError(null)
         const response = await api('delete', {}, `/users/delete/${deletingUserId}`)
 
-        if (response?.data) {
+        if (response.success && response.data) {
             const usersResponse = await api('get', {}, '/users/list')
-            if (usersResponse?.data) {
-                setUsers(usersResponse.data.data)
+            if (usersResponse.success && usersResponse.data) {
+                setUsers(usersResponse.data.data || [])
             }
 
             setSuccessMessage('Пользователь успешно удален')
             setIsSuccessOpen(true)
+        } else {
+            setError({
+                message: response.error || 'Ошибка при удалении пользователя',
+                statusCode: response.statusCode,
+                errors: response.errors,
+            })
+            setIsErrorOpen(true)
         }
 
         setDeleting(false)
@@ -424,94 +457,55 @@ const Users = () => {
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     title={isEditMode ? 'Редактирование пользователя' : 'Создание пользователя'}
-                    maxWidth="max-w-6xl"
                 >
                     <form onSubmit={handleSubmit}>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <Input
-                                    label="Имя пользователя"
-                                    type="text"
-                                    name="username"
-                                    value={formData.username}
-                                    onChange={handleInputChange}
-                                    placeholder="Введите имя пользователя"
-                                    required
-                                />
+                        <div className="space-y-4">
+                            <Input
+                                label="Имя пользователя"
+                                type="text"
+                                name="username"
+                                value={formData.username}
+                                onChange={handleInputChange}
+                                placeholder="Введите имя пользователя"
+                                required
+                            />
 
-                                <Input
-                                    label="Номер телефона"
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleInputChange}
-                                    maskType="uz-phone"
-                                    placeholder="+998 (90) 123-45-67"
-                                    required
-                                />
+                            <Input
+                                label="Номер телефона"
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                maskType="uz-phone"
+                                placeholder="+998 (90) 123-45-67"
+                                required
+                            />
 
-                                <Input
-                                    label={
-                                        isEditMode
-                                            ? 'Пароль (оставьте пустым, если не хотите менять)'
-                                            : 'Пароль'
-                                    }
-                                    type="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleInputChange}
-                                    placeholder="Введите пароль"
-                                    required={!isEditMode}
-                                />
+                            <Input
+                                label={
+                                    isEditMode
+                                        ? 'Пароль (оставьте пустым, если не хотите менять)'
+                                        : 'Пароль'
+                                }
+                                type="password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                placeholder="Введите пароль"
+                                required={!isEditMode}
+                            />
 
-                                <Select
-                                    label="Роль"
-                                    options={roles.map((role) => ({
-                                        value: role.id,
-                                        label: role.name,
-                                    }))}
-                                    value={formData.role}
-                                    onChange={handleRoleChange}
-                                    placeholder="Выберите роль"
-                                    required
-                                />
-                            </div>
-
-                            {!isEditMode && (
-                                <div className="border-l border-gray-200 pl-6">
-                                    <h3 className="text-sm font-semibold text-gray-700 mb-4">
-                                        Данные для отправки:
-                                    </h3>
-                                    <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-                                        <div>
-                                            <span className="text-gray-500">username:</span>{' '}
-                                            <span className="font-mono text-gray-800">
-                                                {formData.username || '(не указано)'}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">phone:</span>{' '}
-                                            <span className="font-mono text-gray-800">
-                                                {formData.phone || '(не указано)'}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">password:</span>{' '}
-                                            <span className="font-mono text-gray-800">
-                                                {formData.password ? '••••••••' : '(не указано)'}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">role:</span>{' '}
-                                            <span className="font-mono text-gray-800">
-                                                {formData.role
-                                                    ? `[${roles.find((r) => r.id === formData.role)?.name || formData.role}]`
-                                                    : '(не указано)'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                            <Select
+                                label="Роль"
+                                options={roles.map((role) => ({
+                                    value: role.id,
+                                    label: role.name,
+                                }))}
+                                value={formData.role}
+                                onChange={handleRoleChange}
+                                placeholder="Выберите роль"
+                                required
+                            />
                         </div>
 
                         <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
@@ -556,6 +550,15 @@ const Users = () => {
                     onClose={() => setIsSuccessOpen(false)}
                     title="Успешно"
                     message={successMessage}
+                />
+
+                <ErrorModal
+                    isOpen={isErrorOpen}
+                    onClose={() => setIsErrorOpen(false)}
+                    title="Xatolik"
+                    message={error?.message || 'Noma\'lum xatolik yuz berdi'}
+                    statusCode={error?.statusCode}
+                    errors={error?.errors}
                 />
             </div>
         </Layout>

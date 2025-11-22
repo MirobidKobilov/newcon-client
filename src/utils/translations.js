@@ -11,6 +11,7 @@ export const translations = {
         sales: 'Продажи',
         payments: 'Платежи',
         expances: 'Расходы',
+        workers: 'Работники',
         settings: 'Справочник',
     },
     actions: {
