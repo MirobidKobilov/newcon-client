@@ -6,6 +6,7 @@ import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import SuccessModal from '../components/UI/SuccessModal'
+import Pagination from '../components/UI/Pagination'
 
 const Roles = () => {
     const [items, setItems] = useState([])
@@ -25,24 +26,42 @@ const Roles = () => {
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
     const [viewMode, setViewMode] = useState('table')
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
+
+    const fetchRoles = async (currentPage = page, pageSize = size) => {
+        setLoading(true)
+        const rolesResponse = await api('get', { page: currentPage, size: pageSize }, '/roles/list')
+        if (rolesResponse?.data) {
+            setItems(rolesResponse.data.data || [])
+            // Handle pagination metadata
+            if (rolesResponse.data.total !== undefined) {
+                setTotalItems(rolesResponse.data.total)
+                setTotalPages(Math.ceil(rolesResponse.data.total / pageSize))
+            } else if (rolesResponse.data.meta) {
+                setTotalItems(rolesResponse.data.meta.total || 0)
+                setTotalPages(rolesResponse.data.meta.last_page || 1)
+            } else {
+                const items = rolesResponse.data.data || []
+                setTotalItems(items.length)
+                setTotalPages(1)
+            }
+        }
+        setLoading(false)
+    }
 
     useEffect(() => {
         const fetchData = async () => {
-            setLoading(true)
-            const [rolesResponse, permissionsResponse] = await Promise.all([
-                api('get', {}, '/roles/list'),
-                api('get', {}, '/permissions/list'),
-            ])
-            if (rolesResponse?.data) {
-                setItems(rolesResponse.data.data)
-            }
+            await fetchRoles(page, size)
+            const permissionsResponse = await api('get', {}, '/permissions/list')
             if (permissionsResponse?.data) {
-                setPermissions(permissionsResponse.data.data)
+                setPermissions(permissionsResponse.data.data || [])
             }
-            setLoading(false)
         }
         fetchData()
-    }, [])
+    }, [page, size])
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -76,10 +95,7 @@ const Roles = () => {
         }
 
         if (response?.data) {
-            const itemsResponse = await api('get', {}, '/roles/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
-            }
+            await fetchRoles(page, size)
 
             setIsModalOpen(false)
             setIsEditMode(false)
@@ -116,10 +132,7 @@ const Roles = () => {
         const response = await api('delete', {}, `/roles/delete/${deletingItemId}`)
 
         if (response?.data) {
-            const itemsResponse = await api('get', {}, '/roles/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
-            }
+            await fetchRoles(page, size)
 
             setSuccessMessage('Роль успешно удалена')
             setIsSuccessOpen(true)
@@ -307,6 +320,21 @@ const Roles = () => {
                         </div>
                     )}
                 </div>
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
 
                 <Modal
                     isOpen={isModalOpen}

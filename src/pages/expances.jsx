@@ -9,6 +9,7 @@ import SuccessModal from '../components/UI/SuccessModal'
 import { Context } from '../context'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
+import Pagination from '../components/UI/Pagination'
 
 const Expances = () => {
     const { userInfo } = useContext(Context)
@@ -32,33 +33,50 @@ const Expances = () => {
     const [totalExpenses, setTotalExpenses] = useState(0)
     const [totalCount, setTotalCount] = useState(0)
     const [calculating, setCalculating] = useState(false)
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
 
     // Check if user has calculate_expances permission
     const hasCalculateExpensesPermission =
         userInfo?.permissions?.includes('calculate_expances') || false
 
-    useEffect(() => {
-        const fetchItems = async () => {
-            setLoading(true)
-            const params = {}
-            if (filterUserId) {
-                params.user_id = filterUserId
-            }
-            const response = await api('get', params, '/expances/list')
-            if (response.success && response.data) {
-                setItems(response.data.data || [])
-            } else {
-                setError({
-                    message: response.error || 'Ошибка при загрузке расходов',
-                    statusCode: response.statusCode,
-                    errors: response.errors,
-                })
-                setIsErrorOpen(true)
-            }
-            setLoading(false)
+    const fetchItems = async (currentPage = page, pageSize = size) => {
+        setLoading(true)
+        const params = { page: currentPage, size: pageSize }
+        if (filterUserId) {
+            params.user_id = filterUserId
         }
-        fetchItems()
-    }, [filterUserId])
+        const response = await api('get', params, '/expances/list')
+        if (response.success && response.data) {
+            setItems(response.data.data || [])
+            // Handle pagination metadata
+            if (response.data.total !== undefined) {
+                setTotalItems(response.data.total)
+                setTotalPages(Math.ceil(response.data.total / pageSize))
+            } else if (response.data.meta) {
+                setTotalItems(response.data.meta.total || 0)
+                setTotalPages(response.data.meta.last_page || 1)
+            } else {
+                const items = response.data.data || []
+                setTotalItems(items.length)
+                setTotalPages(1)
+            }
+        } else {
+            setError({
+                message: response.error || 'Ошибка при загрузке расходов',
+                statusCode: response.statusCode,
+                errors: response.errors,
+            })
+            setIsErrorOpen(true)
+        }
+        setLoading(false)
+    }
+
+    useEffect(() => {
+        fetchItems(page, size)
+    }, [filterUserId, page, size])
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -133,14 +151,7 @@ const Expances = () => {
         const response = await api('post', formData, '/expances/create')
 
         if (response.success && response.data) {
-            const params = {}
-            if (filterUserId) {
-                params.user_id = filterUserId
-            }
-            const itemsResponse = await api('get', params, '/expances/list')
-            if (itemsResponse.success && itemsResponse.data) {
-                setItems(itemsResponse.data.data || [])
-            }
+            await fetchItems(page, size)
 
             // Обновить статистику после создания расхода
             if (hasCalculateExpensesPermission) {
@@ -407,6 +418,21 @@ const Expances = () => {
                         </div>
                     )}
                 </div>
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
 
                 <Modal
                     isOpen={isModalOpen}

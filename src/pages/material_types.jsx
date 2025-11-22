@@ -6,6 +6,7 @@ import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import SuccessModal from '../components/UI/SuccessModal'
+import Pagination from '../components/UI/Pagination'
 
 const MaterialTypes = () => {
     const [items, setItems] = useState([])
@@ -23,18 +24,35 @@ const MaterialTypes = () => {
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
     const [viewMode, setViewMode] = useState('table')
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
+
+    const fetchItems = async (currentPage = page, pageSize = size) => {
+        setLoading(true)
+        const response = await api('get', { page: currentPage, size: pageSize }, '/material_types/list')
+        if (response?.data) {
+            setItems(response.data.data || [])
+            // Handle pagination metadata
+            if (response.data.total !== undefined) {
+                setTotalItems(response.data.total)
+                setTotalPages(Math.ceil(response.data.total / pageSize))
+            } else if (response.data.meta) {
+                setTotalItems(response.data.meta.total || 0)
+                setTotalPages(response.data.meta.last_page || 1)
+            } else {
+                const items = response.data.data || []
+                setTotalItems(items.length)
+                setTotalPages(1)
+            }
+        }
+        setLoading(false)
+    }
 
     useEffect(() => {
-        const fetchItems = async () => {
-            setLoading(true)
-            const response = await api('get', {}, '/material_types/list')
-            if (response?.data) {
-                setItems(response.data.data)
-            }
-            setLoading(false)
-        }
-        fetchItems()
-    }, [])
+        fetchItems(page, size)
+    }, [page, size])
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -56,10 +74,7 @@ const MaterialTypes = () => {
         }
 
         if (response?.data) {
-            const itemsResponse = await api('get', {}, '/material_types/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
-            }
+            await fetchItems(page, size)
 
             setIsModalOpen(false)
             setIsEditMode(false)
@@ -96,10 +111,7 @@ const MaterialTypes = () => {
         const response = await api('delete', {}, `/material_types/delete/${deletingItemId}`)
 
         if (response?.data) {
-            const itemsResponse = await api('get', {}, '/material_types/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
-            }
+            await fetchItems(page, size)
 
             setSuccessMessage('Тип материала успешно удален')
             setIsSuccessOpen(true)
@@ -277,6 +289,21 @@ const MaterialTypes = () => {
                         </div>
                     )}
                 </div>
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
 
                 <Modal
                     isOpen={isModalOpen}

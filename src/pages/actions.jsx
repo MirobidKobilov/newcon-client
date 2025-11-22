@@ -2,21 +2,34 @@ import { useState, useEffect } from 'react'
 import Layout from '../layout/layout'
 import { t } from '../utils/translations'
 import { api } from '../utils/api'
+import Pagination from '../components/UI/Pagination'
 
 const Actions = () => {
     const [actions, setActions] = useState([])
     const [loading, setLoading] = useState(true)
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
 
-    useEffect(() => {
-        fetchActions()
-    }, [])
-
-    const fetchActions = async () => {
+    const fetchActions = async (currentPage = page, pageSize = size) => {
         try {
             setLoading(true)
-            const response = await api('get', {}, '/actions/list')
-            if (response.status === 200) {
+            const response = await api('get', { page: currentPage, size: pageSize }, '/actions/list')
+            if (response.status === 200 || response.success) {
                 setActions(response.data.data || [])
+                // Handle pagination metadata
+                if (response.data.total !== undefined) {
+                    setTotalItems(response.data.total)
+                    setTotalPages(Math.ceil(response.data.total / pageSize))
+                } else if (response.data.meta) {
+                    setTotalItems(response.data.meta.total || 0)
+                    setTotalPages(response.data.meta.last_page || 1)
+                } else {
+                    const items = response.data.data || []
+                    setTotalItems(items.length)
+                    setTotalPages(1)
+                }
             }
         } catch (error) {
             console.error('Error fetching actions:', error)
@@ -24,6 +37,10 @@ const Actions = () => {
             setLoading(false)
         }
     }
+
+    useEffect(() => {
+        fetchActions(page, size)
+    }, [page, size])
 
     const getActionTypeLabel = (actionTypeId) => {
         const labels = {
@@ -132,6 +149,21 @@ const Actions = () => {
                         </div>
                     )}
                 </div>
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
             </div>
         </Layout>
     )

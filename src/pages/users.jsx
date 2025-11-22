@@ -8,6 +8,7 @@ import Modal from '../components/UI/Modal'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import SuccessModal from '../components/UI/SuccessModal'
 import ErrorModal from '../components/UI/ErrorModal'
+import Pagination from '../components/UI/Pagination'
 
 const Users = () => {
     const [users, setUsers] = useState([])
@@ -31,25 +32,43 @@ const Users = () => {
     const [viewMode, setViewMode] = useState('table')
     const [error, setError] = useState(null)
     const [isErrorOpen, setIsErrorOpen] = useState(false)
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
+
+    const fetchUsers = async (currentPage = page, pageSize = size) => {
+        setLoading(true)
+        const response = await api('get', { page: currentPage, size: pageSize }, '/users/list')
+        if (response.success && response.data) {
+            setUsers(response.data.data || [])
+            // Handle pagination metadata - adjust based on your API response structure
+            if (response.data.total !== undefined) {
+                setTotalItems(response.data.total)
+                setTotalPages(Math.ceil(response.data.total / pageSize))
+            } else if (response.data.meta) {
+                setTotalItems(response.data.meta.total || 0)
+                setTotalPages(response.data.meta.last_page || 1)
+            } else {
+                // Fallback: if no pagination metadata, assume all items are on one page
+                const items = response.data.data || []
+                setTotalItems(items.length)
+                setTotalPages(1)
+            }
+        } else {
+            setError({
+                message: response.error || 'Ошибка при загрузке пользователей',
+                statusCode: response.statusCode,
+                errors: response.errors,
+            })
+            setIsErrorOpen(true)
+        }
+        setLoading(false)
+    }
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            setLoading(true)
-            const response = await api('get', {}, '/users/list')
-            if (response.success && response.data) {
-                setUsers(response.data.data || [])
-            } else {
-                setError({
-                    message: response.error || 'Ошибка при загрузке пользователей',
-                    statusCode: response.statusCode,
-                    errors: response.errors,
-                })
-                setIsErrorOpen(true)
-            }
-            setLoading(false)
-        }
-        fetchUsers()
-    }, [])
+        fetchUsers(page, size)
+    }, [page, size])
 
     useEffect(() => {
         const fetchRoles = async () => {
@@ -107,10 +126,7 @@ const Users = () => {
         }
 
         if (response.success && response.data) {
-            const usersResponse = await api('get', {}, '/users/list')
-            if (usersResponse.success && usersResponse.data) {
-                setUsers(usersResponse.data.data || [])
-            }
+            await fetchUsers(page, size)
 
             setIsModalOpen(false)
             setIsEditMode(false)
@@ -161,10 +177,7 @@ const Users = () => {
         const response = await api('delete', {}, `/users/delete/${deletingUserId}`)
 
         if (response.success && response.data) {
-            const usersResponse = await api('get', {}, '/users/list')
-            if (usersResponse.success && usersResponse.data) {
-                setUsers(usersResponse.data.data || [])
-            }
+            await fetchUsers(page, size)
 
             setSuccessMessage('Пользователь успешно удален')
             setIsSuccessOpen(true)
@@ -452,6 +465,21 @@ const Users = () => {
                         </div>
                     )}
                 </div>
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
 
                 <Modal
                     isOpen={isModalOpen}

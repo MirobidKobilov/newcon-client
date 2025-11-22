@@ -7,6 +7,7 @@ import Modal from '../components/UI/Modal'
 import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
+import Pagination from '../components/UI/Pagination'
 
 const Companies = () => {
     const [items, setItems] = useState([])
@@ -34,14 +35,30 @@ const Companies = () => {
     const [companyPayments, setCompanyPayments] = useState([])
     const [loadingDebtData, setLoadingDebtData] = useState(false)
     const [companyDebts, setCompanyDebts] = useState({})
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
 
-    useEffect(() => {
-        const fetchItems = async () => {
-            setLoading(true)
-            const response = await api('get', {}, '/companies/list')
-            if (response.success && response.data) {
-                const companiesData = response.data.data || []
-                setItems(companiesData)
+    const fetchItems = async (currentPage = page, pageSize = size) => {
+        setLoading(true)
+        const response = await api('get', { page: currentPage, size: pageSize }, '/companies/list')
+        if (response.success && response.data) {
+            const companiesData = response.data.data || []
+            setItems(companiesData)
+
+            // Handle pagination metadata
+            if (response.data.total !== undefined) {
+                setTotalItems(response.data.total)
+                setTotalPages(Math.ceil(response.data.total / pageSize))
+            } else if (response.data.meta) {
+                setTotalItems(response.data.meta.total || 0)
+                setTotalPages(response.data.meta.last_page || 1)
+            } else {
+                const items = response.data.data || []
+                setTotalItems(items.length)
+                setTotalPages(1)
+            }
 
                 // Calculate debts for all companies - fetch data once
                 const debts = {}
@@ -90,10 +107,12 @@ const Companies = () => {
                 })
                 setIsErrorOpen(true)
             }
-            setLoading(false)
-        }
-        fetchItems()
-    }, [])
+        setLoading(false)
+    }
+
+    useEffect(() => {
+        fetchItems(page, size)
+    }, [page, size])
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -116,10 +135,7 @@ const Companies = () => {
         }
 
         if (response.success && response.data) {
-            const itemsResponse = await api('get', {}, '/companies/list')
-            if (itemsResponse.success && itemsResponse.data) {
-                setItems(itemsResponse.data.data || [])
-            }
+            await fetchItems(page, size)
 
             setIsModalOpen(false)
             setIsEditMode(false)
@@ -172,10 +188,7 @@ const Companies = () => {
         const response = await api('delete', {}, `/companies/delete/${deletingItemId}`)
 
         if (response.success && response.data) {
-            const itemsResponse = await api('get', {}, '/companies/list')
-            if (itemsResponse.success && itemsResponse.data) {
-                setItems(itemsResponse.data.data || [])
-            }
+            await fetchItems(page, size)
 
             setSuccessMessage('Компания успешно удалена')
             setIsSuccessOpen(true)
@@ -604,6 +617,21 @@ const Companies = () => {
                         </div>
                     )}
                 </div>
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
 
                 <Modal
                     isOpen={isModalOpen}

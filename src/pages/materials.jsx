@@ -7,6 +7,7 @@ import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import SuccessModal from '../components/UI/SuccessModal'
+import Pagination from '../components/UI/Pagination'
 
 const Materials = () => {
     const [items, setItems] = useState([])
@@ -28,25 +29,49 @@ const Materials = () => {
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
     const [viewMode, setViewMode] = useState('table')
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
+
+    const fetchMaterials = async (currentPage = page, pageSize = size) => {
+        setLoading(true)
+        const materialsResponse = await api('get', { page: currentPage, size: pageSize }, '/materials/list')
+        if (materialsResponse?.data) {
+            setItems(materialsResponse.data.data || [])
+            // Handle pagination metadata
+            if (materialsResponse.data.total !== undefined) {
+                setTotalItems(materialsResponse.data.total)
+                setTotalPages(Math.ceil(materialsResponse.data.total / pageSize))
+            } else if (materialsResponse.data.meta) {
+                setTotalItems(materialsResponse.data.meta.total || 0)
+                setTotalPages(materialsResponse.data.meta.last_page || 1)
+            } else {
+                const items = materialsResponse.data.data || []
+                setTotalItems(items.length)
+                setTotalPages(1)
+            }
+        }
+        setLoading(false)
+    }
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true)
 
-            const materialsResponse = await api('get', {}, '/materials/list')
-            if (materialsResponse?.data) {
-                setItems(materialsResponse.data.data)
-            }
+            // Fetch materials with pagination
+            await fetchMaterials(page, size)
 
+            // Fetch material types (no pagination needed for dropdown)
             const typesResponse = await api('get', {}, '/material_types/list')
             if (typesResponse?.data) {
-                setMaterialTypes(typesResponse.data.data)
+                setMaterialTypes(typesResponse.data.data || [])
             }
 
             setLoading(false)
         }
         fetchData()
-    }, [])
+    }, [page, size])
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -68,10 +93,7 @@ const Materials = () => {
         }
 
         if (response?.data) {
-            const itemsResponse = await api('get', {}, '/materials/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
-            }
+            await fetchMaterials(page, size)
 
             setIsModalOpen(false)
             setIsEditMode(false)
@@ -112,10 +134,7 @@ const Materials = () => {
         const response = await api('delete', {}, `/materials/delete/${deletingItemId}`)
 
         if (response?.data) {
-            const itemsResponse = await api('get', {}, '/materials/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
-            }
+            await fetchMaterials(page, size)
 
             setSuccessMessage('Материал успешно удален')
             setIsSuccessOpen(true)
@@ -351,6 +370,21 @@ const Materials = () => {
                         </div>
                     )}
                 </div>
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
 
                 <Modal
                     isOpen={isModalOpen}

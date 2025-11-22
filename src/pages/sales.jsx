@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Button from '../components/UI/Button'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import Modal from '../components/UI/Modal'
+import Pagination from '../components/UI/Pagination'
 import Select from '../components/UI/Select'
 import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
@@ -39,6 +40,10 @@ const Sales = () => {
     const [viewMode, setViewMode] = useState('table')
     const [currentStep, setCurrentStep] = useState(1)
     const [createdSaleId, setCreatedSaleId] = useState(null)
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
 
     const productsPayload = useMemo(() => {
         return (formData.products || [])
@@ -66,23 +71,44 @@ const Sales = () => {
         }, 0)
     }, [productsPayload])
 
+    const fetchSales = async (currentPage = page, pageSize = size) => {
+        setLoading(true)
+
+        // Fetch sales list with pagination
+        const salesResponse = await api('get', { page: currentPage, size: pageSize }, '/sales/list')
+        if (salesResponse?.data) {
+            setItems(salesResponse.data.data || [])
+            // Handle pagination metadata
+            if (salesResponse.data.total !== undefined) {
+                setTotalItems(salesResponse.data.total)
+                setTotalPages(Math.ceil(salesResponse.data.total / pageSize))
+            } else if (salesResponse.data.meta) {
+                setTotalItems(salesResponse.data.meta.total || 0)
+                setTotalPages(salesResponse.data.meta.last_page || 1)
+            } else {
+                const items = salesResponse.data.data || []
+                setTotalItems(items.length)
+                setTotalPages(1)
+            }
+        }
+
+        setLoading(false)
+    }
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true)
 
-            // Fetch sales list
-            const salesResponse = await api('get', {}, '/sales/list')
-            if (salesResponse?.data) {
-                setItems(salesResponse.data.data || [])
-            }
+            // Fetch sales list with pagination
+            await fetchSales(page, size)
 
-            // Fetch companies
+            // Fetch companies (no pagination needed for dropdown)
             const companiesResponse = await api('get', {}, '/companies/list')
             if (companiesResponse?.data) {
                 setCompanies(companiesResponse.data.data || [])
             }
 
-            // Fetch products
+            // Fetch products (no pagination needed for dropdown)
             const productsResponse = await api('get', {}, '/products/list')
             if (productsResponse?.data) {
                 setProducts(productsResponse.data.data || [])
@@ -91,7 +117,7 @@ const Sales = () => {
             setLoading(false)
         }
         fetchData()
-    }, [])
+    }, [page, size])
 
     const formatNumber = (num) => {
         if (num === null || num === undefined || isNaN(num)) return '0'
@@ -157,10 +183,7 @@ const Sales = () => {
 
                 if (saleResponse?.data) {
                     // Refresh sales list
-                    const itemsResponse = await api('get', {}, '/sales/list')
-                    if (itemsResponse?.data) {
-                        setItems(itemsResponse.data.data || [])
-                    }
+                    await fetchSales(page, size)
 
                     setIsModalOpen(false)
                     setIsEditMode(false)
@@ -224,10 +247,7 @@ const Sales = () => {
 
                     if (paymentResponse?.data) {
                         // Refresh sales list
-                        const itemsResponse = await api('get', {}, '/sales/list')
-                        if (itemsResponse?.data) {
-                            setItems(itemsResponse.data.data || [])
-                        }
+                        await fetchSales(page, size)
 
                         setIsModalOpen(false)
                         setIsEditMode(false)
@@ -303,10 +323,7 @@ const Sales = () => {
         const response = await api('delete', {}, `/sales/delete/${deletingItemId}`)
 
         if (response?.data) {
-            const itemsResponse = await api('get', {}, '/sales/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data)
-            }
+            await fetchSales(page, size)
 
             setSuccessMessage('Продажа успешно удалена')
             setIsSuccessOpen(true)
@@ -590,6 +607,21 @@ const Sales = () => {
                     )}
                 </div>
 
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
+
                 <Modal
                     isOpen={isModalOpen}
                     onClose={() => {
@@ -742,23 +774,9 @@ const Sales = () => {
                                                                 )
                                                             const isSelected =
                                                                 selectedProduct !== undefined
-                                                            const unitPrice = Number(product.price)
                                                             const selectedQuantity =
                                                                 Number(selectedProduct?.quantity) ||
                                                                 0
-                                                            const selectedTotal = isSelected
-                                                                ? (Number.isFinite(unitPrice)
-                                                                      ? unitPrice
-                                                                      : 0) * selectedQuantity
-                                                                : 0
-                                                            const formattedUnitPrice =
-                                                                Number.isFinite(unitPrice)
-                                                                    ? unitPrice.toLocaleString()
-                                                                    : '-'
-                                                            const formattedSelectedTotal =
-                                                                Number.isFinite(selectedTotal)
-                                                                    ? selectedTotal.toLocaleString()
-                                                                    : '0'
 
                                                             return (
                                                                 <div
@@ -809,10 +827,6 @@ const Sales = () => {
                                                                         {product.description ||
                                                                             'Описание товара'}
                                                                     </p>
-                                                                    <div className='text-xs text-gray-500 mb-2'>
-                                                                        Рекомендуемая цена:{' '}
-                                                                        {formattedUnitPrice} сум
-                                                                    </div>
                                                                     <div className='space-y-2'>
                                                                         <div className='flex items-center gap-2'>
                                                                             <input
@@ -1024,8 +1038,6 @@ const Sales = () => {
                                                 const quantity = Number(product.quantity) || 0
                                                 const price = Number(product.price) || 0
                                                 const total = quantity * price
-                                                const unitPrice = productInfo?.price || 0
-                                                const recommendedTotal = quantity * unitPrice
 
                                                 return (
                                                     <div
@@ -1036,12 +1048,6 @@ const Sales = () => {
                                                             <p className='text-xs font-semibold text-gray-800 flex-1'>
                                                                 {productInfo?.name || 'Товар'}
                                                             </p>
-                                                            {productInfo?.price && (
-                                                                <span className='text-xs text-gray-400 ml-2'>
-                                                                    Рек. цена:{' '}
-                                                                    {formatNumber(unitPrice)}
-                                                                </span>
-                                                            )}
                                                         </div>
                                                         {productInfo?.description && (
                                                             <p className='text-xs text-gray-500 mb-2 line-clamp-2'>
@@ -1072,16 +1078,6 @@ const Sales = () => {
                                                                     {formatNumber(total)} сум
                                                                 </span>
                                                             </div>
-                                                            {productInfo?.price &&
-                                                                price !== unitPrice && (
-                                                                    <div className='text-xs text-gray-400'>
-                                                                        Рекомендуемая:{' '}
-                                                                        {formatNumber(
-                                                                            recommendedTotal
-                                                                        )}{' '}
-                                                                        сум
-                                                                    </div>
-                                                                )}
                                                         </div>
                                                     </div>
                                                 )

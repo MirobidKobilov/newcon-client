@@ -7,6 +7,7 @@ import Select from '../components/UI/Select'
 import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
+import Pagination from '../components/UI/Pagination'
 
 const Payments = () => {
     const [items, setItems] = useState([])
@@ -33,21 +34,42 @@ const Payments = () => {
         { value: 2, label: 'Сум' },
     ])
     const [viewMode, setViewMode] = useState('table')
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
+
+    const fetchPayments = async (currentPage = page, pageSize = size) => {
+        setLoading(true)
+        const paymentsResponse = await api('get', { page: currentPage, size: pageSize }, '/payments/list')
+        if (paymentsResponse?.data) {
+            setItems(paymentsResponse.data.data || [])
+            // Handle pagination metadata
+            if (paymentsResponse.data.total !== undefined) {
+                setTotalItems(paymentsResponse.data.total)
+                setTotalPages(Math.ceil(paymentsResponse.data.total / pageSize))
+            } else if (paymentsResponse.data.meta) {
+                setTotalItems(paymentsResponse.data.meta.total || 0)
+                setTotalPages(paymentsResponse.data.meta.last_page || 1)
+            } else {
+                const items = paymentsResponse.data.data || []
+                setTotalItems(items.length)
+                setTotalPages(1)
+            }
+        }
+        setLoading(false)
+    }
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true)
 
-            // Fetch payments list
-            const paymentsResponse = await api('get', {}, '/payments/list')
-            if (paymentsResponse?.data) {
-                setItems(paymentsResponse.data.data || [])
-            }
+            // Fetch payments list with pagination
+            await fetchPayments(page, size)
 
-            // Fetch companies list
+            // Fetch companies list (no pagination needed for dropdown)
             const companiesResponse = await api('get', {}, '/companies/list')
             if (companiesResponse?.data) {
-                // Handle paginated response structure
                 const companiesData = companiesResponse.data.data || []
                 setCompaniesList(companiesData)
             }
@@ -55,7 +77,7 @@ const Payments = () => {
             setLoading(false)
         }
         fetchData()
-    }, [])
+    }, [page, size])
 
     const formatNumber = (num) => {
         if (num === null || num === undefined || num === '' || isNaN(num)) return ''
@@ -116,10 +138,7 @@ const Payments = () => {
         }
 
         if (response?.data) {
-            const itemsResponse = await api('get', {}, '/payments/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data || [])
-            }
+            await fetchPayments(page, size)
 
             setIsModalOpen(false)
             setIsEditMode(false)
@@ -164,10 +183,7 @@ const Payments = () => {
         const response = await api('delete', {}, `/payments/delete/${deletingItemId}`)
 
         if (response?.data) {
-            const itemsResponse = await api('get', {}, '/payments/list')
-            if (itemsResponse?.data) {
-                setItems(itemsResponse.data.data || [])
-            }
+            await fetchPayments(page, size)
 
             setSuccessMessage('Платеж успешно удален')
             setIsSuccessOpen(true)
@@ -441,6 +457,21 @@ const Payments = () => {
                         </div>
                     )}
                 </div>
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
 
                 <Modal
                     isOpen={isModalOpen}

@@ -7,6 +7,7 @@ import Modal from '../components/UI/Modal'
 import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
+import Pagination from '../components/UI/Pagination'
 
 const Workers = () => {
     const [workers, setWorkers] = useState([])
@@ -31,25 +32,42 @@ const Workers = () => {
     const [viewMode, setViewMode] = useState('table')
     const [error, setError] = useState(null)
     const [isErrorOpen, setIsErrorOpen] = useState(false)
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
+
+    const fetchWorkers = async (currentPage = page, pageSize = size) => {
+        setLoading(true)
+        const response = await api('get', { page: currentPage, size: pageSize }, '/workers/list')
+        if (response.success && response.data) {
+            setWorkers(response.data.data || [])
+            // Handle pagination metadata
+            if (response.data.total !== undefined) {
+                setTotalItems(response.data.total)
+                setTotalPages(Math.ceil(response.data.total / pageSize))
+            } else if (response.data.meta) {
+                setTotalItems(response.data.meta.total || 0)
+                setTotalPages(response.data.meta.last_page || 1)
+            } else {
+                const items = response.data.data || []
+                setTotalItems(items.length)
+                setTotalPages(1)
+            }
+        } else {
+            setError({
+                message: response.error || 'Ошибка при загрузке работников',
+                statusCode: response.statusCode,
+                errors: response.errors,
+            })
+            setIsErrorOpen(true)
+        }
+        setLoading(false)
+    }
 
     useEffect(() => {
-        const fetchWorkers = async () => {
-            setLoading(true)
-            const response = await api('get', {}, '/workers/list')
-            if (response.success && response.data) {
-                setWorkers(response.data.data || [])
-            } else {
-                setError({
-                    message: response.error || 'Ошибка при загрузке работников',
-                    statusCode: response.statusCode,
-                    errors: response.errors,
-                })
-                setIsErrorOpen(true)
-            }
-            setLoading(false)
-        }
-        fetchWorkers()
-    }, [])
+        fetchWorkers(page, size)
+    }, [page, size])
 
     const formatDateInput = (value) => {
         // Remove all non-digit characters
@@ -123,10 +141,7 @@ const Workers = () => {
         }
 
         if (response.success && response.data) {
-            const workersResponse = await api('get', {}, '/workers/list')
-            if (workersResponse.success && workersResponse.data) {
-                setWorkers(workersResponse.data.data || [])
-            }
+            await fetchWorkers(page, size)
 
             setIsModalOpen(false)
             setIsEditMode(false)
@@ -183,10 +198,7 @@ const Workers = () => {
         const response = await api('delete', {}, `/workers/delete/${deletingWorkerId}`)
 
         if (response.success && response.data) {
-            const workersResponse = await api('get', {}, '/workers/list')
-            if (workersResponse.success && workersResponse.data) {
-                setWorkers(workersResponse.data.data || [])
-            }
+            await fetchWorkers(page, size)
 
             setSuccessMessage('Работник успешно удален')
             setIsSuccessOpen(true)
@@ -557,6 +569,21 @@ const Workers = () => {
                         </div>
                     )}
                 </div>
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
 
                 <Modal
                     isOpen={isModalOpen}

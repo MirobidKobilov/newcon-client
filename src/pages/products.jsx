@@ -8,6 +8,7 @@ import Select from '../components/UI/Select'
 import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
+import Pagination from '../components/UI/Pagination'
 
 const Products = () => {
     const [items, setItems] = useState([])
@@ -30,25 +31,42 @@ const Products = () => {
     const [viewMode, setViewMode] = useState('table')
     const [error, setError] = useState(null)
     const [isErrorOpen, setIsErrorOpen] = useState(false)
+    const [page, setPage] = useState(1)
+    const [size, setSize] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(1)
+
+    const fetchItems = async (currentPage = page, pageSize = size) => {
+        setLoading(true)
+        const response = await api('get', { page: currentPage, size: pageSize }, '/products/list')
+        if (response.success && response.data) {
+            setItems(response.data.data || [])
+            // Handle pagination metadata
+            if (response.data.total !== undefined) {
+                setTotalItems(response.data.total)
+                setTotalPages(Math.ceil(response.data.total / pageSize))
+            } else if (response.data.meta) {
+                setTotalItems(response.data.meta.total || 0)
+                setTotalPages(response.data.meta.last_page || 1)
+            } else {
+                const items = response.data.data || []
+                setTotalItems(items.length)
+                setTotalPages(1)
+            }
+        } else {
+            setError({
+                message: response.error || 'Ошибка при загрузке продуктов',
+                statusCode: response.statusCode,
+                errors: response.errors,
+            })
+            setIsErrorOpen(true)
+        }
+        setLoading(false)
+    }
 
     useEffect(() => {
-        const fetchItems = async () => {
-            setLoading(true)
-            const response = await api('get', {}, '/products/list')
-            if (response.success && response.data) {
-                setItems(response.data.data || [])
-            } else {
-                setError({
-                    message: response.error || 'Ошибка при загрузке продуктов',
-                    statusCode: response.statusCode,
-                    errors: response.errors,
-                })
-                setIsErrorOpen(true)
-            }
-            setLoading(false)
-        }
-        fetchItems()
-    }, [])
+        fetchItems(page, size)
+    }, [page, size])
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -77,10 +95,7 @@ const Products = () => {
         }
 
         if (response.success && response.data) {
-            const itemsResponse = await api('get', {}, '/products/list')
-            if (itemsResponse.success && itemsResponse.data) {
-                setItems(itemsResponse.data.data || [])
-            }
+            await fetchItems(page, size)
 
             setIsModalOpen(false)
             setIsEditMode(false)
@@ -133,10 +148,7 @@ const Products = () => {
         const response = await api('delete', {}, `/products/delete/${deletingItemId}`)
 
         if (response.success && response.data) {
-            const itemsResponse = await api('get', {}, '/products/list')
-            if (itemsResponse.success && itemsResponse.data) {
-                setItems(itemsResponse.data.data || [])
-            }
+            await fetchItems(page, size)
 
             setSuccessMessage('Продукт успешно удален')
             setIsSuccessOpen(true)
@@ -431,6 +443,21 @@ const Products = () => {
                         </div>
                     )}
                 </div>
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        pageSize={size}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                        onSizeChange={(newSize) => {
+                            setSize(newSize)
+                            setPage(1)
+                        }}
+                        loading={loading}
+                    />
+                )}
 
                 <Modal
                     isOpen={isModalOpen}
