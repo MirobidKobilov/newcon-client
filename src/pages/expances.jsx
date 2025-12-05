@@ -4,12 +4,12 @@ import Button from '../components/UI/Button'
 import ErrorModal from '../components/UI/ErrorModal'
 import Input from '../components/UI/Input'
 import Modal from '../components/UI/Modal'
+import Pagination from '../components/UI/Pagination'
 import Select from '../components/UI/Select'
 import SuccessModal from '../components/UI/SuccessModal'
 import { Context } from '../context'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
-import Pagination from '../components/UI/Pagination'
 
 const Expances = () => {
     const { userInfo } = useContext(Context)
@@ -22,6 +22,7 @@ const Expances = () => {
         user_id: '',
         amount: '',
         reason: '',
+        type: '',
     })
     const [submitting, setSubmitting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
@@ -117,12 +118,27 @@ const Expances = () => {
         fetchCalculatedExpenses()
     }, [hasCalculateExpensesPermission])
 
+    const formatNumber = (num) => {
+        if (num === null || num === undefined || num === '' || isNaN(num)) return ''
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    }
+
     const handleInputChange = (e) => {
         const { name, value } = e.target
         setFormData((prev) => ({
             ...prev,
             [name]: value,
         }))
+    }
+
+    const handleAmountChange = (e) => {
+        const numericValue = e.target.value.replace(/\s/g, '')
+        if (numericValue === '' || /^\d*\.?\d*$/.test(numericValue)) {
+            setFormData((prev) => ({
+                ...prev,
+                amount: numericValue,
+            }))
+        }
     }
 
     const handleUserChange = (userId) => {
@@ -148,7 +164,12 @@ const Expances = () => {
         setSubmitting(true)
         setError(null)
 
-        const response = await api('post', formData, '/expances/create')
+        const submitData = {
+            ...formData,
+            amount: parseFloat(formData.amount) || 0,
+            type: formData.type,
+        }
+        const response = await api('post', submitData, '/expances/create')
 
         if (response.success && response.data) {
             await fetchItems(page, size)
@@ -167,6 +188,7 @@ const Expances = () => {
                 user_id: '',
                 amount: '',
                 reason: '',
+                type: '',
             })
 
             setSuccessMessage('Расход успешно создан')
@@ -188,6 +210,7 @@ const Expances = () => {
             user_id: '',
             amount: '',
             reason: '',
+            type: '',
         })
         setIsModalOpen(true)
     }
@@ -304,7 +327,10 @@ const Expances = () => {
                                             Телефон
                                         </th>
                                         <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
-                                            Причина
+                                            Тип
+                                        </th>
+                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            Описание
                                         </th>
                                         <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
                                             Сумма
@@ -315,7 +341,7 @@ const Expances = () => {
                                     {loading ? (
                                         <tr>
                                             <td
-                                                colSpan='5'
+                                                colSpan='6'
                                                 className='p-8 text-center text-slate-500'
                                             >
                                                 Загрузка...
@@ -324,7 +350,7 @@ const Expances = () => {
                                     ) : items.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan='5'
+                                                colSpan='6'
                                                 className='p-8 text-center text-slate-500'
                                             >
                                                 Нет данных
@@ -349,6 +375,11 @@ const Expances = () => {
                                                 <td className='p-4'>
                                                     <div className='text-sm text-slate-600'>
                                                         {item.user?.phone || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className='p-4'>
+                                                    <div className='text-sm text-slate-600'>
+                                                        {item.type || '-'}
                                                     </div>
                                                 </td>
                                                 <td className='p-4'>
@@ -403,9 +434,17 @@ const Expances = () => {
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div className='mb-3'>
+                                                <div className='text-xs text-slate-400 uppercase mb-1'>
+                                                    Тип
+                                                </div>
+                                                <div className='text-sm text-gray-700'>
+                                                    {item.type || '-'}
+                                                </div>
+                                            </div>
                                             <div>
                                                 <div className='text-xs text-slate-400 uppercase mb-1'>
-                                                    Причина
+                                                    Описание
                                                 </div>
                                                 <div className='text-sm text-gray-700'>
                                                     {item.reason || '-'}
@@ -452,22 +491,46 @@ const Expances = () => {
                                 placeholder='Выберите пользователя'
                                 required
                             />
+                            <Select
+                                label='Тип расхода'
+                                options={[
+                                    { value: 'Обед', label: 'Обед' },
+                                    { value: 'Расходы компании', label: 'Расходы компании' },
+                                    { value: 'Личный', label: 'Личный' },
+                                    { value: 'Сырье', label: 'Сырье' },
+                                ]}
+                                value={formData.type}
+                                onChange={(value) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        type: value,
+                                    }))
+                                }
+                                placeholder='Выберите тип расхода'
+                                required
+                            />
                             <Input
                                 label='Сумма'
-                                type='number'
+                                type='text'
                                 name='amount'
-                                value={formData.amount}
-                                onChange={handleInputChange}
+                                value={
+                                    formData.amount !== '' &&
+                                    formData.amount !== undefined &&
+                                    formData.amount !== null
+                                        ? formatNumber(formData.amount)
+                                        : ''
+                                }
+                                onChange={handleAmountChange}
                                 placeholder='Введите сумму'
                                 required
                             />
                             <Input
-                                label='Причина'
+                                label='Описание'
                                 type='text'
                                 name='reason'
                                 value={formData.reason}
                                 onChange={handleInputChange}
-                                placeholder='Введите причину расхода'
+                                placeholder='Введите описание расхода'
                                 required
                             />
                         </div>

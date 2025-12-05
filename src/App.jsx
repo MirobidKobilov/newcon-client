@@ -1,20 +1,21 @@
 import React, { useEffect, useState } from 'react'
+import { Route, Routes, useNavigate } from 'react-router-dom'
+import { Context } from './context'
+import Actions from './pages/actions'
+import Companies from './pages/companies'
 import Dashboard from './pages/dashboard'
-import Users from './pages/users'
-import Products from './pages/products'
-import Permissions from './pages/permissions'
-import Roles from './pages/roles'
+import Expances from './pages/expances'
+import Login from './pages/login'
 import MaterialTypes from './pages/material_types'
 import Materials from './pages/materials'
-import Companies from './pages/companies'
-import Sales from './pages/sales'
 import Payments from './pages/payments'
-import Expances from './pages/expances'
-import Actions from './pages/actions'
+import Permissions from './pages/permissions'
+import Products from './pages/products'
+import Roles from './pages/roles'
+import Salaries from './pages/salaries'
+import Sales from './pages/sales'
+import Users from './pages/users'
 import Workers from './pages/workers'
-import { Routes, Route, useNavigate } from 'react-router-dom'
-import Login from './pages/login'
-import { Context } from './context'
 import { api } from './utils/api'
 
 const App = () => {
@@ -32,7 +33,11 @@ const App = () => {
 
                 try {
                     const menuResponse = await api('get', {}, '/menu')
-                    if (menuResponse.success && menuResponse.status === 200 && menuResponse.data?.data) {
+                    if (
+                        menuResponse.success &&
+                        menuResponse.status === 200 &&
+                        menuResponse.data?.data
+                    ) {
                         const data = menuResponse.data.data
                         setMenu(data.menu || {})
                         setUserInfo({
@@ -43,7 +48,12 @@ const App = () => {
                             permissions: data.permissions || [],
                         })
                     } else {
-                        console.error('Ошибка при получении данных:', menuResponse.error, 'Status:', menuResponse.statusCode)
+                        console.error(
+                            'Ошибка при получении данных:',
+                            menuResponse.error,
+                            'Status:',
+                            menuResponse.statusCode
+                        )
                     }
                 } catch (error) {
                     console.error('Ошибка при получении данных:', error)
@@ -71,22 +81,23 @@ const App = () => {
                 setIsLogin,
             }}
         >
-            <div className="bg-[#F8F9FA]">
+            <div className='bg-[#F8F9FA]'>
                 <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/users" element={<Users />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/permissions" element={<Permissions />} />
-                    <Route path="/roles" element={<Roles />} />
-                    <Route path="/material_types" element={<MaterialTypes />} />
-                    <Route path="/materials" element={<Materials />} />
-                    <Route path="/companies" element={<Companies />} />
-                    <Route path="/sales" element={<Sales />} />
-                    <Route path="/payments" element={<Payments />} />
-                    <Route path="/expances" element={<Expances />} />
-                    <Route path="/workers" element={<Workers />} />
-                    <Route path="/actions" element={<Actions />} />
-                    <Route path="/login" element={<Login />} />
+                    <Route path='/' element={<Dashboard />} />
+                    <Route path='/users' element={<Users />} />
+                    <Route path='/products' element={<Products />} />
+                    <Route path='/permissions' element={<Permissions />} />
+                    <Route path='/roles' element={<Roles />} />
+                    <Route path='/material_types' element={<MaterialTypes />} />
+                    <Route path='/materials' element={<Materials />} />
+                    <Route path='/companies' element={<Companies />} />
+                    <Route path='/sales' element={<Sales />} />
+                    <Route path='/payments' element={<Payments />} />
+                    <Route path='/expances' element={<Expances />} />
+                    <Route path='/workers' element={<Workers />} />
+                    <Route path='/salaries' element={<Salaries />} />
+                    <Route path='/actions' element={<Actions />} />
+                    <Route path='/login' element={<Login />} />
                 </Routes>
             </div>
         </Context.Provider>

@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import Button from '../components/UI/Button'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
+import DatePicker from '../components/UI/DatePicker'
 import ErrorModal from '../components/UI/ErrorModal'
 import Input from '../components/UI/Input'
 import Modal from '../components/UI/Modal'
+import Pagination from '../components/UI/Pagination'
 import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
-import Pagination from '../components/UI/Pagination'
 
 const Workers = () => {
     const [workers, setWorkers] = useState([])
@@ -257,7 +258,11 @@ const Workers = () => {
         if (!dateString) return '-'
         try {
             const date = new Date(dateString)
-            return date.toLocaleDateString('ru-RU')
+            if (isNaN(date.getTime())) return dateString
+            const day = String(date.getDate()).padStart(2, '0')
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            const year = date.getFullYear()
+            return `${day}-${month}-${year}`
         } catch {
             return dateString
         }
@@ -284,7 +289,7 @@ const Workers = () => {
                     </div>
                 </div>
 
-                <div className='bg-white rounded-2xl shadow-sm mb-6 overflow-hidden'>
+                <div className='bg-white rounded-2xl shadow-sm mb-6'>
                     <div className='p-6 border-b border-slate-200'>
                         <div className='flex items-center justify-between mb-4'>
                             <h2 className='text-lg font-bold text-gray-700'>Работники</h2>
@@ -631,14 +636,12 @@ const Workers = () => {
                                 placeholder='Введите адрес'
                             />
 
-                            <Input
+                            <DatePicker
                                 label='Дата рождения'
-                                type='text'
                                 name='date_of_birth'
                                 value={formData.date_of_birth}
                                 onChange={handleInputChange}
-                                placeholder='Дата рождения'
-                                pattern='^\d{4}-\d{2}-\d{2}$'
+                                placeholder='dd-mm-yyyy'
                                 required
                             />
 

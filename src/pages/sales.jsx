@@ -18,6 +18,7 @@ const Sales = () => {
         company_id: '',
         summa: '',
         products: [],
+        status: 'PENDING_PAYMENT',
     })
     const [submitting, setSubmitting] = useState(false)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
@@ -26,6 +27,10 @@ const Sales = () => {
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
     const [companies, setCompanies] = useState([])
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false)
+    const [statusChangingItemId, setStatusChangingItemId] = useState(null)
+    const [newStatus, setNewStatus] = useState('')
+    const [changingStatus, setChangingStatus] = useState(false)
     const [products, setProducts] = useState([])
     const [isViewModalOpen, setIsViewModalOpen] = useState(false)
     const [viewingItem, setViewingItem] = useState(null)
@@ -37,9 +42,14 @@ const Sales = () => {
         { id: 1, name: 'Доллары' },
         { id: 2, name: 'Сум' },
     ])
+    const statusOptions = [
+        { value: 'PENDING_PAYMENT', label: 'Ожидает оплаты' },
+        { value: 'PAID', label: 'Оплачено' },
+    ]
     const [viewMode, setViewMode] = useState('table')
     const [currentStep, setCurrentStep] = useState(1)
     const [createdSaleId, setCreatedSaleId] = useState(null)
+    const [saleIdToViewAfterCreate, setSaleIdToViewAfterCreate] = useState(null)
     const [page, setPage] = useState(1)
     const [size, setSize] = useState(10)
     const [totalItems, setTotalItems] = useState(0)
@@ -75,7 +85,11 @@ const Sales = () => {
         setLoading(true)
 
         // Fetch sales list with pagination
-        const salesResponse = await api('get', { page: currentPage, size: pageSize }, '/sales/list')
+        const salesResponse = await api(
+            'get',
+            { index: currentPage, size: pageSize },
+            '/sales/list'
+        )
         if (salesResponse?.data) {
             setItems(salesResponse.data.data || [])
             // Handle pagination metadata
@@ -118,6 +132,26 @@ const Sales = () => {
         }
         fetchData()
     }, [page, size])
+
+    // Auto-open view modal after creating a sale
+    useEffect(() => {
+        if (saleIdToViewAfterCreate && items.length > 0 && !loading) {
+            const saleToView = items.find((item) => item.id === saleIdToViewAfterCreate)
+            if (saleToView) {
+                setViewingItem(saleToView)
+                setIsViewModalOpen(true)
+                setSaleIdToViewAfterCreate(null) // Reset after opening
+            } else if (page !== 1) {
+                // If sale not found and not on first page, switch to first page
+                // The sale will be found after the page loads
+                setPage(1)
+            } else {
+                // If on first page and sale not found, reset the flag
+                // (sale might be on a different page or there was an error)
+                setSaleIdToViewAfterCreate(null)
+            }
+        }
+    }, [items, saleIdToViewAfterCreate, loading, page])
 
     const formatNumber = (num) => {
         if (num === null || num === undefined || isNaN(num)) return '0'
@@ -172,11 +206,9 @@ const Sales = () => {
 
         try {
             if (isEditMode) {
-                // In edit mode, only update the sale
+                // In edit mode, only update the company
                 const saleData = {
                     company_id: parseInt(formData.company_id),
-                    summa: saleTotalAmount,
-                    products: productsPayload,
                 }
 
                 const saleResponse = await api('put', saleData, `/sales/update/${editingItemId}`)
@@ -195,6 +227,7 @@ const Sales = () => {
                         company_id: '',
                         summa: '',
                         products: [],
+                        status: 'PENDING_PAYMENT',
                     })
                     setPaymentData({
                         payment_type_id: '',
@@ -210,6 +243,7 @@ const Sales = () => {
                         company_id: parseInt(formData.company_id),
                         summa: saleTotalAmount,
                         products: productsPayload,
+                        status: formData.status || 'PENDING_PAYMENT',
                     }
 
                     const saleResponse = await api('post', saleData, '/sales/create')
@@ -246,6 +280,9 @@ const Sales = () => {
                     const paymentResponse = await api('post', paymentSubmitData, '/payments/create')
 
                     if (paymentResponse?.data) {
+                        // Save the created sale ID before resetting
+                        const saleIdToView = createdSaleId
+
                         // Refresh sales list
                         await fetchSales(page, size)
 
@@ -259,6 +296,7 @@ const Sales = () => {
                             company_id: '',
                             summa: '',
                             products: [],
+                            status: 'PENDING_PAYMENT',
                         })
                         setPaymentData({
                             payment_type_id: '',
@@ -266,6 +304,11 @@ const Sales = () => {
 
                         setSuccessMessage('Продажа и платеж успешно созданы')
                         setIsSuccessOpen(true)
+
+                        // Set flag to open view modal after items are updated
+                        if (saleIdToView) {
+                            setSaleIdToViewAfterCreate(saleIdToView)
+                        }
                     }
                 }
             }
@@ -288,29 +331,45 @@ const Sales = () => {
         // Convert nested company object to company_id
         const companyId = item.company?.id || item.company_id || ''
 
-        // Convert products array (might have full objects or just IDs)
-        const productsData = item.products
-            ? item.products.map((p) => ({
-                  product_id: p.id || p.product_id,
-                  quantity: p.quantity,
-                  price: p.price || '',
-              }))
-            : []
-
         setFormData({
             company_id: companyId,
             summa: item.summa || '',
-            products: productsData,
-        })
-
-        // Try to get payment data if available (from related payment)
-        // Note: This assumes the sale might have payment info, adjust based on your API
-        setPaymentData({
-            payment_type_id: item.payment_type_id || '',
+            products: [],
+            status: item.status || 'PENDING_PAYMENT',
         })
 
         setSearchQuery('')
         setIsModalOpen(true)
+    }
+
+    const handleStatusChange = (item) => {
+        setStatusChangingItemId(item.id)
+        setNewStatus(item.status || 'PENDING_PAYMENT')
+        setIsStatusModalOpen(true)
+    }
+
+    const confirmStatusChange = async () => {
+        setChangingStatus(true)
+        try {
+            const response = await api(
+                'put',
+                { status: newStatus },
+                `/sales/update/${statusChangingItemId}`
+            )
+
+            if (response?.data) {
+                await fetchSales(page, size)
+                setSuccessMessage('Статус успешно изменен')
+                setIsSuccessOpen(true)
+            }
+        } catch (error) {
+            console.error('Error changing status:', error)
+        } finally {
+            setChangingStatus(false)
+            setIsStatusModalOpen(false)
+            setStatusChangingItemId(null)
+            setNewStatus('')
+        }
     }
 
     const handleDelete = (itemId) => {
@@ -343,6 +402,7 @@ const Sales = () => {
             company_id: '',
             summa: '',
             products: [],
+            status: 'PENDING_PAYMENT',
         })
         setPaymentData({
             payment_type_id: '',
@@ -357,9 +417,9 @@ const Sales = () => {
             formData.products.length > 0 &&
             formData.products.every((p) => p.product_id && p.quantity && p.price)
 
-        // In edit mode, payment fields are optional
+        // In edit mode, only company is required
         if (isEditMode) {
-            return hasValidProducts
+            return formData.company_id
         }
 
         // In create mode, step 1: only sale data required
@@ -443,10 +503,16 @@ const Sales = () => {
                                             Товары
                                         </th>
                                         <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            Количество
+                                        </th>
+                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
                                             Сумма
                                         </th>
                                         <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
                                             Дата
+                                        </th>
+                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            Статус
                                         </th>
                                         <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
                                             Действия
@@ -457,7 +523,7 @@ const Sales = () => {
                                     {loading ? (
                                         <tr>
                                             <td
-                                                colSpan='6'
+                                                colSpan='8'
                                                 className='p-8 text-center text-slate-500'
                                             >
                                                 Загрузка...
@@ -466,7 +532,7 @@ const Sales = () => {
                                     ) : !items || items.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan='6'
+                                                colSpan='8'
                                                 className='p-8 text-center text-slate-500'
                                             >
                                                 Нет данных
@@ -498,14 +564,28 @@ const Sales = () => {
                                                             {item.products &&
                                                             item.products.length > 0
                                                                 ? item.products
-                                                                      .map((p) => {
-                                                                          // Product object now has name directly
-                                                                          return `${
-                                                                              p.name || 'Товар'
-                                                                          } (${p.quantity})`
-                                                                      })
+                                                                      .map((p) => p.name || 'Товар')
                                                                       .join(', ')
                                                                 : '-'}
+                                                        </div>
+                                                    </td>
+                                                    <td className='p-4'>
+                                                        <div className='text-sm text-slate-600'>
+                                                            {item.products &&
+                                                            item.products.length > 0
+                                                                ? item.products
+                                                                      .map((p) => {
+                                                                          const quantity =
+                                                                              p.pivot_quantity ||
+                                                                              p.quantity ||
+                                                                              0
+                                                                          return formatNumber(
+                                                                              quantity
+                                                                          )
+                                                                      })
+                                                                      .join(', ')
+                                                                : '-'}{' '}
+                                                            шт.
                                                         </div>
                                                     </td>
                                                     <td className='p-4'>
@@ -516,16 +596,117 @@ const Sales = () => {
                                                     </td>
                                                     <td className='p-4'>
                                                         <div className='text-sm text-slate-600'>
-                                                            {item.date || item.created_at || '-'}
+                                                            {(() => {
+                                                                const dateStr =
+                                                                    item.date || item.created_at
+                                                                if (!dateStr) return '-'
+                                                                try {
+                                                                    const date = new Date(dateStr)
+                                                                    if (isNaN(date.getTime()))
+                                                                        return dateStr
+                                                                    const day = String(
+                                                                        date.getDate()
+                                                                    ).padStart(2, '0')
+                                                                    const month = String(
+                                                                        date.getMonth() + 1
+                                                                    ).padStart(2, '0')
+                                                                    const year = date.getFullYear()
+                                                                    return `${day}-${month}-${year}`
+                                                                } catch {
+                                                                    return dateStr
+                                                                }
+                                                            })()}
                                                         </div>
                                                     </td>
                                                     <td className='p-4'>
-                                                        <button
-                                                            onClick={() => handleView(item)}
-                                                            className='px-3 py-1.5 text-xs cursor-pointer font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors'
-                                                        >
-                                                            Просмотр
-                                                        </button>
+                                                        <div className='flex items-center gap-2'>
+                                                            <span
+                                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                                    item.status === 'PAID'
+                                                                        ? 'bg-green-100 text-green-700'
+                                                                        : 'bg-yellow-100 text-yellow-700'
+                                                                }`}
+                                                            >
+                                                                {item.status === 'PAID'
+                                                                    ? 'Оплачено'
+                                                                    : item.status ===
+                                                                      'PENDING_PAYMENT'
+                                                                    ? 'Ожидает оплаты'
+                                                                    : item.status ||
+                                                                      'Ожидает оплаты'}
+                                                            </span>
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleStatusChange(item)
+                                                                }
+                                                                className='p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors'
+                                                                title='Изменить статус'
+                                                            >
+                                                                <svg
+                                                                    xmlns='http://www.w3.org/2000/svg'
+                                                                    fill='none'
+                                                                    viewBox='0 0 24 24'
+                                                                    strokeWidth={2}
+                                                                    stroke='currentColor'
+                                                                    className='w-4 h-4'
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap='round'
+                                                                        strokeLinejoin='round'
+                                                                        d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10'
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                    <td className='p-4'>
+                                                        <div className='flex gap-2'>
+                                                            <button
+                                                                onClick={() => handleView(item)}
+                                                                className='p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors'
+                                                                title='Просмотр'
+                                                            >
+                                                                <svg
+                                                                    xmlns='http://www.w3.org/2000/svg'
+                                                                    fill='none'
+                                                                    viewBox='0 0 24 24'
+                                                                    strokeWidth={2}
+                                                                    stroke='currentColor'
+                                                                    className='w-4 h-4'
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap='round'
+                                                                        strokeLinejoin='round'
+                                                                        d='M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z'
+                                                                    />
+                                                                    <path
+                                                                        strokeLinecap='round'
+                                                                        strokeLinejoin='round'
+                                                                        d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleEdit(item)}
+                                                                className='p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors'
+                                                                title='Редактировать'
+                                                            >
+                                                                <svg
+                                                                    xmlns='http://www.w3.org/2000/svg'
+                                                                    fill='none'
+                                                                    viewBox='0 0 24 24'
+                                                                    strokeWidth={2}
+                                                                    stroke='currentColor'
+                                                                    className='w-4 h-4'
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap='round'
+                                                                        strokeLinejoin='round'
+                                                                        d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10'
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             )
@@ -563,21 +744,105 @@ const Sales = () => {
                                                         </h3>
                                                         <div className='text-sm text-slate-600 mt-1'>
                                                             {(item.products || [])
-                                                                .map(
-                                                                    (p) =>
-                                                                        `${p.name || 'Товар'} (${
-                                                                            p.quantity
-                                                                        })`
-                                                                )
+                                                                .map((p) => {
+                                                                    const quantity =
+                                                                        p.pivot_quantity ||
+                                                                        p.quantity ||
+                                                                        0
+                                                                    return `${
+                                                                        p.name || 'Товар'
+                                                                    } (${quantity})`
+                                                                })
                                                                 .join(', ') || '-'}
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleView(item)}
-                                                        className='px-3 py-1.5 text-xs cursor-pointer font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors'
-                                                    >
-                                                        Просмотр
-                                                    </button>
+                                                    <div className='flex gap-2'>
+                                                        <button
+                                                            onClick={() => handleView(item)}
+                                                            className='p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors'
+                                                            title='Просмотр'
+                                                        >
+                                                            <svg
+                                                                xmlns='http://www.w3.org/2000/svg'
+                                                                fill='none'
+                                                                viewBox='0 0 24 24'
+                                                                strokeWidth={2}
+                                                                stroke='currentColor'
+                                                                className='w-4 h-4'
+                                                            >
+                                                                <path
+                                                                    strokeLinecap='round'
+                                                                    strokeLinejoin='round'
+                                                                    d='M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z'
+                                                                />
+                                                                <path
+                                                                    strokeLinecap='round'
+                                                                    strokeLinejoin='round'
+                                                                    d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
+                                                                />
+                                                            </svg>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEdit(item)}
+                                                            className='p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors'
+                                                            title='Редактировать'
+                                                        >
+                                                            <svg
+                                                                xmlns='http://www.w3.org/2000/svg'
+                                                                fill='none'
+                                                                viewBox='0 0 24 24'
+                                                                strokeWidth={2}
+                                                                stroke='currentColor'
+                                                                className='w-4 h-4'
+                                                            >
+                                                                <path
+                                                                    strokeLinecap='round'
+                                                                    strokeLinejoin='round'
+                                                                    d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10'
+                                                                />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className='mb-3'>
+                                                    <div className='text-xs text-slate-400 uppercase mb-1'>
+                                                        Статус
+                                                    </div>
+                                                    <div className='flex items-center gap-2'>
+                                                        <span
+                                                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                                item.status === 'PAID'
+                                                                    ? 'bg-green-100 text-green-700'
+                                                                    : 'bg-yellow-100 text-yellow-700'
+                                                            }`}
+                                                        >
+                                                            {item.status === 'PAID'
+                                                                ? 'Оплачено'
+                                                                : item.status === 'PENDING_PAYMENT'
+                                                                ? 'Ожидает оплаты'
+                                                                : item.status || 'Ожидает оплаты'}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => handleStatusChange(item)}
+                                                            className='p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors'
+                                                            title='Изменить статус'
+                                                        >
+                                                            <svg
+                                                                xmlns='http://www.w3.org/2000/svg'
+                                                                fill='none'
+                                                                viewBox='0 0 24 24'
+                                                                strokeWidth={2}
+                                                                stroke='currentColor'
+                                                                className='w-4 h-4'
+                                                            >
+                                                                <path
+                                                                    strokeLinecap='round'
+                                                                    strokeLinejoin='round'
+                                                                    d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10'
+                                                                />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className='grid grid-cols-2 gap-3 text-sm'>
                                                     <div>
@@ -594,7 +859,26 @@ const Sales = () => {
                                                             Дата
                                                         </div>
                                                         <div className='text-gray-700'>
-                                                            {item.date || item.created_at || '-'}
+                                                            {(() => {
+                                                                const dateStr =
+                                                                    item.date || item.created_at
+                                                                if (!dateStr) return '-'
+                                                                try {
+                                                                    const date = new Date(dateStr)
+                                                                    if (isNaN(date.getTime()))
+                                                                        return dateStr
+                                                                    const day = String(
+                                                                        date.getDate()
+                                                                    ).padStart(2, '0')
+                                                                    const month = String(
+                                                                        date.getMonth() + 1
+                                                                    ).padStart(2, '0')
+                                                                    const year = date.getFullYear()
+                                                                    return `${day}-${month}-${year}`
+                                                                } catch {
+                                                                    return dateStr
+                                                                }
+                                                            })()}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -716,203 +1000,132 @@ const Sales = () => {
                                                 />
                                             </div>
 
-                                            <div>
-                                                <div className='flex items-center justify-between mb-3'>
-                                                    <h3 className='text-lg font-semibold text-gray-700'>
-                                                        Выберите товары и укажите количество
-                                                    </h3>
-                                                    <span className='text-sm text-gray-500'>
-                                                        Выбрано: {formData.products.length}
-                                                    </span>
-                                                </div>
-                                                {/* Search Input */}
-                                                <div className='relative mb-4'>
-                                                    <input
-                                                        type='text'
-                                                        placeholder='Поиск товара...'
-                                                        value={searchQuery}
-                                                        onChange={(e) =>
-                                                            setSearchQuery(e.target.value)
-                                                        }
-                                                        className='w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500'
-                                                        disabled={currentStep === 2}
-                                                    />
-                                                    <svg
-                                                        xmlns='http://www.w3.org/2000/svg'
-                                                        fill='none'
-                                                        viewBox='0 0 24 24'
-                                                        strokeWidth={2}
-                                                        stroke='currentColor'
-                                                        className='w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
-                                                    >
-                                                        <path
-                                                            strokeLinecap='round'
-                                                            strokeLinejoin='round'
-                                                            d='M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
+                                            {!isEditMode && (
+                                                <div>
+                                                    <div className='flex items-center justify-between mb-3'>
+                                                        <h3 className='text-lg font-semibold text-gray-700'>
+                                                            Выберите товары и укажите количество
+                                                        </h3>
+                                                        <span className='text-sm text-gray-500'>
+                                                            Выбрано: {formData.products.length}
+                                                        </span>
+                                                    </div>
+                                                    {/* Search Input */}
+                                                    <div className='relative mb-4'>
+                                                        <input
+                                                            type='text'
+                                                            placeholder='Поиск товара...'
+                                                            value={searchQuery}
+                                                            onChange={(e) =>
+                                                                setSearchQuery(e.target.value)
+                                                            }
+                                                            className='w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500'
+                                                            disabled={currentStep === 2}
                                                         />
-                                                    </svg>
-                                                </div>
-                                                <div className='grid grid-cols-3 gap-4 max-h-[350px] overflow-y-auto pr-2'>
-                                                    {(products || [])
-                                                        .filter((product) =>
-                                                            product.name
-                                                                .toLowerCase()
-                                                                .includes(searchQuery.toLowerCase())
-                                                        )
-                                                        .map((product) => {
-                                                            const selectedProduct =
-                                                                formData.products.find(
-                                                                    (p) =>
-                                                                        Number(p.product_id) ===
-                                                                        Number(product.id)
-                                                                )
-                                                            const selectedIndex =
-                                                                formData.products.findIndex(
-                                                                    (p) =>
-                                                                        Number(p.product_id) ===
-                                                                        Number(product.id)
-                                                                )
-                                                            const isSelected =
-                                                                selectedProduct !== undefined
-                                                            const selectedQuantity =
-                                                                Number(selectedProduct?.quantity) ||
-                                                                0
+                                                        <svg
+                                                            xmlns='http://www.w3.org/2000/svg'
+                                                            fill='none'
+                                                            viewBox='0 0 24 24'
+                                                            strokeWidth={2}
+                                                            stroke='currentColor'
+                                                            className='w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
+                                                        >
+                                                            <path
+                                                                strokeLinecap='round'
+                                                                strokeLinejoin='round'
+                                                                d='M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
+                                                            />
+                                                        </svg>
+                                                    </div>
+                                                    <div className='grid grid-cols-3 gap-4 max-h-[350px] overflow-y-auto pr-2'>
+                                                        {(products || [])
+                                                            .filter((product) =>
+                                                                product.name
+                                                                    .toLowerCase()
+                                                                    .includes(
+                                                                        searchQuery.toLowerCase()
+                                                                    )
+                                                            )
+                                                            .map((product) => {
+                                                                const selectedProduct =
+                                                                    formData.products.find(
+                                                                        (p) =>
+                                                                            Number(p.product_id) ===
+                                                                            Number(product.id)
+                                                                    )
+                                                                const selectedIndex =
+                                                                    formData.products.findIndex(
+                                                                        (p) =>
+                                                                            Number(p.product_id) ===
+                                                                            Number(product.id)
+                                                                    )
+                                                                const isSelected =
+                                                                    selectedProduct !== undefined
+                                                                const selectedQuantity =
+                                                                    Number(
+                                                                        selectedProduct?.quantity
+                                                                    ) || 0
 
-                                                            return (
-                                                                <div
-                                                                    key={product.id}
-                                                                    className={`p-4 border-2 rounded-lg transition-all ${
-                                                                        isSelected
-                                                                            ? 'border-blue-500 bg-blue-50'
-                                                                            : 'border-gray-200 hover:border-gray-300'
-                                                                    }`}
-                                                                >
-                                                                    <div className='flex items-start justify-between mb-3 relative'>
-                                                                        <h4 className='font-semibold text-gray-800 text-sm flex-1'>
-                                                                            {product.name}
-                                                                        </h4>
-                                                                        {isSelected && (
-                                                                            <button
-                                                                                type='button'
-                                                                                onClick={() =>
-                                                                                    removeProduct(
-                                                                                        selectedIndex
-                                                                                    )
-                                                                                }
-                                                                                className='p-1 absolute top-0 right-0 text-red-500 hover:bg-red-100 rounded transition-colors'
-                                                                                title='Удалить'
-                                                                                disabled={
-                                                                                    currentStep ===
-                                                                                    2
-                                                                                }
-                                                                            >
-                                                                                <svg
-                                                                                    xmlns='http://www.w3.org/2000/svg'
-                                                                                    fill='none'
-                                                                                    viewBox='0 0 24 24'
-                                                                                    strokeWidth={2}
-                                                                                    stroke='currentColor'
-                                                                                    className='w-4 h-4'
-                                                                                >
-                                                                                    <path
-                                                                                        strokeLinecap='round'
-                                                                                        strokeLinejoin='round'
-                                                                                        d='M6 18L18 6M6 6l12 12'
-                                                                                    />
-                                                                                </svg>
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                    <p className='text-xs text-gray-500 mb-2 min-h-[32px]'>
-                                                                        {product.description ||
-                                                                            'Описание товара'}
-                                                                    </p>
-                                                                    <div className='space-y-2'>
-                                                                        <div className='flex items-center gap-2'>
-                                                                            <input
-                                                                                type='number'
-                                                                                min='0'
-                                                                                placeholder='0'
-                                                                                value={
-                                                                                    selectedProduct?.quantity ||
-                                                                                    ''
-                                                                                }
-                                                                                onChange={(e) => {
-                                                                                    const value =
-                                                                                        e.target
-                                                                                            .value
-                                                                                    if (
-                                                                                        value ===
-                                                                                            '' ||
-                                                                                        value ===
-                                                                                            '0'
-                                                                                    ) {
-                                                                                        // Remove product if quantity is 0 or empty
-                                                                                        if (
-                                                                                            isSelected
-                                                                                        ) {
-                                                                                            removeProduct(
-                                                                                                selectedIndex
-                                                                                            )
-                                                                                        }
-                                                                                    } else {
-                                                                                        if (
-                                                                                            isSelected
-                                                                                        ) {
-                                                                                            // Update existing product
-                                                                                            handleProductChange(
-                                                                                                selectedIndex,
-                                                                                                'quantity',
-                                                                                                value
-                                                                                            )
-                                                                                        } else {
-                                                                                            // Add new product
-                                                                                            setFormData(
-                                                                                                (
-                                                                                                    prev
-                                                                                                ) => ({
-                                                                                                    ...prev,
-                                                                                                    products:
-                                                                                                        [
-                                                                                                            ...prev.products,
-                                                                                                            {
-                                                                                                                product_id:
-                                                                                                                    product.id,
-                                                                                                                quantity:
-                                                                                                                    value,
-                                                                                                                price: '',
-                                                                                                            },
-                                                                                                        ],
-                                                                                                })
-                                                                                            )
-                                                                                        }
+                                                                return (
+                                                                    <div
+                                                                        key={product.id}
+                                                                        className={`p-4 border-2 rounded-lg transition-all ${
+                                                                            isSelected
+                                                                                ? 'border-blue-500 bg-blue-50'
+                                                                                : 'border-gray-200 hover:border-gray-300'
+                                                                        }`}
+                                                                    >
+                                                                        <div className='flex items-start justify-between mb-3 relative'>
+                                                                            <h4 className='font-semibold text-gray-800 text-sm flex-1'>
+                                                                                {product.name}
+                                                                            </h4>
+                                                                            {isSelected && (
+                                                                                <button
+                                                                                    type='button'
+                                                                                    onClick={() =>
+                                                                                        removeProduct(
+                                                                                            selectedIndex
+                                                                                        )
                                                                                     }
-                                                                                }}
-                                                                                className={`flex-1 px-3 py-2 border rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                                                                                    isSelected
-                                                                                        ? 'border-blue-500 focus:ring-blue-200'
-                                                                                        : 'border-gray-300 focus:ring-gray-200'
-                                                                                }`}
-                                                                                disabled={
-                                                                                    currentStep ===
-                                                                                    2
-                                                                                }
-                                                                            />
-                                                                            <span className='text-xs text-gray-500'>
-                                                                                шт.
-                                                                            </span>
+                                                                                    className='p-1 absolute top-0 right-0 text-red-500 hover:bg-red-100 rounded transition-colors'
+                                                                                    title='Удалить'
+                                                                                    disabled={
+                                                                                        currentStep ===
+                                                                                        2
+                                                                                    }
+                                                                                >
+                                                                                    <svg
+                                                                                        xmlns='http://www.w3.org/2000/svg'
+                                                                                        fill='none'
+                                                                                        viewBox='0 0 24 24'
+                                                                                        strokeWidth={
+                                                                                            2
+                                                                                        }
+                                                                                        stroke='currentColor'
+                                                                                        className='w-4 h-4'
+                                                                                    >
+                                                                                        <path
+                                                                                            strokeLinecap='round'
+                                                                                            strokeLinejoin='round'
+                                                                                            d='M6 18L18 6M6 6l12 12'
+                                                                                        />
+                                                                                    </svg>
+                                                                                </button>
+                                                                            )}
                                                                         </div>
-                                                                        {isSelected && (
+                                                                        <p className='text-xs text-gray-500 mb-2 min-h-[32px]'>
+                                                                            {product.description ||
+                                                                                'Описание товара'}
+                                                                        </p>
+                                                                        <div className='space-y-2'>
                                                                             <div className='flex items-center gap-2'>
                                                                                 <input
-                                                                                    type='text'
-                                                                                    placeholder='Цена'
+                                                                                    type='number'
+                                                                                    min='0'
+                                                                                    placeholder='0'
                                                                                     value={
-                                                                                        selectedProduct?.price
-                                                                                            ? formatNumber(
-                                                                                                  selectedProduct.price
-                                                                                              )
-                                                                                            : ''
+                                                                                        selectedProduct?.quantity ||
+                                                                                        ''
                                                                                     }
                                                                                     onChange={(
                                                                                         e
@@ -920,30 +1133,111 @@ const Sales = () => {
                                                                                         const value =
                                                                                             e.target
                                                                                                 .value
-                                                                                        handleProductChange(
-                                                                                            selectedIndex,
-                                                                                            'price',
-                                                                                            value
-                                                                                        )
+                                                                                        if (
+                                                                                            value ===
+                                                                                                '' ||
+                                                                                            value ===
+                                                                                                '0'
+                                                                                        ) {
+                                                                                            // Remove product if quantity is 0 or empty
+                                                                                            if (
+                                                                                                isSelected
+                                                                                            ) {
+                                                                                                removeProduct(
+                                                                                                    selectedIndex
+                                                                                                )
+                                                                                            }
+                                                                                        } else {
+                                                                                            if (
+                                                                                                isSelected
+                                                                                            ) {
+                                                                                                // Update existing product
+                                                                                                handleProductChange(
+                                                                                                    selectedIndex,
+                                                                                                    'quantity',
+                                                                                                    value
+                                                                                                )
+                                                                                            } else {
+                                                                                                // Add new product
+                                                                                                setFormData(
+                                                                                                    (
+                                                                                                        prev
+                                                                                                    ) => ({
+                                                                                                        ...prev,
+                                                                                                        products:
+                                                                                                            [
+                                                                                                                ...prev.products,
+                                                                                                                {
+                                                                                                                    product_id:
+                                                                                                                        product.id,
+                                                                                                                    quantity:
+                                                                                                                        value,
+                                                                                                                    price: '',
+                                                                                                                },
+                                                                                                            ],
+                                                                                                    })
+                                                                                                )
+                                                                                            }
+                                                                                        }
                                                                                     }}
-                                                                                    className='flex-1 px-3 py-2 border border-blue-500 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all'
-                                                                                    required
+                                                                                    className={`flex-1 px-3 py-2 border rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                                                                                        isSelected
+                                                                                            ? 'border-blue-500 focus:ring-blue-200'
+                                                                                            : 'border-gray-300 focus:ring-gray-200'
+                                                                                    }`}
                                                                                     disabled={
                                                                                         currentStep ===
                                                                                         2
                                                                                     }
                                                                                 />
                                                                                 <span className='text-xs text-gray-500'>
-                                                                                    сум
+                                                                                    шт.
                                                                                 </span>
                                                                             </div>
-                                                                        )}
+                                                                            {isSelected && (
+                                                                                <div className='flex items-center gap-2'>
+                                                                                    <input
+                                                                                        type='text'
+                                                                                        placeholder='Цена'
+                                                                                        value={
+                                                                                            selectedProduct?.price
+                                                                                                ? formatNumber(
+                                                                                                      selectedProduct.price
+                                                                                                  )
+                                                                                                : ''
+                                                                                        }
+                                                                                        onChange={(
+                                                                                            e
+                                                                                        ) => {
+                                                                                            const value =
+                                                                                                e
+                                                                                                    .target
+                                                                                                    .value
+                                                                                            handleProductChange(
+                                                                                                selectedIndex,
+                                                                                                'price',
+                                                                                                value
+                                                                                            )
+                                                                                        }}
+                                                                                        className='flex-1 px-3 py-2 border border-blue-500 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all'
+                                                                                        required
+                                                                                        disabled={
+                                                                                            currentStep ===
+                                                                                            2
+                                                                                        }
+                                                                                    />
+                                                                                    <span className='text-xs text-gray-500'>
+                                                                                        сум
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            )
-                                                        })}
+                                                                )
+                                                            })}
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
                                         </>
                                     )}
 
@@ -955,7 +1249,7 @@ const Sales = () => {
                                             </h3>
                                             <div className='space-y-4'>
                                                 <Select
-                                                    label='Тип оплаты'
+                                                    label='Тип валюты'
                                                     required
                                                     options={paymentTypes.map((t) => ({
                                                         value: t.id,
@@ -968,7 +1262,7 @@ const Sales = () => {
                                                             payment_type_id: value,
                                                         }))
                                                     }
-                                                    placeholder='Выберите тип оплаты'
+                                                    placeholder='Выберите тип валюты'
                                                     searchable={false}
                                                 />
                                             </div>
@@ -1208,6 +1502,61 @@ const Sales = () => {
                 />
 
                 <Modal
+                    isOpen={isStatusModalOpen}
+                    onClose={() => {
+                        setIsStatusModalOpen(false)
+                        setStatusChangingItemId(null)
+                        setNewStatus('')
+                    }}
+                    title='Изменение статуса'
+                    maxWidth='max-w-md'
+                >
+                    <div className='space-y-4'>
+                        <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                Статус
+                            </label>
+                            <Select
+                                options={statusOptions}
+                                value={newStatus}
+                                onChange={(value) => setNewStatus(value)}
+                                placeholder='Выберите статус'
+                                searchable={false}
+                            />
+                        </div>
+                        <div className='flex justify-end gap-2 pt-4 border-t border-gray-200'>
+                            <Button
+                                type='button'
+                                variant='secondary'
+                                onClick={() => {
+                                    setIsStatusModalOpen(false)
+                                    setStatusChangingItemId(null)
+                                    setNewStatus('')
+                                }}
+                                disabled={changingStatus}
+                            >
+                                Отмена
+                            </Button>
+                            <Button
+                                type='button'
+                                variant='primary'
+                                onClick={confirmStatusChange}
+                                disabled={changingStatus || !newStatus}
+                            >
+                                {changingStatus ? (
+                                    <span className='flex items-center gap-2'>
+                                        <span className='loading loading-spinner loading-sm'></span>
+                                        Изменение...
+                                    </span>
+                                ) : (
+                                    'Изменить статус'
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+
+                <Modal
                     isOpen={isViewModalOpen}
                     onClose={() => {
                         setIsViewModalOpen(false)
@@ -1239,7 +1588,44 @@ const Sales = () => {
                                     <div>
                                         <p className='text-xs text-gray-500 mb-1'>Дата создания</p>
                                         <p className='text-sm font-semibold text-gray-800'>
-                                            {viewingItem.created_at || viewingItem.date || '-'}
+                                            {(() => {
+                                                const dateStr =
+                                                    viewingItem.created_at || viewingItem.date
+                                                if (!dateStr) return '-'
+                                                try {
+                                                    const date = new Date(dateStr)
+                                                    if (isNaN(date.getTime())) return dateStr
+                                                    const day = String(date.getDate()).padStart(
+                                                        2,
+                                                        '0'
+                                                    )
+                                                    const month = String(
+                                                        date.getMonth() + 1
+                                                    ).padStart(2, '0')
+                                                    const year = date.getFullYear()
+                                                    return `${day}-${month}-${year}`
+                                                } catch {
+                                                    return dateStr
+                                                }
+                                            })()}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className='text-xs text-gray-500 mb-1'>Статус</p>
+                                        <p className='text-sm font-semibold'>
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    viewingItem.status === 'PAID'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-yellow-100 text-yellow-700'
+                                                }`}
+                                            >
+                                                {viewingItem.status === 'PAID'
+                                                    ? 'Оплачено'
+                                                    : viewingItem.status === 'PENDING_PAYMENT'
+                                                    ? 'Ожидает оплаты'
+                                                    : viewingItem.status || 'Ожидает оплаты'}
+                                            </span>
                                         </p>
                                     </div>
                                 </div>
@@ -1286,21 +1672,104 @@ const Sales = () => {
                                 </div>
                             </div>
 
+                            {/* User Info */}
+                            {viewingItem.user && (
+                                <div className='bg-gray-50 rounded-lg p-4'>
+                                    <h3 className='text-sm font-bold text-gray-700 mb-3 uppercase'>
+                                        Кто создал продажу
+                                    </h3>
+                                    <div className='space-y-3'>
+                                        <div>
+                                            <p className='text-xs text-gray-500 mb-1'>
+                                                Имя пользователя
+                                            </p>
+                                            <p className='text-sm font-semibold text-gray-800'>
+                                                {viewingItem.user.username || '-'}
+                                            </p>
+                                        </div>
+                                        <div className='grid grid-cols-2 gap-4'>
+                                            <div>
+                                                <p className='text-xs text-gray-500 mb-1'>
+                                                    Телефон
+                                                </p>
+                                                <p className='text-sm font-semibold text-gray-800'>
+                                                    {viewingItem.user.phone || '-'}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className='text-xs text-gray-500 mb-1'>Роли</p>
+                                                <p className='text-sm font-semibold text-gray-800'>
+                                                    {viewingItem.user.roles &&
+                                                    viewingItem.user.roles.length > 0
+                                                        ? viewingItem.user.roles
+                                                              .map((r) => r.name)
+                                                              .join(', ')
+                                                        : '-'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Products Info */}
                             <div className='bg-gray-50 rounded-lg p-4'>
                                 <h3 className='text-sm font-bold text-gray-700 mb-3 uppercase'>
                                     Товары
                                 </h3>
                                 {viewingItem.products && viewingItem.products.length > 0 ? (
-                                    <div className='text-sm text-gray-700'>
-                                        {viewingItem.products
-                                            .map(
-                                                (product) =>
-                                                    `${product.name || 'Товар'} (${
-                                                        product.quantity
-                                                    } шт.)`
+                                    <div className='space-y-3'>
+                                        {viewingItem.products.map((product, index) => {
+                                            const quantity =
+                                                product.pivot_quantity || product.quantity || 0
+                                            const price = product.pivot_price || product.price || 0
+                                            const total = quantity * price
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className='bg-white p-3 rounded-lg border border-gray-200'
+                                                >
+                                                    <div className='flex items-start justify-between mb-2'>
+                                                        <div className='flex-1'>
+                                                            <p className='text-sm font-semibold text-gray-800'>
+                                                                {product.name || 'Товар'}
+                                                            </p>
+                                                            {product.description && (
+                                                                <p className='text-xs text-gray-500 mt-1'>
+                                                                    {product.description}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className='grid grid-cols-3 gap-2 text-xs text-gray-600 pt-2 border-t border-gray-100'>
+                                                        <div>
+                                                            <span className='text-gray-500'>
+                                                                Количество:{' '}
+                                                            </span>
+                                                            <strong>{quantity}</strong> шт.
+                                                        </div>
+                                                        <div>
+                                                            <span className='text-gray-500'>
+                                                                Цена:{' '}
+                                                            </span>
+                                                            <strong>
+                                                                {Number(price).toLocaleString()}
+                                                            </strong>{' '}
+                                                            сум
+                                                        </div>
+                                                        <div>
+                                                            <span className='text-gray-500'>
+                                                                Сумма:{' '}
+                                                            </span>
+                                                            <strong className='text-blue-600'>
+                                                                {Number(total).toLocaleString()}
+                                                            </strong>{' '}
+                                                            сум
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             )
-                                            .join(', ')}
+                                        })}
                                     </div>
                                 ) : (
                                     <p className='text-sm text-gray-500'>Нет товаров</p>

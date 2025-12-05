@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import DatePicker from '../components/UI/DatePicker'
+import ErrorModal from '../components/UI/ErrorModal'
 import Select from '../components/UI/Select'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
-import ErrorModal from '../components/UI/ErrorModal'
 
 const Dashboard = () => {
     // Format date to yyyy-mm-dd string format
@@ -133,10 +134,13 @@ const Dashboard = () => {
             .map(([date, summa]) => ({
                 date,
                 summa,
-                label: new Date(date).toLocaleDateString('ru-RU', {
-                    day: '2-digit',
-                    month: '2-digit',
-                }),
+                label: (() => {
+                    const d = new Date(date)
+                    if (isNaN(d.getTime())) return date
+                    const day = String(d.getDate()).padStart(2, '0')
+                    const month = String(d.getMonth() + 1).padStart(2, '0')
+                    return `${day}-${month}`
+                })(),
             }))
 
         return sorted
@@ -161,10 +165,13 @@ const Dashboard = () => {
             .map(([date, summa]) => ({
                 date,
                 summa,
-                label: new Date(date).toLocaleDateString('ru-RU', {
-                    day: '2-digit',
-                    month: '2-digit',
-                }),
+                label: (() => {
+                    const d = new Date(date)
+                    if (isNaN(d.getTime())) return date
+                    const day = String(d.getDate()).padStart(2, '0')
+                    const month = String(d.getMonth() + 1).padStart(2, '0')
+                    return `${day}-${month}`
+                })(),
             }))
 
         return sorted
@@ -185,31 +192,7 @@ const Dashboard = () => {
     }
 
     const handleDateChange = (e) => {
-        let dateValue = e.target.value
-
-        // Remove all non-digit characters
-        dateValue = dateValue.replace(/\D/g, '')
-
-        // Format as yyyy-mm-dd while typing
-        if (dateValue.length > 0) {
-            if (dateValue.length <= 4) {
-                // Just year: yyyy
-                dateValue = dateValue
-            } else if (dateValue.length <= 6) {
-                // Year and month: yyyy-mm
-                dateValue = dateValue.slice(0, 4) + '-' + dateValue.slice(4, 6)
-            } else {
-                // Full date: yyyy-mm-dd (limit to 8 digits)
-                dateValue =
-                    dateValue.slice(0, 4) +
-                    '-' +
-                    dateValue.slice(4, 6) +
-                    '-' +
-                    dateValue.slice(6, 8)
-            }
-        }
-
-        setSelectedDate(dateValue)
+        setSelectedDate(e.target.value) // DatePicker returns yyyy-mm-dd format
     }
 
     const renderChart = (chartData, maxValue, loading) => {
@@ -330,13 +313,13 @@ const Dashboard = () => {
                         <div className='flex items-center justify-between bg-white rounded-xl shadow-sm p-4'>
                             <h2 className='text-gray-800 font-bold text-lg'>Продажи по дням</h2>
                             <div className='flex items-center gap-2'>
-                                <span className='text-sm text-slate-600 font-medium'>Дата:</span>
-                                <input
-                                    type='text'
-                                    value={selectedDate || ''}
+                                <DatePicker
+                                    label=''
+                                    name='selectedDate'
+                                    value={selectedDate}
                                     onChange={handleDateChange}
-                                    placeholder='yyyy-mm-dd'
-                                    className='px-3 py-2 border border-slate-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent'
+                                    placeholder='dd-mm-yyyy'
+                                    className='w-48'
                                 />
                             </div>
                         </div>
@@ -356,11 +339,22 @@ const Dashboard = () => {
                                             : '0 Сум'}
                                     </h3>
                                     <div className='text-slate-500 text-sm'>
-                                        {new Date(selectedDate).toLocaleDateString('ru-RU', {
-                                            day: '2-digit',
-                                            month: 'long',
-                                            year: 'numeric',
-                                        })}
+                                        {(() => {
+                                            if (!selectedDate) return ''
+                                            try {
+                                                const date = new Date(selectedDate)
+                                                if (isNaN(date.getTime())) return ''
+                                                const day = String(date.getDate()).padStart(2, '0')
+                                                const month = String(date.getMonth() + 1).padStart(
+                                                    2,
+                                                    '0'
+                                                )
+                                                const year = date.getFullYear()
+                                                return `${day}-${month}-${year}`
+                                            } catch {
+                                                return ''
+                                            }
+                                        })()}
                                     </div>
                                 </div>
                                 <div className='w-14 h-14 bg-teal-400/90 text-white rounded-xl shadow-sm flex items-center justify-center ring-1 ring-teal-300/50'>
@@ -627,8 +621,8 @@ const Dashboard = () => {
             <ErrorModal
                 isOpen={isErrorOpen}
                 onClose={() => setIsErrorOpen(false)}
-                title="Xatolik"
-                message={error?.message || 'Noma\'lum xatolik yuz berdi'}
+                title='Xatolik'
+                message={error?.message || "Noma'lum xatolik yuz berdi"}
                 statusCode={error?.statusCode}
                 errors={error?.errors}
             />

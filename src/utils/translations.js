@@ -12,6 +12,7 @@ export const translations = {
         payments: 'Платежи',
         expances: 'Расходы',
         workers: 'Работники',
+        salaries: 'Зарплаты',
         settings: 'Справочник',
     },
     actions: {
