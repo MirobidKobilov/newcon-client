@@ -643,6 +643,7 @@ const Workers = () => {
                                 onChange={handleInputChange}
                                 placeholder='dd-mm-yyyy'
                                 required
+                                dropdownDirection='up'
                             />
 
                             <Input

@@ -309,19 +309,21 @@ const Dashboard = () => {
                 <div className='grid grid-cols-1 xl:grid-cols-2 gap-6'>
                     {/* Left Column - Daily Sales */}
                     <div className='space-y-4'>
-                        {/* Header with date picker */}
+                        {/* Header */}
                         <div className='flex items-center justify-between bg-white rounded-xl shadow-sm p-4'>
                             <h2 className='text-gray-800 font-bold text-lg'>Продажи по дням</h2>
-                            <div className='flex items-center gap-2'>
-                                <DatePicker
-                                    label=''
-                                    name='selectedDate'
-                                    value={selectedDate}
-                                    onChange={handleDateChange}
-                                    placeholder='dd-mm-yyyy'
-                                    className='w-48'
-                                />
-                            </div>
+                        </div>
+
+                        {/* Date Picker Card */}
+                        <div className='bg-white rounded-xl shadow-sm p-4'>
+                            <DatePicker
+                                label='Выберите дату'
+                                name='selectedDate'
+                                value={selectedDate}
+                                onChange={handleDateChange}
+                                placeholder='dd-mm-yyyy'
+                                className='w-full'
+                            />
                         </div>
 
                         {/* Daily Stats Card */}

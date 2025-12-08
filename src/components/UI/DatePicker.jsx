@@ -1,6 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react'
 
-const DatePicker = ({ label, required, value, onChange, name, placeholder, className = '' }) => {
+const DatePicker = ({
+    label,
+    required,
+    value,
+    onChange,
+    name,
+    placeholder,
+    className = '',
+    dropdownDirection = 'down',
+}) => {
     const [isOpen, setIsOpen] = useState(false)
     const [displayValue, setDisplayValue] = useState('')
     const [selectedDate, setSelectedDate] = useState(null)
@@ -222,7 +231,7 @@ const DatePicker = ({ label, required, value, onChange, name, placeholder, class
                     onChange={handleInputChange}
                     onFocus={() => setIsOpen(true)}
                     placeholder={placeholder || 'dd-mm-yyyy'}
-                    className={`input input-bordered w-full border-gray-300 focus:border-gray-500 placeholder:text-gray-400 text-gray-900 ${className}`}
+                    className={`input input-bordered w-full border-gray-300 focus:border-gray-500 placeholder:text-gray-400 text-gray-900 bg-white ${className}`}
                     style={{ outline: 0 }}
                 />
                 <button
@@ -248,7 +257,11 @@ const DatePicker = ({ label, required, value, onChange, name, placeholder, class
             </div>
 
             {isOpen && (
-                <div className='absolute z-50 right-0 bottom-0 bottom-full mb-2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80'>
+                <div
+                    className={`absolute z-50 right-0 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80 ${
+                        dropdownDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'
+                    }`}
+                >
                     {/* Calendar Header */}
                     <div className='flex items-center justify-between mb-4'>
                         <button
