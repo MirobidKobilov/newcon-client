@@ -1042,10 +1042,10 @@ const Companies = () => {
                                                                     const paymentType =
                                                                         payment.payment_type_id ===
                                                                         1
-                                                                            ? 'Доллары'
+                                                                            ? '$'
                                                                             : payment.payment_type_id ===
                                                                               2
-                                                                            ? 'Сум'
+                                                                            ? '$'
                                                                             : '-'
                                                                     // Get amount from companies pivot
                                                                     const companyPayment =
@@ -1356,9 +1356,9 @@ const Companies = () => {
                                     </div>
                                     <div className='text-sm text-gray-700'>
                                         {selectedDetail.payment_type_id === 1
-                                            ? 'Доллары'
+                                            ? '$'
                                             : selectedDetail.payment_type_id === 2
-                                            ? 'Сум'
+                                            ? '$'
                                             : '-'}
                                     </div>
                                 </div>

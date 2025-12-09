@@ -39,8 +39,8 @@ const Sales = () => {
         payment_type_id: '',
     })
     const [paymentTypes] = useState([
-        { id: 1, name: 'Доллары' },
-        { id: 2, name: 'Сум' },
+        { id: 1, name: '$' },
+        { id: 2, name: '$' },
     ])
     const statusOptions = [
         { value: 'PENDING_PAYMENT', label: 'Ожидает оплаты' },
@@ -155,7 +155,7 @@ const Sales = () => {
 
     const formatNumber = (num) => {
         if (num === null || num === undefined || isNaN(num)) return '0'
-        // Округляем до целого числа для сум
+        // Округляем до целого числа для $
         const roundedNum = Math.round(Number(num))
         return roundedNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
     }
@@ -1227,7 +1227,7 @@ const Sales = () => {
                                                                                         }
                                                                                     />
                                                                                     <span className='text-xs text-gray-500'>
-                                                                                        сум
+                                                                                        $
                                                                                     </span>
                                                                                 </div>
                                                                             )}
@@ -1302,7 +1302,7 @@ const Sales = () => {
                                                                 {Number(
                                                                     company.deposit
                                                                 ).toLocaleString()}{' '}
-                                                                сум
+                                                                $
                                                             </p>
                                                         )}
                                                     </div>
@@ -1361,7 +1361,7 @@ const Sales = () => {
                                                                             ? formatNumber(price)
                                                                             : '0'}
                                                                     </strong>{' '}
-                                                                    сум
+                                                                    $
                                                                 </span>
                                                             </div>
                                                             <div className='flex justify-between items-center pt-1 border-t border-gray-100'>
@@ -1369,7 +1369,7 @@ const Sales = () => {
                                                                     Сумма:
                                                                 </span>
                                                                 <span className='text-xs font-bold text-blue-600'>
-                                                                    {formatNumber(total)} сум
+                                                                    {formatNumber(total)} $
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -1415,7 +1415,7 @@ const Sales = () => {
                                                 Итого:
                                             </p>
                                             <p className='text-xl font-bold text-blue-600'>
-                                                {formatNumber(saleTotalAmount)} сум
+                                                {formatNumber(saleTotalAmount)} $
                                             </p>
                                         </div>
                                         <div className='text-xs text-gray-500'>
@@ -1582,7 +1582,7 @@ const Sales = () => {
                                     <div>
                                         <p className='text-xs text-gray-500 mb-1'>Сумма</p>
                                         <p className='text-lg font-bold text-blue-600'>
-                                            {Number(viewingItem.summa).toLocaleString()} сум
+                                            {Number(viewingItem.summa).toLocaleString()} $
                                         </p>
                                     </div>
                                     <div>
@@ -1658,7 +1658,7 @@ const Sales = () => {
                                                 {viewingItem.company?.deposit
                                                     ? Number(
                                                           viewingItem.company.deposit
-                                                      ).toLocaleString() + ' сум'
+                                                      ).toLocaleString() + ' $'
                                                     : 'Не указан'}
                                             </p>
                                         </div>
@@ -1755,7 +1755,7 @@ const Sales = () => {
                                                             <strong>
                                                                 {Number(price).toLocaleString()}
                                                             </strong>{' '}
-                                                            сум
+                                                            $
                                                         </div>
                                                         <div>
                                                             <span className='text-gray-500'>
@@ -1764,7 +1764,7 @@ const Sales = () => {
                                                             <strong className='text-blue-600'>
                                                                 {Number(total).toLocaleString()}
                                                             </strong>{' '}
-                                                            сум
+                                                            $
                                                         </div>
                                                     </div>
                                                 </div>

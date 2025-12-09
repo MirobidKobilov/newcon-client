@@ -250,7 +250,7 @@ const Dashboard = () => {
                                 <div className='absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[100]'>
                                     <div className='bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl whitespace-nowrap'>
                                         <div className='font-semibold'>
-                                            {formatNumber(item.summa)} Сум
+                                            {formatNumber(item.summa)}$
                                         </div>
                                         <div className='text-gray-300 text-[10px] mt-0.5'>
                                             {item.label}
@@ -337,8 +337,8 @@ const Dashboard = () => {
                                         {loadingDay
                                             ? '...'
                                             : dailySalesData
-                                            ? `${formatNumber(dailySalesData.total_summa)} Сум`
-                                            : '0 Сум'}
+                                            ? `${formatNumber(dailySalesData.total_summa)}$`
+                                            : '0$'}
                                     </h3>
                                     <div className='text-slate-500 text-sm'>
                                         {(() => {
@@ -441,8 +441,7 @@ const Dashboard = () => {
                                                             <span className='text-sm font-semibold text-teal-600'>
                                                                 {formatNumber(
                                                                     parseFloat(sale.summa)
-                                                                )}{' '}
-                                                                Сум
+                                                                )}{' '}$
                                                             </span>
                                                         </td>
                                                     </tr>
@@ -452,7 +451,7 @@ const Dashboard = () => {
                                     </div>
                                     <div className='mt-4 pt-4 border-t border-slate-200 text-right'>
                                         <div className='text-base font-bold text-gray-800'>
-                                            Итого: {formatNumber(dailySalesData.total_summa)} Сум
+                                            Итого: {formatNumber(dailySalesData.total_summa)}$
                                         </div>
                                     </div>
                                 </div>
@@ -500,8 +499,8 @@ const Dashboard = () => {
                                         {loadingMonth
                                             ? '...'
                                             : salesData
-                                            ? `${formatNumber(salesData.total_summa)} Сум`
-                                            : '0 Сум'}
+                                            ? `${formatNumber(salesData.total_summa)}$`
+                                            : '0$'}
                                     </h3>
                                     <div className='text-slate-500 text-sm'>
                                         {months.find((m) => m.value === selectedMonth)?.label} 2025
@@ -591,8 +590,7 @@ const Dashboard = () => {
                                                     </td>
                                                     <td className='py-3 px-4'>
                                                         <span className='text-sm font-semibold text-teal-600'>
-                                                            {formatNumber(parseFloat(sale.summa))}{' '}
-                                                            Сум
+                                                            {formatNumber(parseFloat(sale.summa))}$
                                                         </span>
                                                     </td>
                                                 </tr>
@@ -602,7 +600,7 @@ const Dashboard = () => {
                                 </div>
                                 <div className='mt-4 pt-4 border-t border-slate-200 text-right'>
                                     <div className='text-base font-bold text-gray-800'>
-                                        Итого: {formatNumber(salesData.total_summa)} Сум
+                                        Итого: {formatNumber(salesData.total_summa)}$
                                     </div>
                                 </div>
                             </div>

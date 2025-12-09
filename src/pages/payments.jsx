@@ -30,8 +30,8 @@ const Payments = () => {
     const [successMessage, setSuccessMessage] = useState('')
     const [companiesList, setCompaniesList] = useState([])
     const [paymentTypes] = useState([
-        { value: 1, label: 'Доллары' },
-        { value: 2, label: 'Сум' },
+        { value: 1, label: '$' },
+        { value: 2, label: '$' },
     ])
     const [viewMode, setViewMode] = useState('table')
     const [page, setPage] = useState(1)

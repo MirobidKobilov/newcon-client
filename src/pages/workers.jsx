@@ -270,7 +270,7 @@ const Workers = () => {
 
     const formatSalary = (salary) => {
         if (!salary) return '-'
-        return new Intl.NumberFormat('ru-RU').format(salary) + ' сум'
+        return new Intl.NumberFormat('ru-RU').format(salary) + ' $'
     }
 
     return (

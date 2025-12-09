@@ -245,7 +245,7 @@ const Expances = () => {
                             ) : (
                                 <p className='text-3xl font-bold text-gray-700'>
                                     {totalExpenses.toLocaleString()}{' '}
-                                    <span className='text-lg text-slate-400'>сум</span>
+                                    <span className='text-lg text-slate-400'>$</span>
                                 </p>
                             )}
                         </div>

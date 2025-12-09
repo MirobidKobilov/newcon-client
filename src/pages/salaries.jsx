@@ -89,7 +89,7 @@ const Salaries = () => {
 
     const formatNumber = (num) => {
         if (num === null || num === undefined || num === '' || isNaN(num)) return ''
-        // Округляем до целого числа для сум
+        // Округляем до целого числа для $
         const roundedNum = Math.round(Number(num))
         return roundedNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
     }
@@ -226,7 +226,7 @@ const Salaries = () => {
     const formatSalary = (salary) => {
         if (!salary) return '-'
         const numSalary = typeof salary === 'string' ? parseFloat(salary) : salary
-        return new Intl.NumberFormat('ru-RU').format(numSalary) + ' сум'
+        return new Intl.NumberFormat('ru-RU').format(numSalary) + ' $'
     }
 
     const formatDate = (dateString) => {
