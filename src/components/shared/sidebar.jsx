@@ -61,7 +61,7 @@ function Icon({ name, className = '' }) {
     )
 }
 
-const Sidebar = () => {
+const Sidebar = ({ onClose }) => {
     const [mounted, setMounted] = useState(false)
     const location = useLocation()
     const { menu } = useContext(Context)
@@ -83,15 +83,41 @@ const Sidebar = () => {
         }
     }, [location.pathname])
 
+    // Close sidebar on mobile when navigating
+    useEffect(() => {
+        if (onClose && window.innerWidth < 1024) {
+            onClose()
+        }
+    }, [location.pathname])
+
     if (!menu) {
         return (
-            <aside className='w-full max-w-[240px] h-screen flex flex-col bg-white border-r border-neutral-200'>
-                <div className='flex items-center gap-3 px-6 py-4 border-b border-neutral-200'>
-                    <Link to='/' className='flex items-center gap-3 group'>
+            <aside className='w-[240px] lg:w-full lg:max-w-[240px] h-screen flex flex-col bg-white border-r border-neutral-200'>
+                <div className='flex items-center justify-between gap-3 px-6 py-4 border-b border-neutral-200'>
+                    <Link to='/' className='flex items-center gap-3 group' onClick={onClose}>
                         <span className="text-gray-700 text-sm font-bold font-['Helvetica'] leading-tight group-hover:text-gray-900 transition-colors">
                             NEWCON
                         </span>
                     </Link>
+                    <button
+                        onClick={onClose}
+                        className='lg:hidden p-1 rounded-lg hover:bg-gray-100 text-gray-500'
+                        aria-label='Close menu'
+                    >
+                        <svg
+                            className='w-6 h-6'
+                            fill='none'
+                            stroke='currentColor'
+                            viewBox='0 0 24 24'
+                        >
+                            <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                strokeWidth={2}
+                                d='M6 18L18 6M6 6l12 12'
+                            />
+                        </svg>
+                    </button>
                 </div>
                 <nav className='flex-1 px-3 py-4' role='navigation'>
                     <div className='text-slate-500 text-xs px-3'>{t('common.loading')}</div>
@@ -101,13 +127,27 @@ const Sidebar = () => {
     }
 
     return (
-        <aside className='w-full max-w-[240px] h-screen flex flex-col bg-white border-r border-neutral-200 overflow-hidden'>
-            <div className='flex items-center gap-3 px-6 py-4 border-b border-neutral-200'>
-                <Link to='/' className='flex items-center gap-3 group'>
+        <aside className='w-[240px] lg:w-full lg:max-w-[240px] h-screen flex flex-col bg-white border-r border-neutral-200 overflow-hidden'>
+            <div className='flex items-center justify-between gap-3 px-6 py-4 border-b border-neutral-200'>
+                <Link to='/' className='flex items-center gap-3 group' onClick={onClose}>
                     <span className="text-gray-700 text-sm font-bold font-['Helvetica'] leading-tight group-hover:text-gray-900 transition-colors">
                         NEWCON
                     </span>
                 </Link>
+                <button
+                    onClick={onClose}
+                    className='lg:hidden p-1 rounded-lg hover:bg-gray-100 text-gray-500'
+                    aria-label='Close menu'
+                >
+                    <svg className='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                        <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M6 18L18 6M6 6l12 12'
+                        />
+                    </svg>
+                </button>
             </div>
 
             <nav className='flex-1 px-3 py-4 overflow-y-auto' role='navigation'>
@@ -121,6 +161,7 @@ const Sidebar = () => {
                     >
                         <NavLink
                             to='/'
+                            onClick={onClose}
                             className={({ isActive }) =>
                                 `group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold font-['Helvetica'] leading-tight transition-all duration-300 ease-out ` +
                                 (isActive
@@ -250,6 +291,7 @@ const Sidebar = () => {
                                                                 <li key={childKey}>
                                                                     <NavLink
                                                                         to={`/${childKey}`}
+                                                                        onClick={onClose}
                                                                         className={({ isActive }) =>
                                                                             `group relative flex items-center gap-2.5 pl-3 pr-3 py-1.5 rounded-lg text-xs font-semibold font-['Helvetica'] leading-tight transition-all duration-200 ease-out ` +
                                                                             (isActive
@@ -309,6 +351,7 @@ const Sidebar = () => {
                                     ) : (
                                         <NavLink
                                             to={`/${sectionKey}`}
+                                            onClick={onClose}
                                             className={({ isActive }) =>
                                                 `group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold font-['Helvetica'] leading-tight transition-all duration-300 ease-out ` +
                                                 (isActive

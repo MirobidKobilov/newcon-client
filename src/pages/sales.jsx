@@ -445,28 +445,34 @@ const Sales = () => {
 
     return (
         <Layout>
-            <div className='min-h-screen bg-gray-50 p-4 lg:p-6'>
-                <div className='mb-6'>
-                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6'>
+            <div className='min-h-screen bg-gray-50 p-2 sm:p-3 md:p-4 lg:p-6'>
+                <div className='mb-4 sm:mb-6'>
+                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6'>
                         <div>
-                            <div className='text-2xl text-slate-400'>
+                            <div className='text-lg sm:text-xl md:text-2xl text-slate-400'>
                                 NEWCON <span className='text-gray-700'>/ Продажи</span>
                             </div>
                         </div>
-                        <Button onClick={handleCreateNew} variant='primary'>
+                        <Button
+                            onClick={handleCreateNew}
+                            variant='primary'
+                            className='w-full sm:w-auto'
+                        >
                             + Создать продажу
                         </Button>
                     </div>
                 </div>
 
-                <div className='bg-white rounded-2xl shadow-sm mb-6 overflow-hidden'>
-                    <div className='p-6 border-b border-slate-200'>
-                        <div className='flex items-center justify-between mb-4'>
-                            <h2 className='text-lg font-bold text-gray-700'>Продажи</h2>
-                            <div className='flex gap-2 bg-gray-100 p-1 rounded-lg'>
+                <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6 overflow-hidden'>
+                    <div className='p-3 sm:p-4 md:p-6 border-b border-slate-200'>
+                        <div className='flex items-center justify-between mb-3 sm:mb-4'>
+                            <h2 className='text-base sm:text-lg font-bold text-gray-700'>
+                                Продажи
+                            </h2>
+                            <div className='flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
                                 <button
                                     onClick={() => setViewMode('table')}
-                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                         viewMode === 'table'
                                             ? 'bg-white text-gray-900 shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
@@ -476,7 +482,7 @@ const Sales = () => {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('cards')}
-                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                         viewMode === 'cards'
                                             ? 'bg-white text-gray-900 shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
@@ -489,32 +495,32 @@ const Sales = () => {
                     </div>
 
                     {viewMode === 'table' && (
-                        <div className='overflow-x-auto'>
-                            <table className='w-full'>
+                        <div className='overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6'>
+                            <table className='w-full min-w-[800px]'>
                                 <thead>
                                     <tr className='border-b border-slate-200'>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-1.5 sm:p-2 md:p-3 lg:p-4 text-slate-400 text-[8px] sm:text-[9px] md:text-[10px] font-bold uppercase whitespace-nowrap'>
                                             ID
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-1.5 sm:p-2 md:p-3 lg:p-4 text-slate-400 text-[8px] sm:text-[9px] md:text-[10px] font-bold uppercase whitespace-nowrap'>
                                             Компания
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-1.5 sm:p-2 md:p-3 lg:p-4 text-slate-400 text-[8px] sm:text-[9px] md:text-[10px] font-bold uppercase whitespace-nowrap'>
                                             Товары
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
-                                            Количество
+                                        <th className='text-left p-1.5 sm:p-2 md:p-3 lg:p-4 text-slate-400 text-[8px] sm:text-[9px] md:text-[10px] font-bold uppercase whitespace-nowrap'>
+                                            Кол-во
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-1.5 sm:p-2 md:p-3 lg:p-4 text-slate-400 text-[8px] sm:text-[9px] md:text-[10px] font-bold uppercase whitespace-nowrap'>
                                             Сумма
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-1.5 sm:p-2 md:p-3 lg:p-4 text-slate-400 text-[8px] sm:text-[9px] md:text-[10px] font-bold uppercase whitespace-nowrap'>
                                             Дата
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-1.5 sm:p-2 md:p-3 lg:p-4 text-slate-400 text-[8px] sm:text-[9px] md:text-[10px] font-bold uppercase whitespace-nowrap'>
                                             Статус
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-1.5 sm:p-2 md:p-3 lg:p-4 text-slate-400 text-[8px] sm:text-[9px] md:text-[10px] font-bold uppercase whitespace-nowrap'>
                                             Действия
                                         </th>
                                     </tr>
@@ -524,7 +530,7 @@ const Sales = () => {
                                         <tr>
                                             <td
                                                 colSpan='8'
-                                                className='p-8 text-center text-slate-500'
+                                                className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
                                             >
                                                 Загрузка...
                                             </td>
@@ -533,7 +539,7 @@ const Sales = () => {
                                         <tr>
                                             <td
                                                 colSpan='8'
-                                                className='p-8 text-center text-slate-500'
+                                                className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
                                             >
                                                 Нет данных
                                             </td>
@@ -549,18 +555,18 @@ const Sales = () => {
                                                     key={item.id}
                                                     className='border-b border-slate-200 hover:bg-gray-50'
                                                 >
-                                                    <td className='p-4'>
-                                                        <div className='text-sm font-bold text-gray-700'>
+                                                    <td className='p-1.5 sm:p-2 md:p-3 lg:p-4'>
+                                                        <div className='text-[10px] sm:text-xs md:text-sm font-bold text-gray-700'>
                                                             {item.id}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='text-sm font-bold text-gray-700'>
+                                                    <td className='p-1.5 sm:p-2 md:p-3 lg:p-4'>
+                                                        <div className='text-[10px] sm:text-xs md:text-sm font-bold text-gray-700 truncate max-w-[120px] sm:max-w-none'>
                                                             {company?.name || '-'}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='text-sm text-slate-600'>
+                                                    <td className='p-1.5 sm:p-2 md:p-3 lg:p-4'>
+                                                        <div className='text-[10px] sm:text-xs md:text-sm text-slate-600 line-clamp-2'>
                                                             {item.products &&
                                                             item.products.length > 0
                                                                 ? item.products
@@ -569,8 +575,8 @@ const Sales = () => {
                                                                 : '-'}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='text-sm text-slate-600'>
+                                                    <td className='p-1.5 sm:p-2 md:p-3 lg:p-4'>
+                                                        <div className='text-[10px] sm:text-xs md:text-sm text-slate-600'>
                                                             {item.products &&
                                                             item.products.length > 0
                                                                 ? item.products
@@ -588,14 +594,14 @@ const Sales = () => {
                                                             шт.
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='text-sm text-slate-600 font-semibold'>
+                                                    <td className='p-1.5 sm:p-2 md:p-3 lg:p-4'>
+                                                        <div className='text-[10px] sm:text-xs md:text-sm text-slate-600 font-semibold whitespace-nowrap'>
                                                             {Number(item.summa).toLocaleString() ||
                                                                 '-'}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='text-sm text-slate-600'>
+                                                    <td className='p-1.5 sm:p-2 md:p-3 lg:p-4'>
+                                                        <div className='text-[10px] sm:text-xs md:text-sm text-slate-600 whitespace-nowrap'>
                                                             {(() => {
                                                                 const dateStr =
                                                                     item.date || item.created_at
@@ -618,10 +624,10 @@ const Sales = () => {
                                                             })()}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='flex items-center gap-2'>
+                                                    <td className='p-1.5 sm:p-2 md:p-3 lg:p-4'>
+                                                        <div className='flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2'>
                                                             <span
-                                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                                className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[8px] sm:text-[9px] md:text-xs font-medium whitespace-nowrap ${
                                                                     item.status === 'PAID'
                                                                         ? 'bg-green-100 text-green-700'
                                                                         : 'bg-yellow-100 text-yellow-700'
@@ -639,7 +645,7 @@ const Sales = () => {
                                                                 onClick={() =>
                                                                     handleStatusChange(item)
                                                                 }
-                                                                className='p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors'
+                                                                className='p-1 sm:p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors touch-manipulation'
                                                                 title='Изменить статус'
                                                             >
                                                                 <svg
@@ -648,7 +654,7 @@ const Sales = () => {
                                                                     viewBox='0 0 24 24'
                                                                     strokeWidth={2}
                                                                     stroke='currentColor'
-                                                                    className='w-4 h-4'
+                                                                    className='w-3 h-3 sm:w-4 sm:h-4'
                                                                 >
                                                                     <path
                                                                         strokeLinecap='round'
@@ -659,11 +665,11 @@ const Sales = () => {
                                                             </button>
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='flex gap-2'>
+                                                    <td className='p-1.5 sm:p-2 md:p-3 lg:p-4'>
+                                                        <div className='flex gap-1 sm:gap-2'>
                                                             <button
                                                                 onClick={() => handleView(item)}
-                                                                className='p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors'
+                                                                className='p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-manipulation'
                                                                 title='Просмотр'
                                                             >
                                                                 <svg
@@ -672,7 +678,7 @@ const Sales = () => {
                                                                     viewBox='0 0 24 24'
                                                                     strokeWidth={2}
                                                                     stroke='currentColor'
-                                                                    className='w-4 h-4'
+                                                                    className='w-3.5 h-3.5 sm:w-4 sm:h-4'
                                                                 >
                                                                     <path
                                                                         strokeLinecap='round'
@@ -688,7 +694,7 @@ const Sales = () => {
                                                             </button>
                                                             <button
                                                                 onClick={() => handleEdit(item)}
-                                                                className='p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors'
+                                                                className='p-1.5 sm:p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors touch-manipulation'
                                                                 title='Редактировать'
                                                             >
                                                                 <svg
@@ -697,7 +703,7 @@ const Sales = () => {
                                                                     viewBox='0 0 24 24'
                                                                     strokeWidth={2}
                                                                     stroke='currentColor'
-                                                                    className='w-4 h-4'
+                                                                    className='w-3.5 h-3.5 sm:w-4 sm:h-4'
                                                                 >
                                                                     <path
                                                                         strokeLinecap='round'
@@ -739,10 +745,10 @@ const Sales = () => {
                                                         <div className='text-xs text-slate-400 font-medium mb-1'>
                                                             ID: {item.id}
                                                         </div>
-                                                        <h3 className='text-lg font-bold text-gray-700'>
+                                                        <h3 className='text-base sm:text-lg font-bold text-gray-700'>
                                                             {company?.name || '-'}
                                                         </h3>
-                                                        <div className='text-sm text-slate-600 mt-1'>
+                                                        <div className='text-xs sm:text-sm text-slate-600 mt-1'>
                                                             {(item.products || [])
                                                                 .map((p) => {
                                                                     const quantity =
@@ -768,7 +774,7 @@ const Sales = () => {
                                                                 viewBox='0 0 24 24'
                                                                 strokeWidth={2}
                                                                 stroke='currentColor'
-                                                                className='w-4 h-4'
+                                                                className='w-3 h-3 sm:w-4 sm:h-4'
                                                             >
                                                                 <path
                                                                     strokeLinecap='round'
@@ -793,7 +799,7 @@ const Sales = () => {
                                                                 viewBox='0 0 24 24'
                                                                 strokeWidth={2}
                                                                 stroke='currentColor'
-                                                                className='w-4 h-4'
+                                                                className='w-3 h-3 sm:w-4 sm:h-4'
                                                             >
                                                                 <path
                                                                     strokeLinecap='round'
@@ -833,7 +839,7 @@ const Sales = () => {
                                                                 viewBox='0 0 24 24'
                                                                 strokeWidth={2}
                                                                 stroke='currentColor'
-                                                                className='w-4 h-4'
+                                                                className='w-3 h-3 sm:w-4 sm:h-4'
                                                             >
                                                                 <path
                                                                     strokeLinecap='round'
@@ -921,11 +927,11 @@ const Sales = () => {
                     <form onSubmit={handleSubmit}>
                         {/* Step Indicator - Only show in create mode */}
                         {!isEditMode && (
-                            <div className='mb-6'>
-                                <div className='flex items-center justify-center gap-4'>
+                            <div className='mb-4 sm:mb-6'>
+                                <div className='flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4'>
                                     <div className='flex items-center gap-2'>
                                         <div
-                                            className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm ${
                                                 currentStep >= 1
                                                     ? 'bg-blue-600 text-white'
                                                     : 'bg-gray-200 text-gray-500'
@@ -934,14 +940,17 @@ const Sales = () => {
                                             1
                                         </div>
                                         <span
-                                            className={`text-sm font-medium ${
+                                            className={`text-xs sm:text-sm font-medium ${
                                                 currentStep >= 1 ? 'text-blue-600' : 'text-gray-500'
                                             }`}
                                         >
-                                            Создание продажи
+                                            <span className='hidden sm:inline'>
+                                                Создание продажи
+                                            </span>
+                                            <span className='sm:hidden'>Продажа</span>
                                         </span>
                                     </div>
-                                    <div className='w-16 h-0.5 bg-gray-200'>
+                                    <div className='w-8 sm:w-16 h-0.5 bg-gray-200'>
                                         <div
                                             className={`h-full transition-all ${
                                                 currentStep >= 2
@@ -952,7 +961,7 @@ const Sales = () => {
                                     </div>
                                     <div className='flex items-center gap-2'>
                                         <div
-                                            className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm ${
                                                 currentStep >= 2
                                                     ? 'bg-blue-600 text-white'
                                                     : 'bg-gray-200 text-gray-500'
@@ -961,21 +970,24 @@ const Sales = () => {
                                             2
                                         </div>
                                         <span
-                                            className={`text-sm font-medium ${
+                                            className={`text-xs sm:text-sm font-medium ${
                                                 currentStep >= 2 ? 'text-blue-600' : 'text-gray-500'
                                             }`}
                                         >
-                                            Создание платежа
+                                            <span className='hidden sm:inline'>
+                                                Создание платежа
+                                            </span>
+                                            <span className='sm:hidden'>Платеж</span>
                                         </span>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        <div className='grid grid-cols-3 gap-6'>
+                        <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6'>
                             {/* Left Side - Form Content */}
-                            <div className='col-span-2'>
-                                <div className='space-y-6'>
+                            <div className='lg:col-span-2'>
+                                <div className='space-y-4 sm:space-y-6'>
                                     {/* Step 1: Sale Creation or Edit Mode */}
                                     {(currentStep === 1 || isEditMode) && (
                                         <>
@@ -1002,16 +1014,16 @@ const Sales = () => {
 
                                             {!isEditMode && (
                                                 <div>
-                                                    <div className='flex items-center justify-between mb-3'>
-                                                        <h3 className='text-lg font-semibold text-gray-700'>
+                                                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3'>
+                                                        <h3 className='text-base sm:text-lg font-semibold text-gray-700'>
                                                             Выберите товары и укажите количество
                                                         </h3>
-                                                        <span className='text-sm text-gray-500'>
+                                                        <span className='text-xs sm:text-sm text-gray-500'>
                                                             Выбрано: {formData.products.length}
                                                         </span>
                                                     </div>
                                                     {/* Search Input */}
-                                                    <div className='relative mb-4'>
+                                                    <div className='relative mb-3 sm:mb-4'>
                                                         <input
                                                             type='text'
                                                             placeholder='Поиск товара...'
@@ -1019,7 +1031,7 @@ const Sales = () => {
                                                             onChange={(e) =>
                                                                 setSearchQuery(e.target.value)
                                                             }
-                                                            className='w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500'
+                                                            className='w-full px-3 sm:px-4 py-2 pl-9 sm:pl-10 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500'
                                                             disabled={currentStep === 2}
                                                         />
                                                         <svg
@@ -1037,7 +1049,7 @@ const Sales = () => {
                                                             />
                                                         </svg>
                                                     </div>
-                                                    <div className='grid grid-cols-3 gap-4 max-h-[350px] overflow-y-auto pr-2'>
+                                                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-h-[350px] sm:max-h-[400px] overflow-y-auto pr-2'>
                                                         {(products || [])
                                                             .filter((product) =>
                                                                 product.name
@@ -1069,14 +1081,14 @@ const Sales = () => {
                                                                 return (
                                                                     <div
                                                                         key={product.id}
-                                                                        className={`p-4 border-2 rounded-lg transition-all ${
+                                                                        className={`p-3 sm:p-4 border-2 rounded-lg transition-all ${
                                                                             isSelected
                                                                                 ? 'border-blue-500 bg-blue-50'
                                                                                 : 'border-gray-200 hover:border-gray-300'
                                                                         }`}
                                                                     >
-                                                                        <div className='flex items-start justify-between mb-3 relative'>
-                                                                            <h4 className='font-semibold text-gray-800 text-sm flex-1'>
+                                                                        <div className='flex items-start justify-between mb-2 sm:mb-3 relative'>
+                                                                            <h4 className='font-semibold text-gray-800 text-xs sm:text-sm flex-1 pr-6'>
                                                                                 {product.name}
                                                                             </h4>
                                                                             {isSelected && (
@@ -1087,7 +1099,7 @@ const Sales = () => {
                                                                                             selectedIndex
                                                                                         )
                                                                                     }
-                                                                                    className='p-1 absolute top-0 right-0 text-red-500 hover:bg-red-100 rounded transition-colors'
+                                                                                    className='p-1.5 sm:p-1 absolute top-0 right-0 text-red-500 hover:bg-red-100 rounded transition-colors touch-manipulation'
                                                                                     title='Удалить'
                                                                                     disabled={
                                                                                         currentStep ===
@@ -1102,7 +1114,7 @@ const Sales = () => {
                                                                                             2
                                                                                         }
                                                                                         stroke='currentColor'
-                                                                                        className='w-4 h-4'
+                                                                                        className='w-4 h-4 sm:w-3 sm:h-3'
                                                                                     >
                                                                                         <path
                                                                                             strokeLinecap='round'
@@ -1113,7 +1125,7 @@ const Sales = () => {
                                                                                 </button>
                                                                             )}
                                                                         </div>
-                                                                        <p className='text-xs text-gray-500 mb-2 min-h-[32px]'>
+                                                                        <p className='text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3 min-h-[24px] sm:min-h-[32px] line-clamp-2'>
                                                                             {product.description ||
                                                                                 'Описание товара'}
                                                                         </p>
@@ -1180,7 +1192,7 @@ const Sales = () => {
                                                                                             }
                                                                                         }
                                                                                     }}
-                                                                                    className={`flex-1 px-3 py-2 border rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                                                                                    className={`flex-1 px-2 sm:px-3 py-2 border rounded-lg text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
                                                                                         isSelected
                                                                                             ? 'border-blue-500 focus:ring-blue-200'
                                                                                             : 'border-gray-300 focus:ring-gray-200'
@@ -1190,7 +1202,7 @@ const Sales = () => {
                                                                                         2
                                                                                     }
                                                                                 />
-                                                                                <span className='text-xs text-gray-500'>
+                                                                                <span className='text-[10px] sm:text-xs text-gray-500 whitespace-nowrap'>
                                                                                     шт.
                                                                                 </span>
                                                                             </div>
@@ -1219,14 +1231,14 @@ const Sales = () => {
                                                                                                 value
                                                                                             )
                                                                                         }}
-                                                                                        className='flex-1 px-3 py-2 border border-blue-500 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all'
+                                                                                        className='flex-1 px-2 sm:px-3 py-2 border border-blue-500 rounded-lg text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all'
                                                                                         required
                                                                                         disabled={
                                                                                             currentStep ===
                                                                                             2
                                                                                         }
                                                                                     />
-                                                                                    <span className='text-xs text-gray-500'>
+                                                                                    <span className='text-[10px] sm:text-xs text-gray-500 whitespace-nowrap'>
                                                                                         $
                                                                                     </span>
                                                                                 </div>
@@ -1243,8 +1255,8 @@ const Sales = () => {
 
                                     {/* Step 2: Payment Creation - Only show in create mode */}
                                     {!isEditMode && currentStep === 2 && (
-                                        <div className='border-t border-gray-200 pt-6'>
-                                            <h3 className='text-lg font-semibold text-gray-700 mb-4'>
+                                        <div className='border-t border-gray-200 pt-4 sm:pt-6'>
+                                            <h3 className='text-base sm:text-lg font-semibold text-gray-700 mb-3 sm:mb-4'>
                                                 Информация об оплате
                                             </h3>
                                             <div className='space-y-4'>
@@ -1272,17 +1284,19 @@ const Sales = () => {
                             </div>
 
                             {/* Right Side - Information Panel */}
-                            <div className='col-span-1 bg-gray-50 rounded-lg p-4 h-full overflow-y-auto max-h-[70vh]'>
-                                <h3 className='text-sm font-bold text-gray-700 mb-4 uppercase'>
+                            <div className='lg:col-span-1 bg-gray-50 rounded-lg p-3 sm:p-4 h-full overflow-y-auto max-h-[50vh] lg:max-h-[70vh]'>
+                                <h3 className='text-xs sm:text-sm font-bold text-gray-700 mb-3 sm:mb-4 uppercase'>
                                     Информация о продаже
                                 </h3>
 
                                 {/* Company Info */}
-                                <div className='mb-4 pb-4 border-b border-gray-200'>
-                                    <p className='text-xs text-gray-500 mb-1 uppercase'>Компания</p>
+                                <div className='mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200'>
+                                    <p className='text-[10px] sm:text-xs text-gray-500 mb-1 uppercase'>
+                                        Компания
+                                    </p>
                                     {formData.company_id ? (
                                         <>
-                                            <p className='text-sm font-semibold text-gray-800 mb-2'>
+                                            <p className='text-xs sm:text-sm font-semibold text-gray-800 mb-2'>
                                                 {companies.find((c) => c.id === formData.company_id)
                                                     ?.name || '-'}
                                             </p>
@@ -1291,10 +1305,12 @@ const Sales = () => {
                                                     (c) => c.id === formData.company_id
                                                 )
                                                 return company ? (
-                                                    <div className='space-y-1 text-xs text-gray-600'>
+                                                    <div className='space-y-1 text-[10px] sm:text-xs text-gray-600'>
                                                         {company.phone && <p>📞 {company.phone}</p>}
                                                         {company.address && (
-                                                            <p>� {company.address}</p>
+                                                            <p className='break-words'>
+                                                                📍 {company.address}
+                                                            </p>
                                                         )}
                                                         {company.deposit !== undefined && (
                                                             <p>
@@ -1310,20 +1326,24 @@ const Sales = () => {
                                             })()}
                                         </>
                                     ) : (
-                                        <p className='text-xs text-gray-400'>Не выбрана</p>
+                                        <p className='text-[10px] sm:text-xs text-gray-400'>
+                                            Не выбрана
+                                        </p>
                                     )}
                                 </div>
 
                                 {/* Products List */}
-                                <div className='mb-4 pb-4 border-b border-gray-200'>
+                                <div className='mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200'>
                                     <div className='flex items-center justify-between mb-2'>
-                                        <p className='text-xs text-gray-500 uppercase'>Товары</p>
-                                        <span className='text-xs text-gray-400'>
+                                        <p className='text-[10px] sm:text-xs text-gray-500 uppercase'>
+                                            Товары
+                                        </p>
+                                        <span className='text-[10px] sm:text-xs text-gray-400'>
                                             {formData.products?.length || 0} шт.
                                         </span>
                                     </div>
                                     {formData.products && formData.products.length > 0 ? (
-                                        <div className='space-y-3'>
+                                        <div className='space-y-2 sm:space-y-3'>
                                             {formData.products.map((product, index) => {
                                                 const productInfo = products.find(
                                                     (p) =>
@@ -1336,20 +1356,20 @@ const Sales = () => {
                                                 return (
                                                     <div
                                                         key={index}
-                                                        className='bg-white p-3 rounded-lg border border-gray-200 shadow-sm'
+                                                        className='bg-white p-2 sm:p-3 rounded-lg border border-gray-200 shadow-sm'
                                                     >
                                                         <div className='flex items-start justify-between mb-2'>
-                                                            <p className='text-xs font-semibold text-gray-800 flex-1'>
+                                                            <p className='text-[10px] sm:text-xs font-semibold text-gray-800 flex-1'>
                                                                 {productInfo?.name || 'Товар'}
                                                             </p>
                                                         </div>
                                                         {productInfo?.description && (
-                                                            <p className='text-xs text-gray-500 mb-2 line-clamp-2'>
+                                                            <p className='text-[10px] sm:text-xs text-gray-500 mb-2 line-clamp-2'>
                                                                 {productInfo.description}
                                                             </p>
                                                         )}
                                                         <div className='space-y-1'>
-                                                            <div className='flex justify-between text-xs text-gray-600'>
+                                                            <div className='flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0 text-[10px] sm:text-xs text-gray-600'>
                                                                 <span>
                                                                     Количество:{' '}
                                                                     <strong>{quantity}</strong> шт.
@@ -1365,10 +1385,10 @@ const Sales = () => {
                                                                 </span>
                                                             </div>
                                                             <div className='flex justify-between items-center pt-1 border-t border-gray-100'>
-                                                                <span className='text-xs text-gray-500'>
+                                                                <span className='text-[10px] sm:text-xs text-gray-500'>
                                                                     Сумма:
                                                                 </span>
-                                                                <span className='text-xs font-bold text-blue-600'>
+                                                                <span className='text-[10px] sm:text-xs font-bold text-blue-600'>
                                                                     {formatNumber(total)} $
                                                                 </span>
                                                             </div>
@@ -1378,17 +1398,19 @@ const Sales = () => {
                                             })}
                                         </div>
                                     ) : (
-                                        <p className='text-xs text-gray-400'>Нет товаров</p>
+                                        <p className='text-[10px] sm:text-xs text-gray-400'>
+                                            Нет товаров
+                                        </p>
                                     )}
                                 </div>
 
                                 {/* Payment Info - Only show in create mode */}
                                 {!isEditMode && (
-                                    <div className='mb-4 pb-4 border-b border-gray-200'>
-                                        <p className='text-xs text-gray-500 mb-2 uppercase'>
+                                    <div className='mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200'>
+                                        <p className='text-[10px] sm:text-xs text-gray-500 mb-2 uppercase'>
                                             Оплата
                                         </p>
-                                        <div className='space-y-2 text-xs'>
+                                        <div className='space-y-2 text-[10px] sm:text-xs'>
                                             <div>
                                                 <span className='text-gray-500'>Тип оплаты: </span>
                                                 <span className='font-semibold text-gray-800'>
@@ -1409,16 +1431,16 @@ const Sales = () => {
 
                                 {/* Total Amount */}
                                 <div className='pt-2'>
-                                    <div className='bg-blue-50 rounded-lg p-3 border border-blue-200'>
+                                    <div className='bg-blue-50 rounded-lg p-2 sm:p-3 border border-blue-200'>
                                         <div className='flex justify-between items-center mb-1'>
-                                            <p className='text-sm font-bold text-gray-700'>
+                                            <p className='text-xs sm:text-sm font-bold text-gray-700'>
                                                 Итого:
                                             </p>
-                                            <p className='text-xl font-bold text-blue-600'>
+                                            <p className='text-lg sm:text-xl font-bold text-blue-600'>
                                                 {formatNumber(saleTotalAmount)} $
                                             </p>
                                         </div>
-                                        <div className='text-xs text-gray-500'>
+                                        <div className='text-[10px] sm:text-xs text-gray-500'>
                                             {formData.products?.length || 0}{' '}
                                             {formData.products?.length === 1 ? 'товар' : 'товаров'}
                                         </div>
@@ -1428,20 +1450,21 @@ const Sales = () => {
                         </div>
 
                         {/* Navigation Buttons */}
-                        <div className='flex justify-between gap-2 mt-6 pt-4 border-t border-gray-200'>
-                            <div>
+                        <div className='flex flex-col sm:flex-row justify-between gap-2 sm:gap-2 mt-4 sm:mt-6 pt-4 border-t border-gray-200'>
+                            <div className='w-full sm:w-auto'>
                                 {!isEditMode && currentStep === 2 && (
                                     <Button
                                         type='button'
                                         variant='secondary'
                                         onClick={() => setCurrentStep(1)}
                                         disabled={submitting}
+                                        className='w-full sm:w-auto'
                                     >
                                         Назад
                                     </Button>
                                 )}
                             </div>
-                            <div className='flex gap-2'>
+                            <div className='flex flex-col sm:flex-row gap-2 w-full sm:w-auto'>
                                 <Button
                                     type='button'
                                     variant='secondary'
@@ -1452,6 +1475,7 @@ const Sales = () => {
                                         setCreatedSaleId(null)
                                     }}
                                     disabled={submitting}
+                                    className='w-full sm:w-auto'
                                 >
                                     Отмена
                                 </Button>
@@ -1459,22 +1483,45 @@ const Sales = () => {
                                     type='submit'
                                     variant='primary'
                                     disabled={submitting || !canSubmit()}
+                                    className='w-full sm:w-auto'
                                 >
                                     {submitting ? (
                                         <span className='flex items-center gap-2'>
                                             <span className='loading loading-spinner loading-sm'></span>
-                                            {isEditMode
-                                                ? 'Обновление...'
-                                                : currentStep === 1
-                                                ? 'Создание продажи...'
-                                                : 'Создание платежа...'}
+                                            <span className='hidden sm:inline'>
+                                                {isEditMode
+                                                    ? 'Обновление...'
+                                                    : currentStep === 1
+                                                    ? 'Создание продажи...'
+                                                    : 'Создание платежа...'}
+                                            </span>
+                                            <span className='sm:hidden'>
+                                                {isEditMode
+                                                    ? 'Обновление...'
+                                                    : currentStep === 1
+                                                    ? 'Создание...'
+                                                    : 'Создание...'}
+                                            </span>
                                         </span>
                                     ) : isEditMode ? (
-                                        'Обновить продажу'
+                                        <span>
+                                            <span className='hidden sm:inline'>
+                                                Обновить продажу
+                                            </span>
+                                            <span className='sm:hidden'>Обновить</span>
+                                        </span>
                                     ) : currentStep === 1 ? (
-                                        'Создать продажу'
+                                        <span>
+                                            <span className='hidden sm:inline'>
+                                                Создать продажу
+                                            </span>
+                                            <span className='sm:hidden'>Создать</span>
+                                        </span>
                                     ) : (
-                                        'Создать платеж'
+                                        <span>
+                                            <span className='hidden sm:inline'>Создать платеж</span>
+                                            <span className='sm:hidden'>Создать</span>
+                                        </span>
                                     )}
                                 </Button>
                             </div>
@@ -1568,26 +1615,32 @@ const Sales = () => {
                     {viewingItem && (
                         <div className='space-y-6'>
                             {/* Main Info */}
-                            <div className='bg-gray-50 rounded-lg p-4'>
-                                <h3 className='text-sm font-bold text-gray-700 mb-3 uppercase'>
+                            <div className='bg-gray-50 rounded-lg p-3 sm:p-4'>
+                                <h3 className='text-xs sm:text-sm font-bold text-gray-700 mb-3 uppercase'>
                                     Основная информация
                                 </h3>
-                                <div className='grid grid-cols-2 gap-4'>
+                                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
                                     <div>
-                                        <p className='text-xs text-gray-500 mb-1'>ID продажи</p>
-                                        <p className='text-sm font-semibold text-gray-800'>
+                                        <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
+                                            ID продажи
+                                        </p>
+                                        <p className='text-xs sm:text-sm font-semibold text-gray-800'>
                                             #{viewingItem.id}
                                         </p>
                                     </div>
                                     <div>
-                                        <p className='text-xs text-gray-500 mb-1'>Сумма</p>
-                                        <p className='text-lg font-bold text-blue-600'>
+                                        <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
+                                            Сумма
+                                        </p>
+                                        <p className='text-sm sm:text-base lg:text-lg font-bold text-blue-600'>
                                             {Number(viewingItem.summa).toLocaleString()} $
                                         </p>
                                     </div>
                                     <div>
-                                        <p className='text-xs text-gray-500 mb-1'>Дата создания</p>
-                                        <p className='text-sm font-semibold text-gray-800'>
+                                        <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
+                                            Дата создания
+                                        </p>
+                                        <p className='text-xs sm:text-sm font-semibold text-gray-800'>
                                             {(() => {
                                                 const dateStr =
                                                     viewingItem.created_at || viewingItem.date
@@ -1611,10 +1664,12 @@ const Sales = () => {
                                         </p>
                                     </div>
                                     <div>
-                                        <p className='text-xs text-gray-500 mb-1'>Статус</p>
-                                        <p className='text-sm font-semibold'>
+                                        <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
+                                            Статус
+                                        </p>
+                                        <p className='text-xs sm:text-sm font-semibold'>
                                             <span
-                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium ${
                                                     viewingItem.status === 'PAID'
                                                         ? 'bg-green-100 text-green-700'
                                                         : 'bg-yellow-100 text-yellow-700'
@@ -1632,29 +1687,33 @@ const Sales = () => {
                             </div>
 
                             {/* Company Info */}
-                            <div className='bg-gray-50 rounded-lg p-4'>
-                                <h3 className='text-sm font-bold text-gray-700 mb-3 uppercase'>
+                            <div className='bg-gray-50 rounded-lg p-3 sm:p-4'>
+                                <h3 className='text-xs sm:text-sm font-bold text-gray-700 mb-3 uppercase'>
                                     Информация о компании
                                 </h3>
                                 <div className='space-y-3'>
                                     <div>
-                                        <p className='text-xs text-gray-500 mb-1'>
+                                        <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
                                             Название компании
                                         </p>
-                                        <p className='text-sm font-semibold text-gray-800'>
+                                        <p className='text-xs sm:text-sm font-semibold text-gray-800'>
                                             {viewingItem.company?.name || '-'}
                                         </p>
                                     </div>
-                                    <div className='grid grid-cols-2 gap-4'>
+                                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
                                         <div>
-                                            <p className='text-xs text-gray-500 mb-1'>Телефон</p>
-                                            <p className='text-sm font-semibold text-gray-800'>
+                                            <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
+                                                Телефон
+                                            </p>
+                                            <p className='text-xs sm:text-sm font-semibold text-gray-800'>
                                                 {viewingItem.company?.phone || '-'}
                                             </p>
                                         </div>
                                         <div>
-                                            <p className='text-xs text-gray-500 mb-1'>Депозит</p>
-                                            <p className='text-sm font-semibold text-gray-800'>
+                                            <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
+                                                Депозит
+                                            </p>
+                                            <p className='text-xs sm:text-sm font-semibold text-gray-800'>
                                                 {viewingItem.company?.deposit
                                                     ? Number(
                                                           viewingItem.company.deposit
@@ -1664,8 +1723,10 @@ const Sales = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <p className='text-xs text-gray-500 mb-1'>Адрес</p>
-                                        <p className='text-sm font-semibold text-gray-800'>
+                                        <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
+                                            Адрес
+                                        </p>
+                                        <p className='text-xs sm:text-sm font-semibold text-gray-800 break-words'>
                                             {viewingItem.company?.address || '-'}
                                         </p>
                                     </div>
@@ -1674,31 +1735,33 @@ const Sales = () => {
 
                             {/* User Info */}
                             {viewingItem.user && (
-                                <div className='bg-gray-50 rounded-lg p-4'>
-                                    <h3 className='text-sm font-bold text-gray-700 mb-3 uppercase'>
+                                <div className='bg-gray-50 rounded-lg p-3 sm:p-4'>
+                                    <h3 className='text-xs sm:text-sm font-bold text-gray-700 mb-3 uppercase'>
                                         Кто создал продажу
                                     </h3>
                                     <div className='space-y-3'>
                                         <div>
-                                            <p className='text-xs text-gray-500 mb-1'>
+                                            <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
                                                 Имя пользователя
                                             </p>
-                                            <p className='text-sm font-semibold text-gray-800'>
+                                            <p className='text-xs sm:text-sm font-semibold text-gray-800'>
                                                 {viewingItem.user.username || '-'}
                                             </p>
                                         </div>
-                                        <div className='grid grid-cols-2 gap-4'>
+                                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
                                             <div>
-                                                <p className='text-xs text-gray-500 mb-1'>
+                                                <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
                                                     Телефон
                                                 </p>
-                                                <p className='text-sm font-semibold text-gray-800'>
+                                                <p className='text-xs sm:text-sm font-semibold text-gray-800'>
                                                     {viewingItem.user.phone || '-'}
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className='text-xs text-gray-500 mb-1'>Роли</p>
-                                                <p className='text-sm font-semibold text-gray-800'>
+                                                <p className='text-[10px] sm:text-xs text-gray-500 mb-1'>
+                                                    Роли
+                                                </p>
+                                                <p className='text-xs sm:text-sm font-semibold text-gray-800'>
                                                     {viewingItem.user.roles &&
                                                     viewingItem.user.roles.length > 0
                                                         ? viewingItem.user.roles
@@ -1713,12 +1776,12 @@ const Sales = () => {
                             )}
 
                             {/* Products Info */}
-                            <div className='bg-gray-50 rounded-lg p-4'>
-                                <h3 className='text-sm font-bold text-gray-700 mb-3 uppercase'>
+                            <div className='bg-gray-50 rounded-lg p-3 sm:p-4'>
+                                <h3 className='text-xs sm:text-sm font-bold text-gray-700 mb-3 uppercase'>
                                     Товары
                                 </h3>
                                 {viewingItem.products && viewingItem.products.length > 0 ? (
-                                    <div className='space-y-3'>
+                                    <div className='space-y-2 sm:space-y-3'>
                                         {viewingItem.products.map((product, index) => {
                                             const quantity =
                                                 product.pivot_quantity || product.quantity || 0
@@ -1727,21 +1790,21 @@ const Sales = () => {
                                             return (
                                                 <div
                                                     key={index}
-                                                    className='bg-white p-3 rounded-lg border border-gray-200'
+                                                    className='bg-white p-2 sm:p-3 rounded-lg border border-gray-200'
                                                 >
                                                     <div className='flex items-start justify-between mb-2'>
                                                         <div className='flex-1'>
-                                                            <p className='text-sm font-semibold text-gray-800'>
+                                                            <p className='text-xs sm:text-sm font-semibold text-gray-800'>
                                                                 {product.name || 'Товар'}
                                                             </p>
                                                             {product.description && (
-                                                                <p className='text-xs text-gray-500 mt-1'>
+                                                                <p className='text-[10px] sm:text-xs text-gray-500 mt-1 line-clamp-2'>
                                                                     {product.description}
                                                                 </p>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className='grid grid-cols-3 gap-2 text-xs text-gray-600 pt-2 border-t border-gray-100'>
+                                                    <div className='grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] sm:text-xs text-gray-600 pt-2 border-t border-gray-100'>
                                                         <div>
                                                             <span className='text-gray-500'>
                                                                 Количество:{' '}
@@ -1772,7 +1835,7 @@ const Sales = () => {
                                         })}
                                     </div>
                                 ) : (
-                                    <p className='text-sm text-gray-500'>Нет товаров</p>
+                                    <p className='text-xs sm:text-sm text-gray-500'>Нет товаров</p>
                                 )}
                             </div>
                         </div>

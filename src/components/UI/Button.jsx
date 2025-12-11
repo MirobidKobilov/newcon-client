@@ -5,7 +5,12 @@ const Button = ({ children, variant = 'primary', type = 'button', className = ''
     }
 
     return (
-        <button type={type} style={{outline: 0}} className={`btn shadow-none rounded-xl pb-[3px] ${variants[variant]} ${className}`} {...props}>
+        <button
+            type={type}
+            style={{ outline: 0 }}
+            className={`btn shadow-none rounded-xl pb-[3px] text-xs sm:text-sm ${variants[variant]} ${className}`}
+            {...props}
+        >
             {children}
         </button>
     )

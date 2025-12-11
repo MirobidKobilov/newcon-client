@@ -298,30 +298,30 @@ const Companies = () => {
 
     return (
         <Layout>
-            <div className='min-h-screen bg-gray-50 p-4 lg:p-6'>
-                <div className='mb-6'>
-                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6'>
+            <div className='min-h-screen bg-gray-50 p-2 sm:p-3 md:p-4 lg:p-6'>
+                <div className='mb-4 sm:mb-6'>
+                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6'>
                         <div>
-                            <div className='text-2xl text-slate-400'>
+                            <div className='text-lg sm:text-xl md:text-2xl text-slate-400'>
                                 NEWCON <span className='text-gray-700'>/ Компании</span>
                             </div>
                         </div>
-                        <Button onClick={handleCreateNew} variant='primary'>
+                        <Button onClick={handleCreateNew} variant='primary' className="w-full sm:w-auto">
                             + Создать компанию
                         </Button>
                     </div>
                 </div>
 
-                <div className='bg-white rounded-2xl shadow-sm mb-6 overflow-hidden'>
-                    <div className='p-6 border-b border-slate-200'>
-                        <div className='flex items-center justify-between mb-4'>
-                            <h2 className='text-lg font-bold text-gray-700'>Компании</h2>
+                <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6 overflow-hidden'>
+                    <div className='p-3 sm:p-4 md:p-6 border-b border-slate-200'>
+                        <div className='flex items-center justify-between mb-3 sm:mb-4'>
+                            <h2 className='text-base sm:text-lg font-bold text-gray-700'>Компании</h2>
 
                             {/* Tab Buttons */}
-                            <div className='flex gap-2 bg-gray-100 p-1 rounded-lg'>
+                            <div className='flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
                                 <button
                                     onClick={() => setViewMode('table')}
-                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                         viewMode === 'table'
                                             ? 'bg-white text-gray-900 shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
@@ -345,7 +345,7 @@ const Companies = () => {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('cards')}
-                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                         viewMode === 'cards'
                                             ? 'bg-white text-gray-900 shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
@@ -373,26 +373,26 @@ const Companies = () => {
 
                     {/* Table View */}
                     {viewMode === 'table' && (
-                        <div className='overflow-x-auto'>
-                            <table className='w-full'>
+                        <div className='overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6'>
+                            <table className='w-full min-w-[600px]'>
                                 <thead>
                                     <tr className='border-b border-slate-200'>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             ID
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Название
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Телефон
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Адрес
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Debt overall
                                         </th>
-                                        <th className='text-right p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-right p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Действия
                                         </th>
                                     </tr>
@@ -402,7 +402,7 @@ const Companies = () => {
                                         <tr>
                                             <td
                                                 colSpan='6'
-                                                className='p-8 text-center text-slate-500'
+                                                className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
                                             >
                                                 Загрузка...
                                             </td>
@@ -411,7 +411,7 @@ const Companies = () => {
                                         <tr>
                                             <td
                                                 colSpan='6'
-                                                className='p-8 text-center text-slate-500'
+                                                className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
                                             >
                                                 Нет данных
                                             </td>
@@ -422,40 +422,40 @@ const Companies = () => {
                                                 key={item.id}
                                                 className='border-b border-slate-200 hover:bg-gray-50'
                                             >
-                                                <td className='p-4'>
-                                                    <div className='text-sm font-bold text-gray-700'>
+                                                <td className='p-2 sm:p-3 md:p-4'>
+                                                    <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                         {item.id}
                                                     </div>
                                                 </td>
-                                                <td className='p-4'>
+                                                <td className='p-2 sm:p-3 md:p-4'>
                                                     <button
                                                         onClick={() => handleDebtClick(item)}
-                                                        className='text-sm font-bold text-gray-700 hover:text-blue-600 hover:underline cursor-pointer'
+                                                        className='text-xs sm:text-sm font-bold text-gray-700 hover:text-blue-600 hover:underline cursor-pointer'
                                                     >
                                                         {item.name}
                                                     </button>
                                                 </td>
-                                                <td className='p-4'>
-                                                    <div className='text-sm text-slate-600'>
+                                                <td className='p-2 sm:p-3 md:p-4'>
+                                                    <div className='text-xs sm:text-sm text-slate-600'>
                                                         {formatUzPhoneDisplay(item.phone) || '-'}
                                                     </div>
                                                 </td>
-                                                <td className='p-4'>
-                                                    <div className='text-sm text-slate-600'>
+                                                <td className='p-2 sm:p-3 md:p-4'>
+                                                    <div className='text-xs sm:text-sm text-slate-600'>
                                                         {item.address || '-'}
                                                     </div>
                                                 </td>
-                                                <td className='p-4'>
+                                                <td className='p-2 sm:p-3 md:p-4'>
                                                     <div className='text-sm font-semibold text-gray-700'>
                                                         {formatNumber(companyDebts[item.id] || 0)}
                                                     </div>
                                                 </td>
-                                                <td className='p-4'>
-                                                    <div className='flex gap-2 justify-end'>
+                                                <td className='p-2 sm:p-3 md:p-4'>
+                                                    <div className='flex gap-1 sm:gap-2 justify-end'>
                                                         <Button
                                                             onClick={() => handleDebtClick(item)}
                                                             variant='secondary'
-                                                            className='btn-sm btn-circle'
+                                                            className='btn-xs sm:btn-sm btn-circle'
                                                             title='Просмотр деталей'
                                                         >
                                                             <svg
@@ -464,7 +464,7 @@ const Companies = () => {
                                                                 viewBox='0 0 24 24'
                                                                 strokeWidth={1.5}
                                                                 stroke='currentColor'
-                                                                className='w-4 h-4'
+                                                                className='w-3 h-3 sm:w-4 sm:h-4'
                                                             >
                                                                 <path
                                                                     strokeLinecap='round'
@@ -481,7 +481,7 @@ const Companies = () => {
                                                         <Button
                                                             onClick={() => handleEdit(item)}
                                                             variant='secondary'
-                                                            className='btn-sm btn-circle'
+                                                            className='btn-xs sm:btn-sm btn-circle'
                                                             title='Редактировать'
                                                         >
                                                             <svg
@@ -490,7 +490,7 @@ const Companies = () => {
                                                                 viewBox='0 0 24 24'
                                                                 strokeWidth={1.5}
                                                                 stroke='currentColor'
-                                                                className='w-4 h-4'
+                                                                className='w-3 h-3 sm:w-4 sm:h-4'
                                                             >
                                                                 <path
                                                                     strokeLinecap='round'
@@ -502,7 +502,7 @@ const Companies = () => {
                                                         <Button
                                                             onClick={() => handleDelete(item.id)}
                                                             variant='secondary'
-                                                            className='btn-sm btn-circle hover:bg-red-50'
+                                                            className='btn-xs sm:btn-sm btn-circle hover:bg-red-50'
                                                             title='Удалить'
                                                         >
                                                             <svg
@@ -544,12 +544,12 @@ const Companies = () => {
                                             key={item.id}
                                             className='bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow'
                                         >
-                                            <div className='flex justify-between items-start mb-4'>
+                                            <div className='flex justify-between items-start mb-3 sm:mb-4'>
                                                 <div className='flex-1'>
                                                     <div className='text-xs text-slate-400 font-medium mb-1'>
                                                         ID: {item.id}
                                                     </div>
-                                                    <h3 className='text-lg font-bold text-gray-700 mb-2'>
+                                                    <h3 className='text-base sm:text-lg font-bold text-gray-700 mb-2'>
                                                         {item.name}
                                                     </h3>
                                                 </div>
@@ -557,7 +557,7 @@ const Companies = () => {
                                                     <Button
                                                         onClick={() => handleEdit(item)}
                                                         variant='secondary'
-                                                        className='btn-sm btn-circle'
+                                                        className='btn-xs sm:btn-sm btn-circle'
                                                         title='Редактировать'
                                                     >
                                                         <svg
@@ -566,7 +566,7 @@ const Companies = () => {
                                                             viewBox='0 0 24 24'
                                                             strokeWidth={1.5}
                                                             stroke='currentColor'
-                                                            className='w-4 h-4'
+                                                            className='w-3 h-3 sm:w-4 sm:h-4'
                                                         >
                                                             <path
                                                                 strokeLinecap='round'
@@ -578,7 +578,7 @@ const Companies = () => {
                                                     <Button
                                                         onClick={() => handleDelete(item.id)}
                                                         variant='secondary'
-                                                        className='btn-sm btn-circle hover:bg-red-50'
+                                                        className='btn-xs sm:btn-sm btn-circle hover:bg-red-50'
                                                         title='Удалить'
                                                     >
                                                         <svg
@@ -774,7 +774,7 @@ const Companies = () => {
                             {/* Header with Breadcrumb */}
                             <div className='px-6 py-4 border-b border-gray-200'>
                                 {/* Breadcrumb */}
-                                <nav className='mb-4' aria-label='Breadcrumb'>
+                                <nav className='mb-3 sm:mb-4' aria-label='Breadcrumb'>
                                     <ol className='flex items-center space-x-2 text-sm'>
                                         <li>
                                             <button
@@ -824,12 +824,12 @@ const Companies = () => {
                                     <div className='flex gap-6 h-full'>
                                         {/* Left Section - Sales */}
                                         <div className='w-1/2 flex flex-col'>
-                                            <h3 className='text-lg font-semibold text-gray-700 mb-4'>
+                                            <h3 className='text-lg font-semibold text-gray-700 mb-3 sm:mb-4'>
                                                 Продажи
                                             </h3>
                                             <div className='relative flex-1 overflow-hidden'>
-                                                <div className='overflow-x-auto overflow-y-auto h-full'>
-                                                    <table className='w-full'>
+                                                <div className='overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 overflow-y-auto h-full'>
+                                                    <table className='w-full min-w-[600px]'>
                                                         <thead className='sticky top-0 bg-white z-10'>
                                                             <tr className='border-b border-slate-200'>
                                                                 <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
@@ -854,7 +854,7 @@ const Companies = () => {
                                                                 <tr>
                                                                     <td
                                                                         colSpan='5'
-                                                                        className='p-8 text-center text-slate-500'
+                                                                        className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
                                                                     >
                                                                         Нет данных
                                                                     </td>
@@ -866,12 +866,12 @@ const Companies = () => {
                                                                         className='border-b border-slate-200 hover:bg-gray-50'
                                                                     >
                                                                         <td className='p-3'>
-                                                                            <div className='text-sm font-bold text-gray-700'>
+                                                                            <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                                                 {sale.id}
                                                                             </div>
                                                                         </td>
                                                                         <td className='p-3'>
-                                                                            <div className='text-sm text-slate-600'>
+                                                                            <div className='text-xs sm:text-sm text-slate-600'>
                                                                                 {sale.products &&
                                                                                 sale.products
                                                                                     .length > 0
@@ -897,14 +897,14 @@ const Companies = () => {
                                                                             </div>
                                                                         </td>
                                                                         <td className='p-3'>
-                                                                            <div className='text-sm text-slate-600 font-semibold'>
+                                                                            <div className='text-xs sm:text-sm text-slate-600 font-semibold'>
                                                                                 {formatNumber(
                                                                                     sale.summa || 0
                                                                                 )}
                                                                             </div>
                                                                         </td>
                                                                         <td className='p-3'>
-                                                                            <div className='text-sm text-slate-600'>
+                                                                            <div className='text-xs sm:text-sm text-slate-600'>
                                                                                 {(() => {
                                                                                     const dateStr =
                                                                                         sale.date ||
@@ -961,7 +961,7 @@ const Companies = () => {
                                                                                         )
                                                                                     }}
                                                                                     variant='secondary'
-                                                                                    className='btn-sm btn-circle'
+                                                                                    className='btn-xs sm:btn-sm btn-circle'
                                                                                     title='Показать детали'
                                                                                 >
                                                                                     <svg
@@ -972,7 +972,7 @@ const Companies = () => {
                                                                                             1.5
                                                                                         }
                                                                                         stroke='currentColor'
-                                                                                        className='w-4 h-4'
+                                                                                        className='w-3 h-3 sm:w-4 sm:h-4'
                                                                                     >
                                                                                         <path
                                                                                             strokeLinecap='round'
@@ -999,12 +999,12 @@ const Companies = () => {
 
                                         {/* Right Section - Payments */}
                                         <div className='w-1/2 flex flex-col'>
-                                            <h3 className='text-lg font-semibold text-gray-700 mb-4'>
+                                            <h3 className='text-lg font-semibold text-gray-700 mb-3 sm:mb-4'>
                                                 Оплаченные платежи
                                             </h3>
                                             <div className='relative flex-1 overflow-hidden'>
-                                                <div className='overflow-x-auto overflow-y-auto h-full'>
-                                                    <table className='w-full'>
+                                                <div className='overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 overflow-y-auto h-full'>
+                                                    <table className='w-full min-w-[600px]'>
                                                         <thead className='sticky top-0 bg-white z-10'>
                                                             <tr className='border-b border-slate-200'>
                                                                 <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
@@ -1032,7 +1032,7 @@ const Companies = () => {
                                                                 <tr>
                                                                     <td
                                                                         colSpan='6'
-                                                                        className='p-8 text-center text-slate-500'
+                                                                        className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
                                                                     >
                                                                         Нет данных
                                                                     </td>
@@ -1064,30 +1064,30 @@ const Companies = () => {
                                                                             className='border-b border-slate-200 hover:bg-gray-50'
                                                                         >
                                                                             <td className='p-3'>
-                                                                                <div className='text-sm font-bold text-gray-700'>
+                                                                                <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                                                     {payment.id}
                                                                                 </div>
                                                                             </td>
                                                                             <td className='p-3'>
-                                                                                <div className='text-sm font-bold text-gray-700'>
+                                                                                <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                                                     {payment.name ||
                                                                                         '-'}
                                                                                 </div>
                                                                             </td>
                                                                             <td className='p-3'>
-                                                                                <div className='text-sm text-slate-600'>
+                                                                                <div className='text-xs sm:text-sm text-slate-600'>
                                                                                     {paymentType}
                                                                                 </div>
                                                                             </td>
                                                                             <td className='p-3'>
-                                                                                <div className='text-sm text-slate-600 font-semibold'>
+                                                                                <div className='text-xs sm:text-sm text-slate-600 font-semibold'>
                                                                                     {formatNumber(
                                                                                         amount
                                                                                     )}
                                                                                 </div>
                                                                             </td>
                                                                             <td className='p-3'>
-                                                                                <div className='text-sm text-slate-600'>
+                                                                                <div className='text-xs sm:text-sm text-slate-600'>
                                                                                     {(() => {
                                                                                         const dateStr =
                                                                                             payment.date ||
@@ -1146,7 +1146,7 @@ const Companies = () => {
                                                                                             )
                                                                                         }}
                                                                                         variant='secondary'
-                                                                                        className='btn-sm btn-circle'
+                                                                                        className='btn-xs sm:btn-sm btn-circle'
                                                                                         title='Показать детали'
                                                                                     >
                                                                                         <svg
@@ -1157,7 +1157,7 @@ const Companies = () => {
                                                                                                 1.5
                                                                                             }
                                                                                             stroke='currentColor'
-                                                                                            className='w-4 h-4'
+                                                                                            className='w-3 h-3 sm:w-4 sm:h-4'
                                                                                         >
                                                                                             <path
                                                                                                 strokeLinecap='round'
@@ -1214,7 +1214,7 @@ const Companies = () => {
                                     <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
                                         ID
                                     </div>
-                                    <div className='text-sm font-bold text-gray-700'>
+                                    <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                         {selectedDetail.id}
                                     </div>
                                 </div>
@@ -1330,7 +1330,7 @@ const Companies = () => {
                                     <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
                                         ID
                                     </div>
-                                    <div className='text-sm font-bold text-gray-700'>
+                                    <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                         {selectedDetail.id}
                                     </div>
                                 </div>

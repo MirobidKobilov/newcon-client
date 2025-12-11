@@ -245,28 +245,28 @@ const Salaries = () => {
 
     return (
         <Layout>
-            <div className='min-h-screen bg-gray-50 p-4 lg:p-6'>
-                <div className='mb-6'>
-                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6'>
+            <div className='min-h-screen bg-gray-50 p-2 sm:p-3 md:p-4 lg:p-6'>
+                <div className='mb-4 sm:mb-6'>
+                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6'>
                         <div>
-                            <div className='text-2xl text-slate-400'>
+                            <div className='text-lg sm:text-xl md:text-2xl text-slate-400'>
                                 NEWCON <span className='text-gray-700'>/ Зарплаты</span>
                             </div>
                         </div>
-                        <Button onClick={handleCreateNew} variant='primary'>
+                        <Button onClick={handleCreateNew} variant='primary' className="w-full sm:w-auto">
                             + Создать зарплату
                         </Button>
                     </div>
                 </div>
 
-                <div className='bg-white rounded-2xl shadow-sm mb-6 overflow-hidden'>
-                    <div className='p-6 border-b border-slate-200'>
-                        <div className='flex items-center justify-between mb-4'>
-                            <h2 className='text-lg font-bold text-gray-700'>Зарплаты</h2>
-                            <div className='flex gap-2 bg-gray-100 p-1 rounded-lg'>
+                <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6 overflow-hidden'>
+                    <div className='p-3 sm:p-4 md:p-6 border-b border-slate-200'>
+                        <div className='flex items-center justify-between mb-3 sm:mb-4'>
+                            <h2 className='text-base sm:text-lg font-bold text-gray-700'>Зарплаты</h2>
+                            <div className='flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
                                 <button
                                     onClick={() => setViewMode('table')}
-                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                         viewMode === 'table'
                                             ? 'bg-white text-gray-900 shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
@@ -276,7 +276,7 @@ const Salaries = () => {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('cards')}
-                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                         viewMode === 'cards'
                                             ? 'bg-white text-gray-900 shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
@@ -289,29 +289,29 @@ const Salaries = () => {
                     </div>
 
                     {viewMode === 'table' && (
-                        <div className='overflow-x-auto'>
-                            <table className='w-full'>
+                        <div className='overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6'>
+                            <table className='w-full min-w-[600px]'>
                                 <thead>
                                     <tr className='border-b border-slate-200'>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             ID
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Работник
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Телефон
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Должность
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Зарплата
                                         </th>
-                                        <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Дата создания
                                         </th>
-                                        <th className='text-right p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                        <th className='text-right p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                             Действия
                                         </th>
                                     </tr>
@@ -321,7 +321,7 @@ const Salaries = () => {
                                         <tr>
                                             <td
                                                 colSpan='7'
-                                                className='p-8 text-center text-slate-500'
+                                                className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
                                             >
                                                 Загрузка...
                                             </td>
@@ -330,7 +330,7 @@ const Salaries = () => {
                                         <tr>
                                             <td
                                                 colSpan='7'
-                                                className='p-8 text-center text-slate-500'
+                                                className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
                                             >
                                                 Нет данных
                                             </td>
@@ -345,42 +345,42 @@ const Salaries = () => {
                                                     key={salary.id}
                                                     className='border-b border-slate-200 hover:bg-gray-50'
                                                 >
-                                                    <td className='p-4'>
-                                                        <div className='text-sm font-bold text-gray-700'>
+                                                    <td className='p-2 sm:p-3 md:p-4'>
+                                                        <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                             {salary.id}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='text-sm font-bold text-gray-700'>
+                                                    <td className='p-2 sm:p-3 md:p-4'>
+                                                        <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                             {worker?.full_name || '-'}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='text-sm text-slate-600'>
+                                                    <td className='p-2 sm:p-3 md:p-4'>
+                                                        <div className='text-xs sm:text-sm text-slate-600'>
                                                             {worker?.phone || '-'}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='text-sm text-slate-600'>
+                                                    <td className='p-2 sm:p-3 md:p-4'>
+                                                        <div className='text-xs sm:text-sm text-slate-600'>
                                                             {worker?.position || '-'}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
+                                                    <td className='p-2 sm:p-3 md:p-4'>
                                                         <div className='text-sm font-semibold text-gray-700'>
                                                             {formatSalary(salary.salary)}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='text-sm text-slate-600'>
+                                                    <td className='p-2 sm:p-3 md:p-4'>
+                                                        <div className='text-xs sm:text-sm text-slate-600'>
                                                             {formatDate(salary.created_at)}
                                                         </div>
                                                     </td>
-                                                    <td className='p-4'>
-                                                        <div className='flex gap-2 justify-end'>
+                                                    <td className='p-2 sm:p-3 md:p-4'>
+                                                        <div className='flex gap-1 sm:gap-2 justify-end'>
                                                             <Button
                                                                 onClick={() => handleEdit(salary)}
                                                                 variant='secondary'
-                                                                className='btn-sm btn-circle'
+                                                                className='btn-xs sm:btn-sm btn-circle'
                                                                 title='Редактировать'
                                                             >
                                                                 <svg
@@ -389,7 +389,7 @@ const Salaries = () => {
                                                                     viewBox='0 0 24 24'
                                                                     strokeWidth={1.5}
                                                                     stroke='currentColor'
-                                                                    className='w-4 h-4'
+                                                                    className='w-3 h-3 sm:w-4 sm:h-4'
                                                                 >
                                                                     <path
                                                                         strokeLinecap='round'
@@ -403,7 +403,7 @@ const Salaries = () => {
                                                                     handleDelete(salary.id)
                                                                 }
                                                                 variant='secondary'
-                                                                className='btn-sm btn-circle hover:bg-red-50'
+                                                                className='btn-xs sm:btn-sm btn-circle hover:bg-red-50'
                                                                 title='Удалить'
                                                             >
                                                                 <svg
@@ -454,10 +454,10 @@ const Salaries = () => {
                                                         <div className='text-xs text-slate-400 font-medium mb-1'>
                                                             ID: {salary.id}
                                                         </div>
-                                                        <h3 className='text-lg font-bold text-gray-700'>
+                                                        <h3 className='text-base sm:text-lg font-bold text-gray-700'>
                                                             {worker?.full_name || '-'}
                                                         </h3>
-                                                        <div className='text-sm text-slate-600 mt-1'>
+                                                        <div className='text-xs sm:text-sm text-slate-600 mt-1'>
                                                             {worker?.phone || '-'}
                                                         </div>
                                                     </div>
@@ -465,7 +465,7 @@ const Salaries = () => {
                                                         <Button
                                                             onClick={() => handleEdit(salary)}
                                                             variant='secondary'
-                                                            className='btn-sm btn-circle'
+                                                            className='btn-xs sm:btn-sm btn-circle'
                                                             title='Редактировать'
                                                         >
                                                             <svg
@@ -474,7 +474,7 @@ const Salaries = () => {
                                                                 viewBox='0 0 24 24'
                                                                 strokeWidth={1.5}
                                                                 stroke='currentColor'
-                                                                className='w-4 h-4'
+                                                                className='w-3 h-3 sm:w-4 sm:h-4'
                                                             >
                                                                 <path
                                                                     strokeLinecap='round'
@@ -486,7 +486,7 @@ const Salaries = () => {
                                                         <Button
                                                             onClick={() => handleDelete(salary.id)}
                                                             variant='secondary'
-                                                            className='btn-sm btn-circle hover:bg-red-50'
+                                                            className='btn-xs sm:btn-sm btn-circle hover:bg-red-50'
                                                             title='Удалить'
                                                         >
                                                             <svg

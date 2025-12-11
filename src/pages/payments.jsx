@@ -212,16 +212,16 @@ const Payments = () => {
 
     return (
         <Layout>
-            <div className='min-h-screen bg-gray-50 p-4 lg:p-6'>
-                <div className='mb-6'>
-                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6'>
+            <div className='min-h-screen bg-gray-50 p-2 sm:p-3 md:p-4 lg:p-6'>
+                <div className='mb-4 sm:mb-6'>
+                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6'>
                         <div>
-                            <div className='text-2xl text-slate-400'>
+                            <div className='text-lg sm:text-xl md:text-2xl text-slate-400'>
                                 NEWCON <span className='text-gray-700'>/ Платежи</span>
                             </div>
                         </div>
                         {!showComingSoon && (
-                            <Button onClick={handleCreateNew} variant='primary'>
+                            <Button onClick={handleCreateNew} variant='primary' className="w-full sm:w-auto">
                                 + Создать платеж
                             </Button>
                         )}
@@ -229,7 +229,7 @@ const Payments = () => {
                 </div>
 
                 {showComingSoon ? (
-                    <div className='bg-white rounded-2xl shadow-sm mb-6 overflow-hidden'>
+                    <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6 overflow-hidden'>
                         <div className='p-12 text-center'>
                             <div className='text-2xl font-bold text-gray-700 mb-2'>Скоро...</div>
                             <div className='text-sm text-slate-500'>
@@ -238,14 +238,14 @@ const Payments = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className='bg-white rounded-2xl shadow-sm mb-6'>
-                        <div className='p-6 border-b border-slate-200'>
-                            <div className='flex items-center justify-between mb-4'>
-                                <h2 className='text-lg font-bold text-gray-700'>Платежи</h2>
-                                <div className='flex gap-2 bg-gray-100 p-1 rounded-lg'>
+                    <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6'>
+                        <div className='p-3 sm:p-4 md:p-6 border-b border-slate-200'>
+                            <div className='flex items-center justify-between mb-3 sm:mb-4'>
+                                <h2 className='text-base sm:text-lg font-bold text-gray-700'>Платежи</h2>
+                                <div className='flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
                                     <button
                                         onClick={() => setViewMode('table')}
-                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                        className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                             viewMode === 'table'
                                                 ? 'bg-white text-gray-900 shadow-sm'
                                                 : 'text-gray-600 hover:text-gray-900'
@@ -255,7 +255,7 @@ const Payments = () => {
                                     </button>
                                     <button
                                         onClick={() => setViewMode('cards')}
-                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                        className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                             viewMode === 'cards'
                                                 ? 'bg-white text-gray-900 shadow-sm'
                                                 : 'text-gray-600 hover:text-gray-900'
@@ -268,23 +268,23 @@ const Payments = () => {
                         </div>
 
                         {viewMode === 'table' && (
-                            <div className='overflow-x-auto'>
-                                <table className='w-full'>
+                            <div className='overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6'>
+                                <table className='w-full min-w-[600px]'>
                                     <thead>
                                         <tr className='border-b border-slate-200'>
-                                            <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                                 ID
                                             </th>
-                                            <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                                 Название
                                             </th>
-                                            <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                                 Валюта
                                             </th>
-                                            <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                                 Продажи
                                             </th>
-                                            <th className='text-left p-4 text-slate-400 text-[10px] font-bold uppercase'>
+                                            <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                                 Действия
                                             </th>
                                         </tr>
@@ -294,7 +294,7 @@ const Payments = () => {
                                             <tr>
                                                 <td
                                                     colSpan='5'
-                                                    className='p-8 text-center text-slate-500'
+                                                    className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
                                                 >
                                                     Загрузка...
                                                 </td>
@@ -303,7 +303,7 @@ const Payments = () => {
                                             <tr>
                                                 <td
                                                     colSpan='5'
-                                                    className='p-8 text-center text-slate-500'
+                                                    className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
                                                 >
                                                     Нет данных
                                                 </td>
@@ -318,23 +318,23 @@ const Payments = () => {
                                                         key={item.id}
                                                         className='border-b border-slate-200 hover:bg-gray-50'
                                                     >
-                                                        <td className='p-4'>
-                                                            <div className='text-sm font-bold text-gray-700'>
+                                                        <td className='p-2 sm:p-3 md:p-4'>
+                                                            <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                                 {item.id}
                                                             </div>
                                                         </td>
-                                                        <td className='p-4'>
-                                                            <div className='text-sm font-bold text-gray-700'>
+                                                        <td className='p-2 sm:p-3 md:p-4'>
+                                                            <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                                 {item.name || '-'}
                                                             </div>
                                                         </td>
-                                                        <td className='p-4'>
-                                                            <div className='text-sm text-slate-600'>
+                                                        <td className='p-2 sm:p-3 md:p-4'>
+                                                            <div className='text-xs sm:text-sm text-slate-600'>
                                                                 {paymentType?.label || '-'}
                                                             </div>
                                                         </td>
-                                                        <td className='p-4'>
-                                                            <div className='text-sm text-slate-600'>
+                                                        <td className='p-2 sm:p-3 md:p-4'>
+                                                            <div className='text-xs sm:text-sm text-slate-600'>
                                                                 {item.sales && item.sales.length > 0
                                                                     ? item.sales
                                                                           .map(
@@ -351,7 +351,7 @@ const Payments = () => {
                                                                     : '-'}
                                                             </div>
                                                         </td>
-                                                        <td className='p-4'>
+                                                        <td className='p-2 sm:p-3 md:p-4'>
                                                             <div className='flex items-center gap-2'>
                                                                 <button
                                                                     onClick={() => handleView(item)}
@@ -415,10 +415,10 @@ const Payments = () => {
                                                             <div className='text-xs text-slate-400 font-medium mb-1'>
                                                                 ID: {item.id}
                                                             </div>
-                                                            <h3 className='text-lg font-bold text-gray-700'>
+                                                            <h3 className='text-base sm:text-lg font-bold text-gray-700'>
                                                                 {item.name || '-'}
                                                             </h3>
-                                                            <div className='text-sm text-slate-600 mt-1'>
+                                                            <div className='text-xs sm:text-sm text-slate-600 mt-1'>
                                                                 {paymentType?.label || '-'}
                                                             </div>
                                                         </div>
@@ -450,7 +450,7 @@ const Payments = () => {
                                                             </button>
                                                         </div>
                                                     </div>
-                                                    <div className='text-sm text-slate-600'>
+                                                    <div className='text-xs sm:text-sm text-slate-600'>
                                                         {item.sales && item.sales.length > 0 ? (
                                                             item.sales.map((s, idx) => (
                                                                 <div
@@ -681,13 +681,13 @@ const Payments = () => {
                                 <div className='grid grid-cols-2 gap-4 pb-4 border-b border-gray-200'>
                                     <div>
                                         <div className='text-xs text-gray-500 mb-1'>ID</div>
-                                        <div className='text-sm font-bold text-gray-700'>
+                                        <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                             {viewingItem.id}
                                         </div>
                                     </div>
                                     <div>
                                         <div className='text-xs text-gray-500 mb-1'>Название</div>
-                                        <div className='text-sm font-bold text-gray-700'>
+                                        <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                             {viewingItem.name || '-'}
                                         </div>
                                     </div>
@@ -702,7 +702,7 @@ const Payments = () => {
                                 </div>
 
                                 <div>
-                                    <h3 className='text-sm font-bold text-gray-700 mb-3'>
+                                    <h3 className='text-xs sm:text-sm font-bold text-gray-700 mb-3'>
                                         Продажи
                                     </h3>
                                     {viewingItem.sales && viewingItem.sales.length > 0 ? (
@@ -717,7 +717,7 @@ const Payments = () => {
                                                             <div className='text-xs text-gray-500 mb-1'>
                                                                 ID продажи
                                                             </div>
-                                                            <div className='text-sm font-bold text-gray-700'>
+                                                            <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                                 #{sale.id}
                                                             </div>
                                                         </div>
@@ -725,7 +725,7 @@ const Payments = () => {
                                                             <div className='text-xs text-gray-500 mb-1'>
                                                                 Сумма
                                                             </div>
-                                                            <div className='text-sm font-bold text-gray-700'>
+                                                            <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                                 {formatNumber(sale.summa || 0)}
                                                             </div>
                                                         </div>
@@ -808,7 +808,7 @@ const Payments = () => {
                                                                             className='bg-white rounded p-3 flex justify-between items-start'
                                                                         >
                                                                             <div className='flex-1'>
-                                                                                <div className='text-sm font-bold text-gray-700'>
+                                                                                <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                                                     {product.name ||
                                                                                         '-'}
                                                                                 </div>
