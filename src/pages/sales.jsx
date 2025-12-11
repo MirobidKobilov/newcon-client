@@ -39,8 +39,8 @@ const Sales = () => {
         payment_type_id: '',
     })
     const [paymentTypes] = useState([
-        { id: 1, name: '$' },
-        { id: 2, name: '$' },
+        { id: 1, name: 'Сум' },
+        { id: 2, name: 'Доллары' },
     ])
     const statusOptions = [
         { value: 'PENDING_PAYMENT', label: 'Ожидает оплаты' },

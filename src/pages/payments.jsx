@@ -30,8 +30,8 @@ const Payments = () => {
     const [successMessage, setSuccessMessage] = useState('')
     const [companiesList, setCompaniesList] = useState([])
     const [paymentTypes] = useState([
-        { value: 1, label: '$' },
-        { value: 2, label: '$' },
+        { value: 1, label: 'Сум' },
+        { value: 2, label: 'Доллары' },
     ])
     const [viewMode, setViewMode] = useState('table')
     const [page, setPage] = useState(1)
@@ -221,7 +221,11 @@ const Payments = () => {
                             </div>
                         </div>
                         {!showComingSoon && (
-                            <Button onClick={handleCreateNew} variant='primary' className="w-full sm:w-auto">
+                            <Button
+                                onClick={handleCreateNew}
+                                variant='primary'
+                                className='w-full sm:w-auto'
+                            >
                                 + Создать платеж
                             </Button>
                         )}
@@ -241,7 +245,9 @@ const Payments = () => {
                     <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6'>
                         <div className='p-3 sm:p-4 md:p-6 border-b border-slate-200'>
                             <div className='flex items-center justify-between mb-3 sm:mb-4'>
-                                <h2 className='text-base sm:text-lg font-bold text-gray-700'>Платежи</h2>
+                                <h2 className='text-base sm:text-lg font-bold text-gray-700'>
+                                    Платежи
+                                </h2>
                                 <div className='flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
                                     <button
                                         onClick={() => setViewMode('table')}
