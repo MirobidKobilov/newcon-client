@@ -225,7 +225,11 @@ const Expances = () => {
                                 NEWCON <span className='text-gray-700'>/ Расходы</span>
                             </div>
                         </div>
-                        <Button onClick={handleCreateNew} variant='primary' className="w-full sm:w-auto">
+                        <Button
+                            onClick={handleCreateNew}
+                            variant='primary'
+                            className='w-full sm:w-auto'
+                        >
                             + Создать расход
                         </Button>
                     </div>
@@ -268,10 +272,12 @@ const Expances = () => {
                 {/* Таблица/Карточки расходов */}
                 <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6 overflow-hidden'>
                     <div className='p-3 sm:p-4 md:p-6 border-b border-slate-200'>
-                        <div className='flex items-center justify-between'>
-                            <h2 className='text-base sm:text-lg font-bold text-gray-700'>Расходы</h2>
-                            <div className='flex items-end gap-4'>
-                                <div className='max-w-xs'>
+                        <div className='flex flex-col gap-4'>
+                            <h2 className='text-base sm:text-lg font-bold text-gray-700'>
+                                Расходы
+                            </h2>
+                            <div className='flex flex-col sm:flex-row items-stretch sm:items-end gap-4'>
+                                <div className='flex-1 max-w-full sm:max-w-xs'>
                                     <Select
                                         label='Фильтр по пользователю'
                                         options={[
