@@ -237,24 +237,20 @@ const Sales = () => {
                     setIsSuccessOpen(true)
                 }
             } else {
-                // In create mode, step 1: create sale
-                if (currentStep === 1) {
-                    const saleData = {
-                        company_id: parseInt(formData.company_id),
-                        summa: saleTotalAmount,
-                        products: productsPayload,
-                        status: formData.status || 'PENDING_PAYMENT',
-                    }
+                // In create mode: create sale and payment automatically
+                const saleData = {
+                    company_id: parseInt(formData.company_id),
+                    summa: saleTotalAmount,
+                    products: productsPayload,
+                    status: formData.status || 'PENDING_PAYMENT',
+                }
 
-                    const saleResponse = await api('post', saleData, '/sales/create')
+                const saleResponse = await api('post', saleData, '/sales/create')
 
-                    if (saleResponse?.data) {
-                        const newSaleId = saleResponse.data.data?.id || saleResponse.data.id
-                        setCreatedSaleId(newSaleId)
-                        setCurrentStep(2)
-                    }
-                } else if (currentStep === 2) {
-                    // Step 2: create payment
+                if (saleResponse?.data) {
+                    const newSaleId = saleResponse.data.data?.id || saleResponse.data.id
+
+                    // Automatically create payment with payment_type_id "$" (dollars, id: 2)
                     const company = companies.find((c) => c.id === formData.company_id)
                     const companyName = company?.name || 'Компания'
                     const currentDate = new Date().toLocaleDateString('ru-RU')
@@ -268,7 +264,7 @@ const Sales = () => {
 
                     const paymentSubmitData = {
                         name: generatedName,
-                        payment_type_id: parseInt(paymentData.payment_type_id),
+                        payment_type_id: 2, // "$" (dollars)
                         sales: [
                             {
                                 company_id: parseInt(formData.company_id),
@@ -281,7 +277,7 @@ const Sales = () => {
 
                     if (paymentResponse?.data) {
                         // Save the created sale ID before resetting
-                        const saleIdToView = createdSaleId
+                        const saleIdToView = newSaleId
 
                         // Refresh sales list
                         await fetchSales(page, size)
@@ -422,17 +418,8 @@ const Sales = () => {
             return formData.company_id
         }
 
-        // In create mode, step 1: only sale data required
-        if (currentStep === 1) {
-            return hasValidProducts
-        }
-
-        // Step 2: payment fields are required
-        if (currentStep === 2) {
-            return paymentData.payment_type_id
-        }
-
-        return false
+        // In create mode: only sale data required (payment is created automatically)
+        return hasValidProducts
     }
 
     const handlePaymentInputChange = (e) => {
@@ -925,219 +912,225 @@ const Sales = () => {
                     maxHeight='h-[90vh]'
                 >
                     <form onSubmit={handleSubmit}>
-                        {/* Step Indicator - Only show in create mode */}
-                        {!isEditMode && (
-                            <div className='mb-4 sm:mb-6'>
-                                <div className='flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4'>
-                                    <div className='flex items-center gap-2'>
-                                        <div
-                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm ${
-                                                currentStep >= 1
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-200 text-gray-500'
-                                            }`}
-                                        >
-                                            1
-                                        </div>
-                                        <span
-                                            className={`text-xs sm:text-sm font-medium ${
-                                                currentStep >= 1 ? 'text-blue-600' : 'text-gray-500'
-                                            }`}
-                                        >
-                                            <span className='hidden sm:inline'>
-                                                Создание продажи
-                                            </span>
-                                            <span className='sm:hidden'>Продажа</span>
-                                        </span>
-                                    </div>
-                                    <div className='w-8 sm:w-16 h-0.5 bg-gray-200'>
-                                        <div
-                                            className={`h-full transition-all ${
-                                                currentStep >= 2
-                                                    ? 'bg-blue-600 w-full'
-                                                    : 'bg-gray-200 w-0'
-                                            }`}
-                                        ></div>
-                                    </div>
-                                    <div className='flex items-center gap-2'>
-                                        <div
-                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm ${
-                                                currentStep >= 2
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-200 text-gray-500'
-                                            }`}
-                                        >
-                                            2
-                                        </div>
-                                        <span
-                                            className={`text-xs sm:text-sm font-medium ${
-                                                currentStep >= 2 ? 'text-blue-600' : 'text-gray-500'
-                                            }`}
-                                        >
-                                            <span className='hidden sm:inline'>
-                                                Создание платежа
-                                            </span>
-                                            <span className='sm:hidden'>Платеж</span>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
                         <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6'>
                             {/* Left Side - Form Content */}
                             <div className='lg:col-span-2'>
                                 <div className='space-y-4 sm:space-y-6'>
-                                    {/* Step 1: Sale Creation or Edit Mode */}
-                                    {(currentStep === 1 || isEditMode) && (
-                                        <>
+                                    {/* Sale Creation or Edit Mode */}
+                                    <>
+                                        <div>
+                                            <Select
+                                                label='Компания'
+                                                required
+                                                options={(companies || []).map((c) => ({
+                                                    value: c.id,
+                                                    label: c.name,
+                                                }))}
+                                                value={formData.company_id}
+                                                onChange={(value) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        company_id: value,
+                                                    }))
+                                                }
+                                                placeholder='Выберите компанию'
+                                                searchable={true}
+                                            />
+                                        </div>
+
+                                        {!isEditMode && (
                                             <div>
-                                                <Select
-                                                    label='Компания'
-                                                    required
-                                                    options={(companies || []).map((c) => ({
-                                                        value: c.id,
-                                                        label: c.name,
-                                                    }))}
-                                                    value={formData.company_id}
-                                                    onChange={(value) =>
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            company_id: value,
-                                                        }))
-                                                    }
-                                                    placeholder='Выберите компанию'
-                                                    searchable={true}
-                                                    disabled={currentStep === 2}
-                                                />
-                                            </div>
-
-                                            {!isEditMode && (
-                                                <div>
-                                                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3'>
-                                                        <h3 className='text-base sm:text-lg font-semibold text-gray-700'>
-                                                            Выберите товары и укажите количество
-                                                        </h3>
-                                                        <span className='text-xs sm:text-sm text-gray-500'>
-                                                            Выбрано: {formData.products.length}
-                                                        </span>
-                                                    </div>
-                                                    {/* Search Input */}
-                                                    <div className='relative mb-3 sm:mb-4'>
-                                                        <input
-                                                            type='text'
-                                                            placeholder='Поиск товара...'
-                                                            value={searchQuery}
-                                                            onChange={(e) =>
-                                                                setSearchQuery(e.target.value)
-                                                            }
-                                                            className='w-full px-3 sm:px-4 py-2 pl-9 sm:pl-10 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500'
-                                                            disabled={currentStep === 2}
+                                                <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3'>
+                                                    <h3 className='text-base sm:text-lg font-semibold text-gray-700'>
+                                                        Выберите товары и укажите количество
+                                                    </h3>
+                                                    <span className='text-xs sm:text-sm text-gray-500'>
+                                                        Выбрано: {formData.products.length}
+                                                    </span>
+                                                </div>
+                                                {/* Search Input */}
+                                                <div className='relative mb-3 sm:mb-4'>
+                                                    <input
+                                                        type='text'
+                                                        placeholder='Поиск товара...'
+                                                        value={searchQuery}
+                                                        onChange={(e) =>
+                                                            setSearchQuery(e.target.value)
+                                                        }
+                                                        className='w-full px-3 sm:px-4 py-2 pl-9 sm:pl-10 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500'
+                                                    />
+                                                    <svg
+                                                        xmlns='http://www.w3.org/2000/svg'
+                                                        fill='none'
+                                                        viewBox='0 0 24 24'
+                                                        strokeWidth={2}
+                                                        stroke='currentColor'
+                                                        className='w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
+                                                    >
+                                                        <path
+                                                            strokeLinecap='round'
+                                                            strokeLinejoin='round'
+                                                            d='M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
                                                         />
-                                                        <svg
-                                                            xmlns='http://www.w3.org/2000/svg'
-                                                            fill='none'
-                                                            viewBox='0 0 24 24'
-                                                            strokeWidth={2}
-                                                            stroke='currentColor'
-                                                            className='w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
-                                                        >
-                                                            <path
-                                                                strokeLinecap='round'
-                                                                strokeLinejoin='round'
-                                                                d='M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
-                                                            />
-                                                        </svg>
-                                                    </div>
-                                                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-h-[350px] sm:max-h-[400px] overflow-y-auto pr-2'>
-                                                        {(products || [])
-                                                            .filter((product) =>
-                                                                product.name
-                                                                    .toLowerCase()
-                                                                    .includes(
-                                                                        searchQuery.toLowerCase()
-                                                                    )
-                                                            )
-                                                            .map((product) => {
-                                                                const selectedProduct =
-                                                                    formData.products.find(
-                                                                        (p) =>
-                                                                            Number(p.product_id) ===
-                                                                            Number(product.id)
-                                                                    )
-                                                                const selectedIndex =
-                                                                    formData.products.findIndex(
-                                                                        (p) =>
-                                                                            Number(p.product_id) ===
-                                                                            Number(product.id)
-                                                                    )
-                                                                const isSelected =
-                                                                    selectedProduct !== undefined
-                                                                const selectedQuantity =
-                                                                    Number(
-                                                                        selectedProduct?.quantity
-                                                                    ) || 0
+                                                    </svg>
+                                                </div>
+                                                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-h-[350px] sm:max-h-[400px] overflow-y-auto pr-2'>
+                                                    {(products || [])
+                                                        .filter((product) =>
+                                                            product.name
+                                                                .toLowerCase()
+                                                                .includes(searchQuery.toLowerCase())
+                                                        )
+                                                        .map((product) => {
+                                                            const selectedProduct =
+                                                                formData.products.find(
+                                                                    (p) =>
+                                                                        Number(p.product_id) ===
+                                                                        Number(product.id)
+                                                                )
+                                                            const selectedIndex =
+                                                                formData.products.findIndex(
+                                                                    (p) =>
+                                                                        Number(p.product_id) ===
+                                                                        Number(product.id)
+                                                                )
+                                                            const isSelected =
+                                                                selectedProduct !== undefined
+                                                            const selectedQuantity =
+                                                                Number(selectedProduct?.quantity) ||
+                                                                0
 
-                                                                return (
-                                                                    <div
-                                                                        key={product.id}
-                                                                        className={`p-3 sm:p-4 border-2 rounded-lg transition-all ${
-                                                                            isSelected
-                                                                                ? 'border-blue-500 bg-blue-50'
-                                                                                : 'border-gray-200 hover:border-gray-300'
-                                                                        }`}
-                                                                    >
-                                                                        <div className='flex items-start justify-between mb-2 sm:mb-3 relative'>
-                                                                            <h4 className='font-semibold text-gray-800 text-xs sm:text-sm flex-1 pr-6'>
-                                                                                {product.name}
-                                                                            </h4>
-                                                                            {isSelected && (
-                                                                                <button
-                                                                                    type='button'
-                                                                                    onClick={() =>
-                                                                                        removeProduct(
-                                                                                            selectedIndex
-                                                                                        )
-                                                                                    }
-                                                                                    className='p-1.5 sm:p-1 absolute top-0 right-0 text-red-500 hover:bg-red-100 rounded transition-colors touch-manipulation'
-                                                                                    title='Удалить'
-                                                                                    disabled={
-                                                                                        currentStep ===
-                                                                                        2
-                                                                                    }
+                                                            return (
+                                                                <div
+                                                                    key={product.id}
+                                                                    className={`p-3 sm:p-4 border-2 rounded-lg transition-all ${
+                                                                        isSelected
+                                                                            ? 'border-blue-500 bg-blue-50'
+                                                                            : 'border-gray-200 hover:border-gray-300'
+                                                                    }`}
+                                                                >
+                                                                    <div className='flex items-start justify-between mb-2 sm:mb-3 relative'>
+                                                                        <h4 className='font-semibold text-gray-800 text-xs sm:text-sm flex-1 pr-6'>
+                                                                            {product.name}
+                                                                        </h4>
+                                                                        {isSelected && (
+                                                                            <button
+                                                                                type='button'
+                                                                                onClick={() =>
+                                                                                    removeProduct(
+                                                                                        selectedIndex
+                                                                                    )
+                                                                                }
+                                                                                className='p-1.5 sm:p-1 absolute top-0 right-0 text-red-500 hover:bg-red-100 rounded transition-colors touch-manipulation'
+                                                                                title='Удалить'
+                                                                                disabled={
+                                                                                    currentStep ===
+                                                                                    2
+                                                                                }
+                                                                            >
+                                                                                <svg
+                                                                                    xmlns='http://www.w3.org/2000/svg'
+                                                                                    fill='none'
+                                                                                    viewBox='0 0 24 24'
+                                                                                    strokeWidth={2}
+                                                                                    stroke='currentColor'
+                                                                                    className='w-4 h-4 sm:w-3 sm:h-3'
                                                                                 >
-                                                                                    <svg
-                                                                                        xmlns='http://www.w3.org/2000/svg'
-                                                                                        fill='none'
-                                                                                        viewBox='0 0 24 24'
-                                                                                        strokeWidth={
-                                                                                            2
+                                                                                    <path
+                                                                                        strokeLinecap='round'
+                                                                                        strokeLinejoin='round'
+                                                                                        d='M6 18L18 6M6 6l12 12'
+                                                                                    />
+                                                                                </svg>
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className='text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3 min-h-[24px] sm:min-h-[32px] line-clamp-2'>
+                                                                        {product.description ||
+                                                                            'Описание товара'}
+                                                                    </p>
+                                                                    <div className='space-y-2'>
+                                                                        <div className='flex items-center gap-2'>
+                                                                            <input
+                                                                                type='number'
+                                                                                min='0'
+                                                                                placeholder='0'
+                                                                                value={
+                                                                                    selectedProduct?.quantity ||
+                                                                                    ''
+                                                                                }
+                                                                                onChange={(e) => {
+                                                                                    const value =
+                                                                                        e.target
+                                                                                            .value
+                                                                                    if (
+                                                                                        value ===
+                                                                                            '' ||
+                                                                                        value ===
+                                                                                            '0'
+                                                                                    ) {
+                                                                                        // Remove product if quantity is 0 or empty
+                                                                                        if (
+                                                                                            isSelected
+                                                                                        ) {
+                                                                                            removeProduct(
+                                                                                                selectedIndex
+                                                                                            )
                                                                                         }
-                                                                                        stroke='currentColor'
-                                                                                        className='w-4 h-4 sm:w-3 sm:h-3'
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap='round'
-                                                                                            strokeLinejoin='round'
-                                                                                            d='M6 18L18 6M6 6l12 12'
-                                                                                        />
-                                                                                    </svg>
-                                                                                </button>
-                                                                            )}
+                                                                                    } else {
+                                                                                        if (
+                                                                                            isSelected
+                                                                                        ) {
+                                                                                            // Update existing product
+                                                                                            handleProductChange(
+                                                                                                selectedIndex,
+                                                                                                'quantity',
+                                                                                                value
+                                                                                            )
+                                                                                        } else {
+                                                                                            // Add new product
+                                                                                            setFormData(
+                                                                                                (
+                                                                                                    prev
+                                                                                                ) => ({
+                                                                                                    ...prev,
+                                                                                                    products:
+                                                                                                        [
+                                                                                                            ...prev.products,
+                                                                                                            {
+                                                                                                                product_id:
+                                                                                                                    product.id,
+                                                                                                                quantity:
+                                                                                                                    value,
+                                                                                                                price: '',
+                                                                                                            },
+                                                                                                        ],
+                                                                                                })
+                                                                                            )
+                                                                                        }
+                                                                                    }
+                                                                                }}
+                                                                                className={`flex-1 px-2 sm:px-3 py-2 border rounded-lg text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                                                                                    isSelected
+                                                                                        ? 'border-blue-500 focus:ring-blue-200'
+                                                                                        : 'border-gray-300 focus:ring-gray-200'
+                                                                                }`}
+                                                                            />
+                                                                            <span className='text-[10px] sm:text-xs text-gray-500 whitespace-nowrap'>
+                                                                                шт.
+                                                                            </span>
                                                                         </div>
-                                                                        <p className='text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3 min-h-[24px] sm:min-h-[32px] line-clamp-2'>
-                                                                            {product.description ||
-                                                                                'Описание товара'}
-                                                                        </p>
-                                                                        <div className='space-y-2'>
+                                                                        {isSelected && (
                                                                             <div className='flex items-center gap-2'>
                                                                                 <input
-                                                                                    type='number'
-                                                                                    min='0'
-                                                                                    placeholder='0'
+                                                                                    type='text'
+                                                                                    placeholder='Цена'
                                                                                     value={
-                                                                                        selectedProduct?.quantity ||
-                                                                                        ''
+                                                                                        selectedProduct?.price
+                                                                                            ? formatNumber(
+                                                                                                  selectedProduct.price
+                                                                                              )
+                                                                                            : ''
                                                                                     }
                                                                                     onChange={(
                                                                                         e
@@ -1145,141 +1138,28 @@ const Sales = () => {
                                                                                         const value =
                                                                                             e.target
                                                                                                 .value
-                                                                                        if (
-                                                                                            value ===
-                                                                                                '' ||
-                                                                                            value ===
-                                                                                                '0'
-                                                                                        ) {
-                                                                                            // Remove product if quantity is 0 or empty
-                                                                                            if (
-                                                                                                isSelected
-                                                                                            ) {
-                                                                                                removeProduct(
-                                                                                                    selectedIndex
-                                                                                                )
-                                                                                            }
-                                                                                        } else {
-                                                                                            if (
-                                                                                                isSelected
-                                                                                            ) {
-                                                                                                // Update existing product
-                                                                                                handleProductChange(
-                                                                                                    selectedIndex,
-                                                                                                    'quantity',
-                                                                                                    value
-                                                                                                )
-                                                                                            } else {
-                                                                                                // Add new product
-                                                                                                setFormData(
-                                                                                                    (
-                                                                                                        prev
-                                                                                                    ) => ({
-                                                                                                        ...prev,
-                                                                                                        products:
-                                                                                                            [
-                                                                                                                ...prev.products,
-                                                                                                                {
-                                                                                                                    product_id:
-                                                                                                                        product.id,
-                                                                                                                    quantity:
-                                                                                                                        value,
-                                                                                                                    price: '',
-                                                                                                                },
-                                                                                                            ],
-                                                                                                    })
-                                                                                                )
-                                                                                            }
-                                                                                        }
+                                                                                        handleProductChange(
+                                                                                            selectedIndex,
+                                                                                            'price',
+                                                                                            value
+                                                                                        )
                                                                                     }}
-                                                                                    className={`flex-1 px-2 sm:px-3 py-2 border rounded-lg text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                                                                                        isSelected
-                                                                                            ? 'border-blue-500 focus:ring-blue-200'
-                                                                                            : 'border-gray-300 focus:ring-gray-200'
-                                                                                    }`}
-                                                                                    disabled={
-                                                                                        currentStep ===
-                                                                                        2
-                                                                                    }
+                                                                                    className='flex-1 px-2 sm:px-3 py-2 border border-blue-500 rounded-lg text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all'
+                                                                                    required
                                                                                 />
                                                                                 <span className='text-[10px] sm:text-xs text-gray-500 whitespace-nowrap'>
-                                                                                    шт.
+                                                                                    $
                                                                                 </span>
                                                                             </div>
-                                                                            {isSelected && (
-                                                                                <div className='flex items-center gap-2'>
-                                                                                    <input
-                                                                                        type='text'
-                                                                                        placeholder='Цена'
-                                                                                        value={
-                                                                                            selectedProduct?.price
-                                                                                                ? formatNumber(
-                                                                                                      selectedProduct.price
-                                                                                                  )
-                                                                                                : ''
-                                                                                        }
-                                                                                        onChange={(
-                                                                                            e
-                                                                                        ) => {
-                                                                                            const value =
-                                                                                                e
-                                                                                                    .target
-                                                                                                    .value
-                                                                                            handleProductChange(
-                                                                                                selectedIndex,
-                                                                                                'price',
-                                                                                                value
-                                                                                            )
-                                                                                        }}
-                                                                                        className='flex-1 px-2 sm:px-3 py-2 border border-blue-500 rounded-lg text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all'
-                                                                                        required
-                                                                                        disabled={
-                                                                                            currentStep ===
-                                                                                            2
-                                                                                        }
-                                                                                    />
-                                                                                    <span className='text-[10px] sm:text-xs text-gray-500 whitespace-nowrap'>
-                                                                                        $
-                                                                                    </span>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
+                                                                        )}
                                                                     </div>
-                                                                )
-                                                            })}
-                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })}
                                                 </div>
-                                            )}
-                                        </>
-                                    )}
-
-                                    {/* Step 2: Payment Creation - Only show in create mode */}
-                                    {!isEditMode && currentStep === 2 && (
-                                        <div className='border-t border-gray-200 pt-4 sm:pt-6'>
-                                            <h3 className='text-base sm:text-lg font-semibold text-gray-700 mb-3 sm:mb-4'>
-                                                Информация об оплате
-                                            </h3>
-                                            <div className='space-y-4'>
-                                                <Select
-                                                    label='Тип валюты'
-                                                    required
-                                                    options={paymentTypes.map((t) => ({
-                                                        value: t.id,
-                                                        label: t.name,
-                                                    }))}
-                                                    value={paymentData.payment_type_id}
-                                                    onChange={(value) =>
-                                                        setPaymentData((prev) => ({
-                                                            ...prev,
-                                                            payment_type_id: value,
-                                                        }))
-                                                    }
-                                                    placeholder='Выберите тип валюты'
-                                                    searchable={false}
-                                                />
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </>
                                 </div>
                             </div>
 
@@ -1404,31 +1284,6 @@ const Sales = () => {
                                     )}
                                 </div>
 
-                                {/* Payment Info - Only show in create mode */}
-                                {!isEditMode && (
-                                    <div className='mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200'>
-                                        <p className='text-[10px] sm:text-xs text-gray-500 mb-2 uppercase'>
-                                            Оплата
-                                        </p>
-                                        <div className='space-y-2 text-[10px] sm:text-xs'>
-                                            <div>
-                                                <span className='text-gray-500'>Тип оплаты: </span>
-                                                <span className='font-semibold text-gray-800'>
-                                                    {paymentData.payment_type_id
-                                                        ? paymentTypes.find(
-                                                              (t) =>
-                                                                  t.id ===
-                                                                  Number(
-                                                                      paymentData.payment_type_id
-                                                                  )
-                                                          )?.name || '-'
-                                                        : 'Не выбран'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* Total Amount */}
                                 <div className='pt-2'>
                                     <div className='bg-blue-50 rounded-lg p-2 sm:p-3 border border-blue-200'>
@@ -1450,20 +1305,7 @@ const Sales = () => {
                         </div>
 
                         {/* Navigation Buttons */}
-                        <div className='flex flex-col sm:flex-row justify-between gap-2 sm:gap-2 mt-4 sm:mt-6 pt-4 border-t border-gray-200'>
-                            <div className='w-full sm:w-auto'>
-                                {!isEditMode && currentStep === 2 && (
-                                    <Button
-                                        type='button'
-                                        variant='secondary'
-                                        onClick={() => setCurrentStep(1)}
-                                        disabled={submitting}
-                                        className='w-full sm:w-auto'
-                                    >
-                                        Назад
-                                    </Button>
-                                )}
-                            </div>
+                        <div className='flex flex-col sm:flex-row justify-end gap-2 sm:gap-2 mt-4 sm:mt-6 pt-4 border-t border-gray-200'>
                             <div className='flex flex-col sm:flex-row gap-2 w-full sm:w-auto'>
                                 <Button
                                     type='button'
@@ -1491,16 +1333,10 @@ const Sales = () => {
                                             <span className='hidden sm:inline'>
                                                 {isEditMode
                                                     ? 'Обновление...'
-                                                    : currentStep === 1
-                                                    ? 'Создание продажи...'
-                                                    : 'Создание платежа...'}
+                                                    : 'Создание продажи...'}
                                             </span>
                                             <span className='sm:hidden'>
-                                                {isEditMode
-                                                    ? 'Обновление...'
-                                                    : currentStep === 1
-                                                    ? 'Создание...'
-                                                    : 'Создание...'}
+                                                {isEditMode ? 'Обновление...' : 'Создание...'}
                                             </span>
                                         </span>
                                     ) : isEditMode ? (
@@ -1510,16 +1346,11 @@ const Sales = () => {
                                             </span>
                                             <span className='sm:hidden'>Обновить</span>
                                         </span>
-                                    ) : currentStep === 1 ? (
+                                    ) : (
                                         <span>
                                             <span className='hidden sm:inline'>
                                                 Создать продажу
                                             </span>
-                                            <span className='sm:hidden'>Создать</span>
-                                        </span>
-                                    ) : (
-                                        <span>
-                                            <span className='hidden sm:inline'>Создать платеж</span>
                                             <span className='sm:hidden'>Создать</span>
                                         </span>
                                     )}
