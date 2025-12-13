@@ -166,11 +166,20 @@ const Users = () => {
     const handleEdit = (user) => {
         setIsEditMode(true)
         setEditingUserId(user.id)
+
+        // Find the role ID by matching the role name
+        let roleId = ''
+        if (user.roles && user.roles.length > 0) {
+            const roleName = user.roles[0]
+            const matchedRole = roles.find((role) => role.name === roleName)
+            roleId = matchedRole ? matchedRole.id : ''
+        }
+
         setFormData({
             username: user.username,
             phone: user.phone || '',
             password: '',
-            role: user.roles && user.roles.length > 0 ? user.roles[0] : '',
+            role: roleId,
         })
         setIsModalOpen(true)
     }
