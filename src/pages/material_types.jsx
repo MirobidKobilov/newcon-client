@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
+import Button from '../components/UI/Button'
+import ConfirmDialog from '../components/UI/ConfirmDialog'
+import Input from '../components/UI/Input'
+import Modal from '../components/UI/Modal'
+import Pagination from '../components/UI/Pagination'
+import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
-import Input from '../components/UI/Input'
-import Button from '../components/UI/Button'
-import Modal from '../components/UI/Modal'
-import ConfirmDialog from '../components/UI/ConfirmDialog'
-import SuccessModal from '../components/UI/SuccessModal'
-import Pagination from '../components/UI/Pagination'
 
 const MaterialTypes = () => {
     const [items, setItems] = useState([])
@@ -23,7 +23,12 @@ const MaterialTypes = () => {
     const [deleting, setDeleting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
-    const [viewMode, setViewMode] = useState('table')
+    const [viewMode, setViewMode] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 768 ? 'table' : 'cards'
+        }
+        return 'table'
+    })
     const [page, setPage] = useState(1)
     const [size, setSize] = useState(10)
     const [totalItems, setTotalItems] = useState(0)
@@ -31,7 +36,11 @@ const MaterialTypes = () => {
 
     const fetchItems = async (currentPage = page, pageSize = size) => {
         setLoading(true)
-        const response = await api('get', { page: currentPage, size: pageSize }, '/material_types/list')
+        const response = await api(
+            'get',
+            { page: currentPage, size: pageSize },
+            '/material_types/list'
+        )
         if (response?.data) {
             setItems(response.data.data || [])
             // Handle pagination metadata
@@ -134,151 +143,225 @@ const MaterialTypes = () => {
 
     return (
         <Layout>
-            <div className="min-h-screen bg-gray-50 p-2 sm:p-3 md:p-4 lg:p-6">
-                <div className="mb-4 sm:mb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+            <div className='min-h-screen bg-gray-50 p-2 sm:p-3 md:p-4 lg:p-6'>
+                <div className='mb-4 sm:mb-6'>
+                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6'>
                         <div>
-                            <div className="text-lg sm:text-xl md:text-2xl text-slate-400">
-                                NEWCON <span className="text-gray-700">/ Типы материалов</span>
+                            <div className='text-lg sm:text-xl md:text-2xl text-slate-400'>
+                                NEWCON <span className='text-gray-700'>/ Типы материалов</span>
                             </div>
                         </div>
-                        <Button onClick={handleCreateNew} variant="primary" className="w-full sm:w-auto">
+                        <Button
+                            onClick={handleCreateNew}
+                            variant='primary'
+                            className='w-full sm:w-auto text-sm px-3 py-2 min-h-[40px] md:text-sm md:px-3 md:py-2 md:min-h-[40px]'
+                        >
                             + Создать тип материала
                         </Button>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6 overflow-hidden">
-                    <div className="p-3 sm:p-4 md:p-6 border-b border-slate-200">
-                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                            <h2 className="text-base sm:text-lg font-bold text-gray-700">Типы материалов</h2>
-                            <div className="flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg">
-                                <button onClick={() => setViewMode('table')} className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Таблица</button>
-                                <button onClick={() => setViewMode('cards')} className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${viewMode === 'cards' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Карточки</button>
+                <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6 overflow-hidden'>
+                    <div className='p-3 sm:p-4 md:p-6 border-b border-slate-200'>
+                        <div className='flex items-center justify-between mb-3 sm:mb-4'>
+                            <h2 className='text-base sm:text-lg font-bold text-gray-700'>
+                                Типы материалов
+                            </h2>
+                            <div className='flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
+                                <button
+                                    onClick={() => setViewMode('table')}
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                                        viewMode === 'table'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                >
+                                    Таблица
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('cards')}
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                                        viewMode === 'cards'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                >
+                                    Карточки
+                                </button>
                             </div>
                         </div>
                     </div>
 
                     {viewMode === 'table' && (
-                    <div className="overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6">
-                        <table className="w-full min-w-[600px]">
-                            <thead>
-                                <tr className="border-b border-slate-200">
-                                    <th className="text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase">
-                                        ID
-                                    </th>
-                                    <th className="text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase">
-                                        Тип
-                                    </th>
-                                    <th className="text-right p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase">
-                                        Действия
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="3" className="p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm">
-                                            Загрузка...
-                                        </td>
+                        <div className='overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6'>
+                            <table className='w-full min-w-[600px]'>
+                                <thead>
+                                    <tr className='border-b border-slate-200'>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
+                                            ID
+                                        </th>
+                                        <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
+                                            Тип
+                                        </th>
+                                        <th className='text-right p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
+                                            Действия
+                                        </th>
                                     </tr>
-                                ) : items.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="3" className="p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm">
-                                            Нет данных
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    items.map((item) => (
-                                        <tr
+                                </thead>
+                                <tbody>
+                                    {loading ? (
+                                        <tr>
+                                            <td
+                                                colSpan='3'
+                                                className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
+                                            >
+                                                Загрузка...
+                                            </td>
+                                        </tr>
+                                    ) : items.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan='3'
+                                                className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
+                                            >
+                                                Нет данных
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        items.map((item) => (
+                                            <tr
+                                                key={item.id}
+                                                className='border-b border-slate-200 hover:bg-gray-50'
+                                            >
+                                                <td className='p-2 sm:p-3 md:p-4'>
+                                                    <div className='text-xs sm:text-sm font-bold text-gray-700'>
+                                                        {item.id}
+                                                    </div>
+                                                </td>
+                                                <td className='p-2 sm:p-3 md:p-4'>
+                                                    <div className='text-xs sm:text-sm font-bold text-gray-700'>
+                                                        {item.name}
+                                                    </div>
+                                                </td>
+                                                <td className='p-2 sm:p-3 md:p-4'>
+                                                    <div className='flex gap-1 sm:gap-2 justify-end'>
+                                                        <Button
+                                                            onClick={() => handleEdit(item)}
+                                                            variant='secondary'
+                                                            className='btn-sm btn-circle min-h-[40px] min-w-[40px] flex items-center justify-center !p-0 !px-0 !pb-0'
+                                                            title='Редактировать'
+                                                        >
+                                                            <svg
+                                                                xmlns='http://www.w3.org/2000/svg'
+                                                                fill='none'
+                                                                viewBox='0 0 24 24'
+                                                                strokeWidth={2.5}
+                                                                stroke='currentColor'
+                                                                className='w-5 h-5 text-gray-700 flex-shrink-0'
+                                                            >
+                                                                <path
+                                                                    strokeLinecap='round'
+                                                                    strokeLinejoin='round'
+                                                                    d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10'
+                                                                />
+                                                            </svg>
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => handleDelete(item.id)}
+                                                            variant='secondary'
+                                                            className='btn-sm btn-circle min-h-[40px] min-w-[40px] hover:bg-red-50 flex items-center justify-center !p-0 !px-0 !pb-0'
+                                                            title='Удалить'
+                                                        >
+                                                            <svg
+                                                                xmlns='http://www.w3.org/2000/svg'
+                                                                viewBox='0 0 24 24'
+                                                                fill='none'
+                                                            >
+                                                                <path
+                                                                    d='M7.99999 6L8.54414 4.36754C8.81637 3.55086 9.58064 3 10.4415 3H13.5585C14.4193 3 15.1836 3.55086 15.4558 4.36754L16 6M7.99999 6H5.61802C4.87464 6 4.39114 6.78231 4.72359 7.44721L5.21262 8.42527C5.40205 8.80413 5.5091 9.2188 5.52674 9.64201L5.88019 18.1249C5.94714 19.7318 7.26931 21 8.87759 21H15.1224C16.7307 21 18.0528 19.7318 18.1198 18.1249L18.4732 9.64202C18.4909 9.21881 18.5979 8.80413 18.7874 8.42527L19.2764 7.44721C19.6088 6.78231 19.1253 6 18.382 6H16M7.99999 6H16M14.4399 16.5L14.6899 10.5M9.56004 16.5L9.31004 10.5'
+                                                                    stroke='currentColor'
+                                                                    strokeWidth='1.5'
+                                                                    strokeLinecap='round'
+                                                                    strokeLinejoin='round'
+                                                                />
+                                                            </svg>
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {viewMode === 'cards' && (
+                        <div className='p-6'>
+                            {loading ? (
+                                <div className='text-center text-slate-500 py-12'>Загрузка...</div>
+                            ) : items.length === 0 ? (
+                                <div className='text-center text-slate-500 py-12'>Нет данных</div>
+                            ) : (
+                                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                                    {items.map((item) => (
+                                        <div
                                             key={item.id}
-                                            className="border-b border-slate-200 hover:bg-gray-50"
+                                            className='bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow'
                                         >
-                                            <td className="p-2 sm:p-3 md:p-4">
-                                                <div className="text-xs sm:text-sm font-bold text-gray-700">
-                                                    {item.id}
+                                            <div className='flex justify-between items-start mb-2'>
+                                                <div>
+                                                    <div className='text-xs text-slate-400 font-medium mb-1'>
+                                                        ID: {item.id}
+                                                    </div>
+                                                    <h3 className='text-base sm:text-lg font-bold text-gray-700'>
+                                                        {item.name}
+                                                    </h3>
                                                 </div>
-                                            </td>
-                                            <td className="p-2 sm:p-3 md:p-4">
-                                                <div className="text-xs sm:text-sm font-bold text-gray-700">
-                                                    {item.name}
-                                                </div>
-                                            </td>
-                                            <td className="p-2 sm:p-3 md:p-4">
-                                                <div className="flex gap-1 sm:gap-2 justify-end">
+                                                <div className='flex gap-2'>
                                                     <Button
                                                         onClick={() => handleEdit(item)}
-                                                        variant="secondary"
-                                                        className="btn-xs sm:btn-sm btn-circle"
-                                                        title="Редактировать"
+                                                        variant='secondary'
+                                                        className='btn-lg btn-circle min-h-[44px] min-w-[44px] flex items-center justify-center !p-0 !px-0 !pb-0'
+                                                        title='Редактировать'
                                                     >
                                                         <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            strokeWidth={1.5}
-                                                            stroke="currentColor"
-                                                            className="w-3 h-3 sm:w-4 sm:h-4"
+                                                            xmlns='http://www.w3.org/2000/svg'
+                                                            fill='none'
+                                                            viewBox='0 0 24 24'
+                                                            strokeWidth={2.5}
+                                                            stroke='currentColor'
+                                                            className='w-5 h-5 text-gray-700'
                                                         >
                                                             <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                                                                strokeLinecap='round'
+                                                                strokeLinejoin='round'
+                                                                d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10'
                                                             />
                                                         </svg>
                                                     </Button>
                                                     <Button
                                                         onClick={() => handleDelete(item.id)}
-                                                        variant="secondary"
-                                                        className="btn-xs sm:btn-sm btn-circle hover:bg-red-50"
-                                                        title="Удалить"
+                                                        variant='secondary'
+                                                        className='btn-lg btn-circle min-h-[44px] min-w-[44px] hover:bg-red-50 flex items-center justify-center !p-0 !px-0 !pb-0'
+                                                        title='Удалить'
                                                     >
                                                         <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            strokeWidth={1.5}
-                                                            stroke="currentColor"
-                                                            className="w-4 h-4 text-red-600"
+                                                            xmlns='http://www.w3.org/2000/svg'
+                                                            width='24'
+                                                            height='24'
+                                                            viewBox='0 0 24 24'
+                                                            fill='none'
+                                                            className='w-5 h-5 text-red-600 flex-shrink-0'
                                                         >
                                                             <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                                                                d='M7.99999 6L8.54414 4.36754C8.81637 3.55086 9.58064 3 10.4415 3H13.5585C14.4193 3 15.1836 3.55086 15.4558 4.36754L16 6M7.99999 6H5.61802C4.87464 6 4.39114 6.78231 4.72359 7.44721L5.21262 8.42527C5.40205 8.80413 5.5091 9.2188 5.52674 9.64201L5.88019 18.1249C5.94714 19.7318 7.26931 21 8.87759 21H15.1224C16.7307 21 18.0528 19.7318 18.1198 18.1249L18.4732 9.64202C18.4909 9.21881 18.5979 8.80413 18.7874 8.42527L19.2764 7.44721C19.6088 6.78231 19.1253 6 18.382 6H16M7.99999 6H16M14.4399 16.5L14.6899 10.5M9.56004 16.5L9.31004 10.5'
+                                                                stroke='currentColor'
+                                                                strokeWidth='1.5'
+                                                                strokeLinecap='round'
+                                                                strokeLinejoin='round'
                                                             />
                                                         </svg>
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                    )}
-
-                    {viewMode === 'cards' && (
-                        <div className="p-6">
-                            {loading ? (
-                                <div className="text-center text-slate-500 py-12">Загрузка...</div>
-                            ) : items.length === 0 ? (
-                                <div className="text-center text-slate-500 py-12">Нет данных</div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {items.map((item) => (
-                                        <div key={item.id} className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div>
-                                                    <div className="text-xs text-slate-400 font-medium mb-1">ID: {item.id}</div>
-                                                    <h3 className="text-base sm:text-lg font-bold text-gray-700">{item.name}</h3>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <Button onClick={() => handleEdit(item)} variant="secondary" className="btn-xs sm:btn-sm btn-circle" title="Редактировать">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 sm:w-4 sm:h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-                                                    </Button>
-                                                    <Button onClick={() => handleDelete(item.id)} variant="secondary" className="btn-xs sm:btn-sm btn-circle hover:bg-red-50" title="Удалить">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-red-600"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                                                     </Button>
                                                 </div>
                                             </div>
@@ -311,31 +394,31 @@ const MaterialTypes = () => {
                     title={isEditMode ? 'Редактирование типа материала' : 'Создание типа материала'}
                 >
                     <form onSubmit={handleSubmit}>
-                        <div className="space-y-4">
+                        <div className='space-y-4'>
                             <Input
-                                label="Тип"
-                                type="text"
-                                name="name"
+                                label='Тип'
+                                type='text'
+                                name='name'
                                 value={formData.name}
                                 onChange={handleInputChange}
-                                placeholder="Введите тип"
+                                placeholder='Введите тип'
                                 required
                             />
                         </div>
 
-                        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
+                        <div className='flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200'>
                             <Button
-                                type="button"
-                                variant="secondary"
+                                type='button'
+                                variant='secondary'
                                 onClick={() => setIsModalOpen(false)}
                                 disabled={submitting}
                             >
                                 Отмена
                             </Button>
-                            <Button type="submit" variant="primary" disabled={submitting}>
+                            <Button type='submit' variant='primary' disabled={submitting}>
                                 {submitting ? (
-                                    <span className="flex items-center gap-2">
-                                        <span className="loading loading-spinner loading-sm"></span>
+                                    <span className='flex items-center gap-2'>
+                                        <span className='loading loading-spinner loading-sm'></span>
                                         {isEditMode ? 'Сохранение...' : 'Создание...'}
                                     </span>
                                 ) : isEditMode ? (
@@ -352,18 +435,18 @@ const MaterialTypes = () => {
                     isOpen={isConfirmOpen}
                     onClose={() => setIsConfirmOpen(false)}
                     onConfirm={confirmDelete}
-                    title="Удаление типа материала"
-                    message="Вы уверены, что хотите удалить этот тип материала? Это действие нельзя отменить."
-                    confirmText="Удалить"
-                    cancelText="Отмена"
-                    confirmVariant="primary"
+                    title='Удаление типа материала'
+                    message='Вы уверены, что хотите удалить этот тип материала? Это действие нельзя отменить.'
+                    confirmText='Удалить'
+                    cancelText='Отмена'
+                    confirmVariant='primary'
                     isLoading={deleting}
                 />
 
                 <SuccessModal
                     isOpen={isSuccessOpen}
                     onClose={() => setIsSuccessOpen(false)}
-                    title="Успешно"
+                    title='Успешно'
                     message={successMessage}
                 />
             </div>

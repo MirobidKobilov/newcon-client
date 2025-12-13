@@ -27,7 +27,12 @@ const Expances = () => {
     const [submitting, setSubmitting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
-    const [viewMode, setViewMode] = useState('table')
+    const [viewMode, setViewMode] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 768 ? 'table' : 'cards'
+        }
+        return 'table'
+    })
     const [error, setError] = useState(null)
     const [isErrorOpen, setIsErrorOpen] = useState(false)
     const [filterUserId, setFilterUserId] = useState(searchParams.get('user_id') || '')
@@ -228,7 +233,7 @@ const Expances = () => {
                         <Button
                             onClick={handleCreateNew}
                             variant='primary'
-                            className='w-full sm:w-auto'
+                            className='w-full sm:w-auto text-sm px-3 py-2 min-h-[40px] md:text-sm md:px-3 md:py-2 md:min-h-[40px]'
                         >
                             + Создать расход
                         </Button>

@@ -4,6 +4,7 @@ import ConfirmDialog from '../components/UI/ConfirmDialog'
 import Modal from '../components/UI/Modal'
 import Pagination from '../components/UI/Pagination'
 import Select from '../components/UI/Select'
+import StatusSelect from '../components/UI/StatusSelect'
 import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
@@ -27,10 +28,9 @@ const Sales = () => {
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
     const [companies, setCompanies] = useState([])
-    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false)
     const [statusChangingItemId, setStatusChangingItemId] = useState(null)
-    const [newStatus, setNewStatus] = useState('')
     const [changingStatus, setChangingStatus] = useState(false)
+    const [statusSuccessItemId, setStatusSuccessItemId] = useState(null)
     const [products, setProducts] = useState([])
     const [isViewModalOpen, setIsViewModalOpen] = useState(false)
     const [viewingItem, setViewingItem] = useState(null)
@@ -46,7 +46,12 @@ const Sales = () => {
         { value: 'PENDING_PAYMENT', label: 'Ожидает оплаты' },
         { value: 'PAID', label: 'Оплачено' },
     ]
-    const [viewMode, setViewMode] = useState('table')
+    const [viewMode, setViewMode] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 768 ? 'table' : 'cards'
+        }
+        return 'table'
+    })
     const [currentStep, setCurrentStep] = useState(1)
     const [createdSaleId, setCreatedSaleId] = useState(null)
     const [saleIdToViewAfterCreate, setSaleIdToViewAfterCreate] = useState(null)
@@ -338,33 +343,26 @@ const Sales = () => {
         setIsModalOpen(true)
     }
 
-    const handleStatusChange = (item) => {
-        setStatusChangingItemId(item.id)
-        setNewStatus(item.status || 'PENDING_PAYMENT')
-        setIsStatusModalOpen(true)
-    }
-
-    const confirmStatusChange = async () => {
+    const handleStatusChange = async (itemId, newStatus) => {
+        setStatusChangingItemId(itemId)
         setChangingStatus(true)
+        setStatusSuccessItemId(null)
+
         try {
-            const response = await api(
-                'put',
-                { status: newStatus },
-                `/sales/update/${statusChangingItemId}`
-            )
+            const response = await api('put', { status: newStatus }, `/sales/update/${itemId}`)
 
             if (response?.data) {
+                setStatusSuccessItemId(itemId)
                 await fetchSales(page, size)
-                setSuccessMessage('Статус успешно изменен')
-                setIsSuccessOpen(true)
+                setTimeout(() => {
+                    setStatusSuccessItemId(null)
+                }, 2000)
             }
         } catch (error) {
             console.error('Error changing status:', error)
         } finally {
             setChangingStatus(false)
-            setIsStatusModalOpen(false)
             setStatusChangingItemId(null)
-            setNewStatus('')
         }
     }
 
@@ -443,7 +441,7 @@ const Sales = () => {
                         <Button
                             onClick={handleCreateNew}
                             variant='primary'
-                            className='w-full sm:w-auto'
+                            className='w-full sm:w-auto text-sm px-3 py-2 min-h-[40px] md:text-sm md:px-3 md:py-2 md:min-h-[40px]'
                         >
                             + Создать продажу
                         </Button>
@@ -612,45 +610,19 @@ const Sales = () => {
                                                         </div>
                                                     </td>
                                                     <td className='p-1.5 sm:p-2 md:p-3 lg:p-4'>
-                                                        <div className='flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2'>
-                                                            <span
-                                                                className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[8px] sm:text-[9px] md:text-xs font-medium whitespace-nowrap ${
-                                                                    item.status === 'PAID'
-                                                                        ? 'bg-green-100 text-green-700'
-                                                                        : 'bg-yellow-100 text-yellow-700'
-                                                                }`}
-                                                            >
-                                                                {item.status === 'PAID'
-                                                                    ? 'Оплачено'
-                                                                    : item.status ===
-                                                                      'PENDING_PAYMENT'
-                                                                    ? 'Ожидает оплаты'
-                                                                    : item.status ||
-                                                                      'Ожидает оплаты'}
-                                                            </span>
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleStatusChange(item)
-                                                                }
-                                                                className='p-1 sm:p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors touch-manipulation'
-                                                                title='Изменить статус'
-                                                            >
-                                                                <svg
-                                                                    xmlns='http://www.w3.org/2000/svg'
-                                                                    fill='none'
-                                                                    viewBox='0 0 24 24'
-                                                                    strokeWidth={2}
-                                                                    stroke='currentColor'
-                                                                    className='w-3 h-3 sm:w-4 sm:h-4'
-                                                                >
-                                                                    <path
-                                                                        strokeLinecap='round'
-                                                                        strokeLinejoin='round'
-                                                                        d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10'
-                                                                    />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
+                                                        <StatusSelect
+                                                            options={statusOptions}
+                                                            value={item.status || 'PENDING_PAYMENT'}
+                                                            onStatusChange={handleStatusChange}
+                                                            itemId={item.id}
+                                                            changingStatus={
+                                                                statusChangingItemId === item.id &&
+                                                                changingStatus
+                                                            }
+                                                            showSuccess={
+                                                                statusSuccessItemId === item.id
+                                                            }
+                                                        />
                                                     </td>
                                                     <td className='p-1.5 sm:p-2 md:p-3 lg:p-4'>
                                                         <div className='flex gap-1 sm:gap-2'>
@@ -801,41 +773,19 @@ const Sales = () => {
                                                     <div className='text-xs text-slate-400 uppercase mb-1'>
                                                         Статус
                                                     </div>
-                                                    <div className='flex items-center gap-2'>
-                                                        <span
-                                                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                                item.status === 'PAID'
-                                                                    ? 'bg-green-100 text-green-700'
-                                                                    : 'bg-yellow-100 text-yellow-700'
-                                                            }`}
-                                                        >
-                                                            {item.status === 'PAID'
-                                                                ? 'Оплачено'
-                                                                : item.status === 'PENDING_PAYMENT'
-                                                                ? 'Ожидает оплаты'
-                                                                : item.status || 'Ожидает оплаты'}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => handleStatusChange(item)}
-                                                            className='p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors'
-                                                            title='Изменить статус'
-                                                        >
-                                                            <svg
-                                                                xmlns='http://www.w3.org/2000/svg'
-                                                                fill='none'
-                                                                viewBox='0 0 24 24'
-                                                                strokeWidth={2}
-                                                                stroke='currentColor'
-                                                                className='w-3 h-3 sm:w-4 sm:h-4'
-                                                            >
-                                                                <path
-                                                                    strokeLinecap='round'
-                                                                    strokeLinejoin='round'
-                                                                    d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10'
-                                                                />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
+                                                    <StatusSelect
+                                                        options={statusOptions}
+                                                        value={item.status || 'PENDING_PAYMENT'}
+                                                        onStatusChange={handleStatusChange}
+                                                        itemId={item.id}
+                                                        changingStatus={
+                                                            statusChangingItemId === item.id &&
+                                                            changingStatus
+                                                        }
+                                                        showSuccess={
+                                                            statusSuccessItemId === item.id
+                                                        }
+                                                    />
                                                 </div>
                                                 <div className='grid grid-cols-2 gap-3 text-sm'>
                                                     <div>
@@ -1030,16 +980,18 @@ const Sales = () => {
                                                                             >
                                                                                 <svg
                                                                                     xmlns='http://www.w3.org/2000/svg'
-                                                                                    fill='none'
+                                                                                    width='24'
+                                                                                    height='24'
                                                                                     viewBox='0 0 24 24'
-                                                                                    strokeWidth={2}
-                                                                                    stroke='currentColor'
-                                                                                    className='w-4 h-4 sm:w-3 sm:h-3'
+                                                                                    fill='none'
+                                                                                    className='w-4 h-4 sm:w-3 sm:h-3 text-red-600'
                                                                                 >
                                                                                     <path
+                                                                                        d='M7.99999 6L8.54414 4.36754C8.81637 3.55086 9.58064 3 10.4415 3H13.5585C14.4193 3 15.1836 3.55086 15.4558 4.36754L16 6M7.99999 6H5.61802C4.87464 6 4.39114 6.78231 4.72359 7.44721L5.21262 8.42527C5.40205 8.80413 5.5091 9.2188 5.52674 9.64201L5.88019 18.1249C5.94714 19.7318 7.26931 21 8.87759 21H15.1224C16.7307 21 18.0528 19.7318 18.1198 18.1249L18.4732 9.64202C18.4909 9.21881 18.5979 8.80413 18.7874 8.42527L19.2764 7.44721C19.6088 6.78231 19.1253 6 18.382 6H16M7.99999 6H16M14.4399 16.5L14.6899 10.5M9.56004 16.5L9.31004 10.5'
+                                                                                        stroke='currentColor'
+                                                                                        strokeWidth='1.5'
                                                                                         strokeLinecap='round'
                                                                                         strokeLinejoin='round'
-                                                                                        d='M6 18L18 6M6 6l12 12'
                                                                                     />
                                                                                 </svg>
                                                                             </button>
@@ -1378,61 +1330,6 @@ const Sales = () => {
                     title='Успешно'
                     message={successMessage}
                 />
-
-                <Modal
-                    isOpen={isStatusModalOpen}
-                    onClose={() => {
-                        setIsStatusModalOpen(false)
-                        setStatusChangingItemId(null)
-                        setNewStatus('')
-                    }}
-                    title='Изменение статуса'
-                    maxWidth='max-w-md'
-                >
-                    <div className='space-y-4'>
-                        <div>
-                            <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                Статус
-                            </label>
-                            <Select
-                                options={statusOptions}
-                                value={newStatus}
-                                onChange={(value) => setNewStatus(value)}
-                                placeholder='Выберите статус'
-                                searchable={false}
-                            />
-                        </div>
-                        <div className='flex justify-end gap-2 pt-4 border-t border-gray-200'>
-                            <Button
-                                type='button'
-                                variant='secondary'
-                                onClick={() => {
-                                    setIsStatusModalOpen(false)
-                                    setStatusChangingItemId(null)
-                                    setNewStatus('')
-                                }}
-                                disabled={changingStatus}
-                            >
-                                Отмена
-                            </Button>
-                            <Button
-                                type='button'
-                                variant='primary'
-                                onClick={confirmStatusChange}
-                                disabled={changingStatus || !newStatus}
-                            >
-                                {changingStatus ? (
-                                    <span className='flex items-center gap-2'>
-                                        <span className='loading loading-spinner loading-sm'></span>
-                                        Изменение...
-                                    </span>
-                                ) : (
-                                    'Изменить статус'
-                                )}
-                            </Button>
-                        </div>
-                    </div>
-                </Modal>
 
                 <Modal
                     isOpen={isViewModalOpen}

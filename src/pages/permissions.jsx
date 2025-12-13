@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
+import Button from '../components/UI/Button'
+import ConfirmDialog from '../components/UI/ConfirmDialog'
+import Input from '../components/UI/Input'
+import Modal from '../components/UI/Modal'
+import Pagination from '../components/UI/Pagination'
+import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
-import Input from '../components/UI/Input'
-import Button from '../components/UI/Button'
-import Modal from '../components/UI/Modal'
-import ConfirmDialog from '../components/UI/ConfirmDialog'
-import SuccessModal from '../components/UI/SuccessModal'
-import Pagination from '../components/UI/Pagination'
 
 const Permissions = () => {
     const [items, setItems] = useState([])
@@ -31,7 +31,11 @@ const Permissions = () => {
 
     const fetchItems = async (currentPage = page, pageSize = size) => {
         setLoading(true)
-        const response = await api('get', { page: currentPage, size: pageSize }, '/permissions/list')
+        const response = await api(
+            'get',
+            { page: currentPage, size: pageSize },
+            '/permissions/list'
+        )
         if (response?.data) {
             setItems(response.data.data || [])
             // Handle pagination metadata
@@ -136,39 +140,45 @@ const Permissions = () => {
 
     return (
         <Layout>
-            <div className="min-h-screen bg-gray-50 p-2 sm:p-3 md:p-4 lg:p-6">
-                <div className="mb-4 sm:mb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+            <div className='min-h-screen bg-gray-50 p-2 sm:p-3 md:p-4 lg:p-6'>
+                <div className='mb-4 sm:mb-6'>
+                    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6'>
                         <div>
-                            <div className="text-lg sm:text-xl md:text-2xl text-slate-400">
-                                NEWCON <span className="text-gray-700">/ Разрешения</span>
+                            <div className='text-lg sm:text-xl md:text-2xl text-slate-400'>
+                                NEWCON <span className='text-gray-700'>/ Разрешения</span>
                             </div>
                         </div>
-                        <Button onClick={handleCreateNew} variant="primary" className="w-full sm:w-auto">
+                        <Button
+                            onClick={handleCreateNew}
+                            variant='primary'
+                            className='w-full sm:w-auto text-sm px-3 py-2 min-h-[40px] md:text-sm md:px-3 md:py-2 md:min-h-[40px]'
+                        >
                             + Создать разрешение
                         </Button>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6 overflow-hidden">
-                    <div className="p-6">
-                        <h2 className="text-base sm:text-lg font-bold text-gray-700 mb-3 sm:mb-4">Разрешения</h2>
+                <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6 overflow-hidden'>
+                    <div className='p-6'>
+                        <h2 className='text-base sm:text-lg font-bold text-gray-700 mb-3 sm:mb-4'>
+                            Разрешения
+                        </h2>
                     </div>
 
-                    <div className="overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6">
-                        <table className="w-full min-w-[600px]">
+                    <div className='overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6'>
+                        <table className='w-full min-w-[600px]'>
                             <thead>
-                                <tr className="border-b border-slate-200">
-                                    <th className="text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase">
+                                <tr className='border-b border-slate-200'>
+                                    <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                         ID
                                     </th>
-                                    <th className="text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase">
+                                    <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                         Название
                                     </th>
-                                    <th className="text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase">
+                                    <th className='text-left p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                         Описание
                                     </th>
-                                    <th className="text-right p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase">
+                                    <th className='text-right p-2 sm:p-3 md:p-4 text-slate-400 text-[9px] sm:text-[10px] font-bold uppercase'>
                                         Действия
                                     </th>
                                 </tr>
@@ -176,13 +186,19 @@ const Permissions = () => {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="4" className="p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm">
+                                        <td
+                                            colSpan='4'
+                                            className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
+                                        >
                                             Загрузка...
                                         </td>
                                     </tr>
                                 ) : items.length === 0 ? (
                                     <tr>
-                                        <td colSpan="4" className="p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm">
+                                        <td
+                                            colSpan='4'
+                                            className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
+                                        >
                                             Нет данных
                                         </td>
                                     </tr>
@@ -190,64 +206,64 @@ const Permissions = () => {
                                     items.map((item) => (
                                         <tr
                                             key={item.id}
-                                            className="border-b border-slate-200 hover:bg-gray-50"
+                                            className='border-b border-slate-200 hover:bg-gray-50'
                                         >
-                                            <td className="p-2 sm:p-3 md:p-4">
-                                                <div className="text-xs sm:text-sm font-bold text-gray-700">
+                                            <td className='p-2 sm:p-3 md:p-4'>
+                                                <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                     {item.id}
                                                 </div>
                                             </td>
-                                            <td className="p-2 sm:p-3 md:p-4">
-                                                <div className="text-xs sm:text-sm font-bold text-gray-700">
+                                            <td className='p-2 sm:p-3 md:p-4'>
+                                                <div className='text-xs sm:text-sm font-bold text-gray-700'>
                                                     {item.name}
                                                 </div>
                                             </td>
-                                            <td className="p-2 sm:p-3 md:p-4">
-                                                <div className="text-xs sm:text-sm text-slate-600">
+                                            <td className='p-2 sm:p-3 md:p-4'>
+                                                <div className='text-xs sm:text-sm text-slate-600'>
                                                     {item.description || '-'}
                                                 </div>
                                             </td>
-                                            <td className="p-2 sm:p-3 md:p-4">
-                                                <div className="flex gap-1 sm:gap-2 justify-end">
+                                            <td className='p-2 sm:p-3 md:p-4'>
+                                                <div className='flex gap-1 sm:gap-2 justify-end'>
                                                     <Button
                                                         onClick={() => handleEdit(item)}
-                                                        variant="secondary"
-                                                        className="btn-xs sm:btn-sm btn-circle"
-                                                        title="Редактировать"
+                                                        variant='secondary'
+                                                        className='btn-sm btn-circle min-h-[40px] min-w-[40px] flex items-center justify-center !p-0 !px-0 !pb-0'
+                                                        title='Редактировать'
                                                     >
                                                         <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            strokeWidth={1.5}
-                                                            stroke="currentColor"
-                                                            className="w-3 h-3 sm:w-4 sm:h-4"
+                                                            xmlns='http://www.w3.org/2000/svg'
+                                                            fill='none'
+                                                            viewBox='0 0 24 24'
+                                                            strokeWidth={2.5}
+                                                            stroke='currentColor'
+                                                            className='w-5 h-5 text-gray-700 flex-shrink-0'
                                                         >
                                                             <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                                                                strokeLinecap='round'
+                                                                strokeLinejoin='round'
+                                                                d='M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10'
                                                             />
                                                         </svg>
                                                     </Button>
                                                     <Button
                                                         onClick={() => handleDelete(item.id)}
-                                                        variant="secondary"
-                                                        className="btn-xs sm:btn-sm btn-circle hover:bg-red-50"
-                                                        title="Удалить"
+                                                        variant='secondary'
+                                                        className='btn-sm btn-circle min-h-[40px] min-w-[40px] hover:bg-red-50 flex items-center justify-center !p-0 !px-0 !pb-0'
+                                                        title='Удалить'
                                                     >
                                                         <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            strokeWidth={1.5}
-                                                            stroke="currentColor"
-                                                            className="w-4 h-4 text-red-600"
+                                                            xmlns='http://www.w3.org/2000/svg'
+                                                            viewBox='0 0 24 24'
+                                                            fill='none'
+                                                            className='w-5 h-5 text-red-600 flex-shrink-0'
                                                         >
                                                             <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                                                                d='M7.99999 6L8.54414 4.36754C8.81637 3.55086 9.58064 3 10.4415 3H13.5585C14.4193 3 15.1836 3.55086 15.4558 4.36754L16 6M7.99999 6H5.61802C4.87464 6 4.39114 6.78231 4.72359 7.44721L5.21262 8.42527C5.40205 8.80413 5.5091 9.2188 5.52674 9.64201L5.88019 18.1249C5.94714 19.7318 7.26931 21 8.87759 21H15.1224C16.7307 21 18.0528 19.7318 18.1198 18.1249L18.4732 9.64202C18.4909 9.21881 18.5979 8.80413 18.7874 8.42527L19.2764 7.44721C19.6088 6.78231 19.1253 6 18.382 6H16M7.99999 6H16M14.4399 16.5L14.6899 10.5M9.56004 16.5L9.31004 10.5'
+                                                                stroke='currentColor'
+                                                                strokeWidth='1.5'
+                                                                strokeLinecap='round'
+                                                                strokeLinejoin='round'
                                                             />
                                                         </svg>
                                                     </Button>
@@ -282,40 +298,40 @@ const Permissions = () => {
                     title={isEditMode ? 'Редактирование разрешения' : 'Создание разрешения'}
                 >
                     <form onSubmit={handleSubmit}>
-                        <div className="space-y-4">
+                        <div className='space-y-4'>
                             <Input
-                                label="Название"
-                                type="text"
-                                name="name"
+                                label='Название'
+                                type='text'
+                                name='name'
                                 value={formData.name}
                                 onChange={handleInputChange}
-                                placeholder="Введите название"
+                                placeholder='Введите название'
                                 required
                             />
 
                             <Input
-                                label="Описание"
-                                type="text"
-                                name="description"
+                                label='Описание'
+                                type='text'
+                                name='description'
                                 value={formData.description}
                                 onChange={handleInputChange}
-                                placeholder="Введите описание"
+                                placeholder='Введите описание'
                             />
                         </div>
 
-                        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
+                        <div className='flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200'>
                             <Button
-                                type="button"
-                                variant="secondary"
+                                type='button'
+                                variant='secondary'
                                 onClick={() => setIsModalOpen(false)}
                                 disabled={submitting}
                             >
                                 Отмена
                             </Button>
-                            <Button type="submit" variant="primary" disabled={submitting}>
+                            <Button type='submit' variant='primary' disabled={submitting}>
                                 {submitting ? (
-                                    <span className="flex items-center gap-2">
-                                        <span className="loading loading-spinner loading-sm"></span>
+                                    <span className='flex items-center gap-2'>
+                                        <span className='loading loading-spinner loading-sm'></span>
                                         {isEditMode ? 'Сохранение...' : 'Создание...'}
                                     </span>
                                 ) : isEditMode ? (
@@ -332,18 +348,18 @@ const Permissions = () => {
                     isOpen={isConfirmOpen}
                     onClose={() => setIsConfirmOpen(false)}
                     onConfirm={confirmDelete}
-                    title="Удаление разрешения"
-                    message="Вы уверены, что хотите удалить это разрешение? Это действие нельзя отменить."
-                    confirmText="Удалить"
-                    cancelText="Отмена"
-                    confirmVariant="primary"
+                    title='Удаление разрешения'
+                    message='Вы уверены, что хотите удалить это разрешение? Это действие нельзя отменить.'
+                    confirmText='Удалить'
+                    cancelText='Отмена'
+                    confirmVariant='primary'
                     isLoading={deleting}
                 />
 
                 <SuccessModal
                     isOpen={isSuccessOpen}
                     onClose={() => setIsSuccessOpen(false)}
-                    title="Успешно"
+                    title='Успешно'
                     message={successMessage}
                 />
             </div>

@@ -33,7 +33,12 @@ const Payments = () => {
         { value: 1, label: 'Сум' },
         { value: 2, label: 'Доллары' },
     ])
-    const [viewMode, setViewMode] = useState('table')
+    const [viewMode, setViewMode] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 768 ? 'table' : 'cards'
+        }
+        return 'table'
+    })
     const [page, setPage] = useState(1)
     const [size, setSize] = useState(10)
     const [totalItems, setTotalItems] = useState(0)
@@ -224,7 +229,7 @@ const Payments = () => {
                             <Button
                                 onClick={handleCreateNew}
                                 variant='primary'
-                                className='w-full sm:w-auto'
+                                className='w-full sm:w-auto text-sm px-3 py-2 min-h-[40px] md:text-sm md:px-3 md:py-2 md:min-h-[40px]'
                             >
                                 + Создать платеж
                             </Button>
@@ -604,16 +609,18 @@ const Payments = () => {
                                                         >
                                                             <svg
                                                                 xmlns='http://www.w3.org/2000/svg'
-                                                                fill='none'
+                                                                width='24'
+                                                                height='24'
                                                                 viewBox='0 0 24 24'
-                                                                strokeWidth={2}
-                                                                stroke='currentColor'
-                                                                className='w-5 h-5'
+                                                                fill='none'
+                                                                className='w-5 h-5 text-red-600'
                                                             >
                                                                 <path
+                                                                    d='M7.99999 6L8.54414 4.36754C8.81637 3.55086 9.58064 3 10.4415 3H13.5585C14.4193 3 15.1836 3.55086 15.4558 4.36754L16 6M7.99999 6H5.61802C4.87464 6 4.39114 6.78231 4.72359 7.44721L5.21262 8.42527C5.40205 8.80413 5.5091 9.2188 5.52674 9.64201L5.88019 18.1249C5.94714 19.7318 7.26931 21 8.87759 21H15.1224C16.7307 21 18.0528 19.7318 18.1198 18.1249L18.4732 9.64202C18.4909 9.21881 18.5979 8.80413 18.7874 8.42527L19.2764 7.44721C19.6088 6.78231 19.1253 6 18.382 6H16M7.99999 6H16M14.4399 16.5L14.6899 10.5M9.56004 16.5L9.31004 10.5'
+                                                                    stroke='currentColor'
+                                                                    strokeWidth='1.5'
                                                                     strokeLinecap='round'
                                                                     strokeLinejoin='round'
-                                                                    d='M6 18L18 6M6 6l12 12'
                                                                 />
                                                             </svg>
                                                         </button>

@@ -26,7 +26,12 @@ const Salaries = () => {
     const [deleting, setDeleting] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
-    const [viewMode, setViewMode] = useState('table')
+    const [viewMode, setViewMode] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 768 ? 'table' : 'cards'
+        }
+        return 'table'
+    })
     const [error, setError] = useState(null)
     const [isErrorOpen, setIsErrorOpen] = useState(false)
     const [page, setPage] = useState(1)
@@ -253,7 +258,11 @@ const Salaries = () => {
                                 NEWCON <span className='text-gray-700'>/ Зарплаты</span>
                             </div>
                         </div>
-                        <Button onClick={handleCreateNew} variant='primary' className="w-full sm:w-auto">
+                        <Button
+                            onClick={handleCreateNew}
+                            variant='primary'
+                            className='w-full sm:w-auto text-sm px-3 py-2 min-h-[40px] md:text-sm md:px-3 md:py-2 md:min-h-[40px]'
+                        >
                             + Создать зарплату
                         </Button>
                     </div>
@@ -262,7 +271,9 @@ const Salaries = () => {
                 <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm mb-3 sm:mb-4 sm:mb-4 sm:mb-6 overflow-hidden'>
                     <div className='p-3 sm:p-4 md:p-6 border-b border-slate-200'>
                         <div className='flex items-center justify-between mb-3 sm:mb-4'>
-                            <h2 className='text-base sm:text-lg font-bold text-gray-700'>Зарплаты</h2>
+                            <h2 className='text-base sm:text-lg font-bold text-gray-700'>
+                                Зарплаты
+                            </h2>
                             <div className='flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
                                 <button
                                     onClick={() => setViewMode('table')}
@@ -380,16 +391,16 @@ const Salaries = () => {
                                                             <Button
                                                                 onClick={() => handleEdit(salary)}
                                                                 variant='secondary'
-                                                                className='btn-xs sm:btn-sm btn-circle'
+                                                                className='btn-sm btn-circle min-h-[40px] min-w-[40px] flex items-center justify-center !p-0 !px-0 !pb-0'
                                                                 title='Редактировать'
                                                             >
                                                                 <svg
                                                                     xmlns='http://www.w3.org/2000/svg'
                                                                     fill='none'
                                                                     viewBox='0 0 24 24'
-                                                                    strokeWidth={1.5}
+                                                                    strokeWidth={2.5}
                                                                     stroke='currentColor'
-                                                                    className='w-3 h-3 sm:w-4 sm:h-4'
+                                                                    className='w-5 h-5 text-gray-700 flex-shrink-0'
                                                                 >
                                                                     <path
                                                                         strokeLinecap='round'
@@ -403,21 +414,21 @@ const Salaries = () => {
                                                                     handleDelete(salary.id)
                                                                 }
                                                                 variant='secondary'
-                                                                className='btn-xs sm:btn-sm btn-circle hover:bg-red-50'
+                                                                className='btn-sm btn-circle min-h-[40px] min-w-[40px] hover:bg-red-50 flex items-center justify-center !p-0 !px-0 !pb-0'
                                                                 title='Удалить'
                                                             >
                                                                 <svg
                                                                     xmlns='http://www.w3.org/2000/svg'
-                                                                    fill='none'
                                                                     viewBox='0 0 24 24'
-                                                                    strokeWidth={1.5}
-                                                                    stroke='currentColor'
-                                                                    className='w-4 h-4 text-red-600'
+                                                                    fill='none'
+                                                                    className='w-5 h-5 text-red-600 flex-shrink-0'
                                                                 >
                                                                     <path
+                                                                        d='M7.99999 6L8.54414 4.36754C8.81637 3.55086 9.58064 3 10.4415 3H13.5585C14.4193 3 15.1836 3.55086 15.4558 4.36754L16 6M7.99999 6H5.61802C4.87464 6 4.39114 6.78231 4.72359 7.44721L5.21262 8.42527C5.40205 8.80413 5.5091 9.2188 5.52674 9.64201L5.88019 18.1249C5.94714 19.7318 7.26931 21 8.87759 21H15.1224C16.7307 21 18.0528 19.7318 18.1198 18.1249L18.4732 9.64202C18.4909 9.21881 18.5979 8.80413 18.7874 8.42527L19.2764 7.44721C19.6088 6.78231 19.1253 6 18.382 6H16M7.99999 6H16M14.4399 16.5L14.6899 10.5M9.56004 16.5L9.31004 10.5'
+                                                                        stroke='currentColor'
+                                                                        strokeWidth='1.5'
                                                                         strokeLinecap='round'
                                                                         strokeLinejoin='round'
-                                                                        d='M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0'
                                                                     />
                                                                 </svg>
                                                             </Button>
@@ -465,16 +476,16 @@ const Salaries = () => {
                                                         <Button
                                                             onClick={() => handleEdit(salary)}
                                                             variant='secondary'
-                                                            className='btn-xs sm:btn-sm btn-circle'
+                                                            className='btn-lg btn-circle min-h-[44px] min-w-[44px] flex items-center justify-center !p-0 !px-0 !pb-0'
                                                             title='Редактировать'
                                                         >
                                                             <svg
                                                                 xmlns='http://www.w3.org/2000/svg'
                                                                 fill='none'
                                                                 viewBox='0 0 24 24'
-                                                                strokeWidth={1.5}
+                                                                strokeWidth={2.5}
                                                                 stroke='currentColor'
-                                                                className='w-3 h-3 sm:w-4 sm:h-4'
+                                                                className='w-5 h-5 text-gray-700'
                                                             >
                                                                 <path
                                                                     strokeLinecap='round'
@@ -486,21 +497,23 @@ const Salaries = () => {
                                                         <Button
                                                             onClick={() => handleDelete(salary.id)}
                                                             variant='secondary'
-                                                            className='btn-xs sm:btn-sm btn-circle hover:bg-red-50'
+                                                            className='btn-lg btn-circle min-h-[44px] min-w-[44px] hover:bg-red-50 flex items-center justify-center !p-0 !px-0 !pb-0'
                                                             title='Удалить'
                                                         >
                                                             <svg
                                                                 xmlns='http://www.w3.org/2000/svg'
-                                                                fill='none'
+                                                                width='24'
+                                                                height='24'
                                                                 viewBox='0 0 24 24'
-                                                                strokeWidth={1.5}
-                                                                stroke='currentColor'
-                                                                className='w-4 h-4 text-red-600'
+                                                                fill='none'
+                                                                className='w-6 h-6 text-red-600 flex-shrink-0'
                                                             >
                                                                 <path
+                                                                    d='M7.99999 6L8.54414 4.36754C8.81637 3.55086 9.58064 3 10.4415 3H13.5585C14.4193 3 15.1836 3.55086 15.4558 4.36754L16 6M7.99999 6H5.61802C4.87464 6 4.39114 6.78231 4.72359 7.44721L5.21262 8.42527C5.40205 8.80413 5.5091 9.2188 5.52674 9.64201L5.88019 18.1249C5.94714 19.7318 7.26931 21 8.87759 21H15.1224C16.7307 21 18.0528 19.7318 18.1198 18.1249L18.4732 9.64202C18.4909 9.21881 18.5979 8.80413 18.7874 8.42527L19.2764 7.44721C19.6088 6.78231 19.1253 6 18.382 6H16M7.99999 6H16M14.4399 16.5L14.6899 10.5M9.56004 16.5L9.31004 10.5'
+                                                                    stroke='currentColor'
+                                                                    strokeWidth='1.5'
                                                                     strokeLinecap='round'
                                                                     strokeLinejoin='round'
-                                                                    d='M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0'
                                                                 />
                                                             </svg>
                                                         </Button>

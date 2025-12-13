@@ -8,7 +8,7 @@ const Button = ({ children, variant = 'primary', type = 'button', className = ''
         <button
             type={type}
             style={{ outline: 0 }}
-            className={`btn shadow-none rounded-xl pb-[3px] text-xs sm:text-sm ${variants[variant]} ${className}`}
+            className={`btn shadow-none rounded-xl pb-[3px] text-base sm:text-lg min-h-[48px] px-4 sm:px-6 ${variants[variant]} ${className}`}
             {...props}
         >
             {children}
