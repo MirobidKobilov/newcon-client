@@ -234,7 +234,7 @@ const Expances = () => {
 
         const submitData = {
             ...formData,
-            amount: parseFloat(formData.amount) || 0,
+            amount: formData.amount ? parseFloat(parseFormattedNumber(formData.amount)) : 0,
             type: formData.type,
         }
         const response = await api('post', submitData, '/expances/create')

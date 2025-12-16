@@ -193,7 +193,7 @@ const Salaries = () => {
 
         const payload = {
             worker_id: parseInt(formData.worker_id),
-            salary: formData.salary ? Number(parseFormattedNumber(formData.salary)) : null,
+            salary: formData.salary ? parseFloat(parseFormattedNumber(formData.salary)) : null,
         }
 
         let response

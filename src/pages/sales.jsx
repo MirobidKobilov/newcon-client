@@ -66,7 +66,7 @@ const Sales = () => {
             .map((p) => {
                 const productId = Number(p.product_id)
                 const quantity = Number(p.quantity)
-                const price = Number(p.price) || 0
+                const price = parseFloat(p.price) || 0
 
                 return {
                     product_id: productId,
