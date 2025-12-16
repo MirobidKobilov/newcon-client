@@ -159,13 +159,64 @@ const Sales = () => {
     }, [items, saleIdToViewAfterCreate, loading, page])
 
     const formatNumber = (num) => {
-        if (num === null || num === undefined || isNaN(num)) return '0'
-        // Округляем до целого числа для $
-        const roundedNum = Math.round(Number(num))
-        return roundedNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+        if (num === null || num === undefined || num === '') return ''
+        const numStr = String(num).trim()
+        if (numStr === '') return ''
+
+        // Проверяем, заканчивается ли строка на точку
+        const endsWithDot = numStr.endsWith('.')
+
+        // Разделяем на целую и дробную части
+        const parts = numStr.split('.')
+        let integerPart = parts[0] || ''
+        const decimalPart = parts.length > 1 ? parts[1] : ''
+
+        // Если целая часть пустая и есть точка, используем '0'
+        if (integerPart === '' && (endsWithDot || decimalPart !== '')) {
+            integerPart = '0'
+        }
+
+        // Проверяем валидность целой части (должна содержать только цифры)
+        if (integerPart !== '' && !/^\d+$/.test(integerPart)) {
+            return ''
+        }
+
+        // Проверяем валидность дробной части (должна содержать только цифры или быть пустой)
+        if (decimalPart !== '' && !/^\d*$/.test(decimalPart)) {
+            return ''
+        }
+
+        // Если целая часть все еще пустая, возвращаем пустую строку
+        if (integerPart === '') {
+            return ''
+        }
+
+        // Форматируем целую часть с пробелами
+        const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+
+        // Объединяем с дробной частью или точкой
+        if (endsWithDot || decimalPart !== '') {
+            return `${formattedInteger}.${decimalPart}`
+        }
+        return formattedInteger
+    }
+
+    const formatPriceInput = (value) => {
+        // Убираем все недопустимые символы, кроме цифр и точки
+        let cleaned = value.replace(/[^\d.]/g, '')
+
+        // Разрешаем только одну точку
+        const parts = cleaned.split('.')
+        if (parts.length > 2) {
+            cleaned = parts[0] + '.' + parts.slice(1).join('')
+        }
+
+        // Форматируем число
+        return formatNumber(cleaned)
     }
 
     const parseFormattedNumber = (str) => {
+        // Убираем только пробелы, сохраняя точку
         return str.replace(/\s/g, '')
     }
 
@@ -182,8 +233,10 @@ const Sales = () => {
         // Remove spaces for numeric fields (price) before storing
         if (field === 'price') {
             const numericValue = parseFormattedNumber(value)
-            // Only allow numbers
-            if (numericValue === '' || /^\d+$/.test(numericValue)) {
+            // Allow numbers with optional decimal point and decimal digits
+            // Also allow empty string for clearing the field
+            // Allow numbers ending with dot (e.g., "123.")
+            if (numericValue === '' || /^\d+\.?$|^\d+\.\d+$/.test(numericValue)) {
                 newProducts[index][field] = numericValue
             } else {
                 return // Don't update if invalid
@@ -1090,10 +1143,15 @@ const Sales = () => {
                                                                                         const value =
                                                                                             e.target
                                                                                                 .value
+                                                                                        // Форматируем введенное значение
+                                                                                        const formattedValue =
+                                                                                            formatPriceInput(
+                                                                                                value
+                                                                                            )
                                                                                         handleProductChange(
                                                                                             selectedIndex,
                                                                                             'price',
-                                                                                            value
+                                                                                            formattedValue
                                                                                         )
                                                                                     }}
                                                                                     className='flex-1 px-2 sm:px-3 py-2 border border-blue-500 rounded-lg text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all'

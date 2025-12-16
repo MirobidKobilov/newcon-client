@@ -93,13 +93,64 @@ const Salaries = () => {
     }, [page, size])
 
     const formatNumber = (num) => {
-        if (num === null || num === undefined || num === '' || isNaN(num)) return ''
-        // Округляем до целого числа для $
-        const roundedNum = Math.round(Number(num))
-        return roundedNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+        if (num === null || num === undefined || num === '') return ''
+        const numStr = String(num).trim()
+        if (numStr === '') return ''
+
+        // Проверяем, заканчивается ли строка на точку
+        const endsWithDot = numStr.endsWith('.')
+
+        // Разделяем на целую и дробную части
+        const parts = numStr.split('.')
+        let integerPart = parts[0] || ''
+        const decimalPart = parts.length > 1 ? parts[1] : ''
+
+        // Если целая часть пустая и есть точка, используем '0'
+        if (integerPart === '' && (endsWithDot || decimalPart !== '')) {
+            integerPart = '0'
+        }
+
+        // Проверяем валидность целой части (должна содержать только цифры)
+        if (integerPart !== '' && !/^\d+$/.test(integerPart)) {
+            return ''
+        }
+
+        // Проверяем валидность дробной части (должна содержать только цифры или быть пустой)
+        if (decimalPart !== '' && !/^\d*$/.test(decimalPart)) {
+            return ''
+        }
+
+        // Если целая часть все еще пустая, возвращаем пустую строку
+        if (integerPart === '') {
+            return ''
+        }
+
+        // Форматируем целую часть с пробелами
+        const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+
+        // Объединяем с дробной частью или точкой
+        if (endsWithDot || decimalPart !== '') {
+            return `${formattedInteger}.${decimalPart}`
+        }
+        return formattedInteger
+    }
+
+    const formatPriceInput = (value) => {
+        // Убираем все недопустимые символы, кроме цифр и точки
+        let cleaned = value.replace(/[^\d.]/g, '')
+
+        // Разрешаем только одну точку
+        const parts = cleaned.split('.')
+        if (parts.length > 2) {
+            cleaned = parts[0] + '.' + parts.slice(1).join('')
+        }
+
+        // Форматируем число
+        return formatNumber(cleaned)
     }
 
     const parseFormattedNumber = (str) => {
+        // Убираем только пробелы, сохраняя точку
         return str.replace(/\s/g, '')
     }
 
@@ -108,9 +159,13 @@ const Salaries = () => {
 
         // Auto-format salary field
         if (name === 'salary') {
-            const numericValue = parseFormattedNumber(value)
-            // Only allow numbers
-            if (numericValue === '' || /^\d+$/.test(numericValue)) {
+            // Форматируем введенное значение
+            const formattedValue = formatPriceInput(value)
+            const numericValue = parseFormattedNumber(formattedValue)
+            // Allow numbers with optional decimal point and decimal digits
+            // Also allow empty string for clearing the field
+            // Allow numbers ending with dot (e.g., "123.")
+            if (numericValue === '' || /^\d+\.?$|^\d+\.\d+$/.test(numericValue)) {
                 setFormData((prev) => ({
                     ...prev,
                     [name]: numericValue,
