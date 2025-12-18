@@ -39,7 +39,7 @@ const Roles = () => {
 
     const fetchRoles = async (currentPage = page, pageSize = size) => {
         setLoading(true)
-        const rolesResponse = await api('get', { page: currentPage, size: pageSize }, '/roles/list')
+        const rolesResponse = await api('get', { index: currentPage, size: pageSize }, '/roles/list')
         if (rolesResponse?.data) {
             setItems(rolesResponse.data.data || [])
             // Handle pagination metadata

@@ -45,7 +45,7 @@ const Workers = () => {
 
     const fetchWorkers = async (currentPage = page, pageSize = size) => {
         setLoading(true)
-        const response = await api('get', { page: currentPage, size: pageSize }, '/workers/list')
+        const response = await api('get', { index: currentPage, size: pageSize }, '/workers/list')
         if (response.success && response.data) {
             setWorkers(response.data.data || [])
             // Handle pagination metadata

@@ -41,7 +41,7 @@ const Salaries = () => {
 
     const fetchSalaries = async (currentPage = page, pageSize = size) => {
         setLoading(true)
-        const response = await api('get', { page: currentPage, size: pageSize }, '/salaries/list')
+        const response = await api('get', { index: currentPage, size: pageSize }, '/salaries/list')
         if (response.success && response.data) {
             // Handle response structure with worker_salaries array
             const salariesData = response.data.worker_salaries || response.data.data || []

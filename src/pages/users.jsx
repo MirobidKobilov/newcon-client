@@ -44,7 +44,7 @@ const Users = () => {
 
     const fetchUsers = async (currentPage = page, pageSize = size) => {
         setLoading(true)
-        const response = await api('get', { page: currentPage, size: pageSize }, '/users/list')
+        const response = await api('get', { index: currentPage, size: pageSize }, '/users/list')
         if (response.success && response.data) {
             setUsers(response.data.data || [])
             // Handle pagination metadata - adjust based on your API response structure

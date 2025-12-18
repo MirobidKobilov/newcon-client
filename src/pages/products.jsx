@@ -43,7 +43,7 @@ const Products = () => {
 
     const fetchItems = async (currentPage = page, pageSize = size) => {
         setLoading(true)
-        const response = await api('get', { page: currentPage, size: pageSize }, '/products/list')
+        const response = await api('get', { index: currentPage, size: pageSize }, '/products/list')
         if (response.success && response.data) {
             setItems(response.data.data || [])
             // Handle pagination metadata

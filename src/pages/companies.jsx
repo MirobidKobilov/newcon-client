@@ -50,7 +50,7 @@ const Companies = () => {
 
     const fetchItems = async (currentPage = page, pageSize = size) => {
         setLoading(true)
-        const response = await api('get', { page: currentPage, size: pageSize }, '/companies/list')
+        const response = await api('get', { index: currentPage, size: pageSize }, '/companies/list')
         if (response.success && response.data) {
             const companiesData = response.data.data || []
             setItems(companiesData)
@@ -363,7 +363,7 @@ const Companies = () => {
                                             Адрес
                                         </th>
                                         <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
-                                            Debt overall
+                                            Долг
                                         </th>
                                         <th className='text-right p-3 text-slate-400 text-xs font-bold uppercase'>
                                             Действия
