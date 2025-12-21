@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Button from '../components/UI/Button'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import ErrorModal from '../components/UI/ErrorModal'
@@ -8,8 +9,10 @@ import Pagination from '../components/UI/Pagination'
 import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
+import { t } from '../utils/translations'
 
 const Companies = () => {
+    const navigate = useNavigate()
     const [items, setItems] = useState([])
     const [loading, setLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -34,15 +37,6 @@ const Companies = () => {
     })
     const [error, setError] = useState(null)
     const [isErrorOpen, setIsErrorOpen] = useState(false)
-    const [isDebtModalOpen, setIsDebtModalOpen] = useState(false)
-    const [selectedCompany, setSelectedCompany] = useState(null)
-    const [companySales, setCompanySales] = useState([])
-    const [companyPayments, setCompanyPayments] = useState([])
-    const [loadingDebtData, setLoadingDebtData] = useState(false)
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
-    const [selectedDetail, setSelectedDetail] = useState(null)
-    const [detailType, setDetailType] = useState(null) // 'sale' or 'payment'
-    const [companyDebts, setCompanyDebts] = useState({})
     const [page, setPage] = useState(1)
     const [size, setSize] = useState(10)
     const [totalItems, setTotalItems] = useState(0)
@@ -67,46 +61,6 @@ const Companies = () => {
                 setTotalItems(items.length)
                 setTotalPages(1)
             }
-
-            // Calculate debts for all companies - fetch data once
-            const debts = {}
-
-            // Fetch all sales and payments once
-            const salesResponse = await api('get', {}, '/sales/list')
-            const paymentsResponse = await api('get', {}, '/payments/list')
-
-            const sales =
-                salesResponse.success && salesResponse.data ? salesResponse.data.data || [] : []
-            const payments =
-                paymentsResponse.success && paymentsResponse.data
-                    ? paymentsResponse.data.data || []
-                    : []
-
-            // Calculate debt for each company
-            companiesData.forEach((company) => {
-                // Calculate total sales for this company
-                const companySales = sales.filter((s) => s.company_id === company.id)
-                const totalSales = companySales.reduce(
-                    (sum, sale) => sum + (Number(sale.summa) || 0),
-                    0
-                )
-
-                // Calculate total payments for this company
-                let totalPayments = 0
-                payments.forEach((payment) => {
-                    if (payment.sales && Array.isArray(payment.sales)) {
-                        payment.sales.forEach((sale) => {
-                            if (sale.company_id === company.id) {
-                                totalPayments += Number(sale.amount || sale.summa || 0)
-                            }
-                        })
-                    }
-                })
-
-                debts[company.id] = totalSales - totalPayments
-            })
-
-            setCompanyDebts(debts)
         } else {
             setError({
                 message: response.error || 'Ошибка при загрузке компаний',
@@ -249,56 +203,23 @@ const Companies = () => {
     }
 
     const formatNumber = (num) => {
-        if (num === null || num === undefined || isNaN(num)) return '0'
-        return Math.round(Number(num))
+        if (num === null || num === undefined || num === '') return '0'
+        const numValue = typeof num === 'string' ? parseFloat(num) : Number(num)
+        if (isNaN(numValue)) return '0'
+        return Math.round(numValue)
             .toString()
             .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
     }
 
-    const handleDebtClick = async (company) => {
-        setSelectedCompany(company)
-        setLoadingDebtData(true)
-        setIsDebtModalOpen(true)
+    const formatDecimal = (num) => {
+        if (num === null || num === undefined || num === '') return '0.00'
+        const numValue = typeof num === 'string' ? parseFloat(num) : Number(num)
+        if (isNaN(numValue)) return '0.00'
+        return numValue.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    }
 
-        try {
-            // Fetch sales and payments for this company from the overall-debt endpoint
-            const response = await api('get', {}, `/companies/overall-debt/${company.id}`)
-            if (response.success && response.data && response.data.data) {
-                const data = response.data.data
-                // Set sales data
-                if (data.sales) {
-                    setCompanySales(Array.isArray(data.sales) ? data.sales : [])
-                } else {
-                    setCompanySales([])
-                }
-
-                // Set payments data
-                if (data.payments) {
-                    setCompanyPayments(Array.isArray(data.payments) ? data.payments : [])
-                } else {
-                    setCompanyPayments([])
-                }
-            } else {
-                setCompanySales([])
-                setCompanyPayments([])
-                setError({
-                    message: response.error || 'Ошибка при загрузке данных о долге',
-                    statusCode: response.statusCode,
-                    errors: response.errors,
-                })
-                setIsErrorOpen(true)
-            }
-        } catch (err) {
-            console.error('Error fetching debt data:', err)
-            setCompanySales([])
-            setCompanyPayments([])
-            setError({
-                message: 'Ошибка при загрузке данных о долге',
-            })
-            setIsErrorOpen(true)
-        } finally {
-            setLoadingDebtData(false)
-        }
+    const handleDebtClick = (company) => {
+        navigate(`/companies/${company.id}`)
     }
 
     return (
@@ -320,10 +241,10 @@ const Companies = () => {
                             <h2 className='text-base sm:text-lg font-bold text-gray-700'>
                                 Компании
                             </h2>
-                            <div className='hidden md:flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
+                            <div className='flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
                                 <button
                                     onClick={() => setViewMode('table')}
-                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                         viewMode === 'table'
                                             ? 'bg-white text-gray-900 shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
@@ -333,7 +254,7 @@ const Companies = () => {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('cards')}
-                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                         viewMode === 'cards'
                                             ? 'bg-white text-gray-900 shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
@@ -363,7 +284,10 @@ const Companies = () => {
                                             Адрес
                                         </th>
                                         <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
-                                            Долг
+                                            {t('common.deposit')}
+                                        </th>
+                                        <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
+                                            {t('common.debt')}
                                         </th>
                                         <th className='text-right p-3 text-slate-400 text-xs font-bold uppercase'>
                                             Действия
@@ -374,7 +298,7 @@ const Companies = () => {
                                     {loading ? (
                                         <tr>
                                             <td
-                                                colSpan='6'
+                                                colSpan='7'
                                                 className='p-6 text-center text-slate-500 text-sm'
                                             >
                                                 Загрузка...
@@ -383,7 +307,7 @@ const Companies = () => {
                                     ) : !items || items.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan='6'
+                                                colSpan='7'
                                                 className='p-6 text-center text-slate-500 text-sm'
                                             >
                                                 Нет данных
@@ -393,7 +317,8 @@ const Companies = () => {
                                         items.map((item) => (
                                             <tr
                                                 key={item.id}
-                                                className='border-b border-slate-200 hover:bg-gray-50'
+                                                className='border-b border-slate-200 hover:bg-gray-50 cursor-pointer'
+                                                onDoubleClick={() => handleDebtClick(item)}
                                             >
                                                 <td className='p-3'>
                                                     <div className='text-sm font-bold text-gray-700'>
@@ -420,7 +345,12 @@ const Companies = () => {
                                                 </td>
                                                 <td className='p-3'>
                                                     <div className='text-sm font-semibold text-gray-700'>
-                                                        {formatNumber(companyDebts[item.id] || 0)}
+                                                        {formatDecimal(item.deposit || 0)}
+                                                    </div>
+                                                </td>
+                                                <td className='p-3'>
+                                                    <div className='text-sm font-semibold text-gray-700'>
+                                                        {formatDecimal(item.debt || 0)}
                                                     </div>
                                                 </td>
                                                 <td className='p-3'>
@@ -518,7 +448,8 @@ const Companies = () => {
                                     {items.map((item) => (
                                         <div
                                             key={item.id}
-                                            className='bg-white border-2 border-slate-200 rounded-2xl p-6 sm:p-8 hover:shadow-lg transition-shadow'
+                                            className='bg-white border-2 border-slate-200 rounded-2xl p-6 sm:p-8 hover:shadow-lg transition-shadow cursor-pointer'
+                                            onDoubleClick={() => handleDebtClick(item)}
                                         >
                                             <div className='flex justify-between items-start mb-4'>
                                                 <div className='flex-1'>
@@ -530,6 +461,24 @@ const Companies = () => {
                                                     </div>
                                                     <div className='text-base sm:text-lg text-slate-600'>
                                                         {item.address || '-'}
+                                                    </div>
+                                                    <div className='mt-3 flex gap-4'>
+                                                        <div>
+                                                            <div className='text-xs text-slate-500 mb-1'>
+                                                                {t('common.deposit')}
+                                                            </div>
+                                                            <div className='text-base font-semibold text-gray-700'>
+                                                                {formatDecimal(item.deposit || 0)}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className='text-xs text-slate-500 mb-1'>
+                                                                {t('common.debt')}
+                                                            </div>
+                                                            <div className='text-base font-semibold text-gray-700'>
+                                                                {formatDecimal(item.debt || 0)}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className='flex gap-3'>
@@ -691,681 +640,6 @@ const Companies = () => {
                     statusCode={error?.statusCode}
                     errors={error?.errors}
                 />
-
-                {/* Debt Details Modal */}
-                {isDebtModalOpen && (
-                    <dialog
-                        className={`modal ${isDebtModalOpen ? 'modal-open' : ''}`}
-                        data-theme='light'
-                    >
-                        <div className='modal-box rounded-2xl bg-white p-0 overflow-hidden border-none m-[25px] w-[calc(100%-50px)] h-[calc(100vh-50px)] max-w-none'>
-                            {/* Header with Breadcrumb */}
-                            <div className='px-6 py-4 border-b border-gray-200'>
-                                {/* Breadcrumb */}
-                                <nav className='mb-3 sm:mb-4' aria-label='Breadcrumb'>
-                                    <ol className='flex items-center space-x-2 text-sm'>
-                                        <li>
-                                            <button
-                                                onClick={() => setIsDebtModalOpen(false)}
-                                                className='text-gray-500 hover:text-gray-700'
-                                            >
-                                                Компании
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <svg
-                                                className='w-4 h-4 text-gray-400'
-                                                fill='currentColor'
-                                                viewBox='0 0 20 20'
-                                            >
-                                                <path
-                                                    fillRule='evenodd'
-                                                    d='M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z'
-                                                    clipRule='evenodd'
-                                                />
-                                            </svg>
-                                        </li>
-                                        <li>
-                                            <span className='text-gray-700 font-medium'>
-                                                Детали - {selectedCompany?.name || ''}
-                                            </span>
-                                        </li>
-                                    </ol>
-                                </nav>
-                                <h3 className='font-semibold text-lg text-gray-900'>
-                                    Детали - {selectedCompany?.name || ''}
-                                </h3>
-                            </div>
-                            <button
-                                className='absolute right-4 top-4 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all z-50'
-                                onClick={() => setIsDebtModalOpen(false)}
-                                type='button'
-                            >
-                                ✕
-                            </button>
-                            <div className='px-6 py-5 h-[calc(100%-80px)] overflow-auto'>
-                                {loadingDebtData ? (
-                                    <div className='text-center py-12 text-slate-500'>
-                                        Загрузка...
-                                    </div>
-                                ) : (
-                                    <div className='flex gap-6 h-full'>
-                                        {/* Left Section - Sales */}
-                                        <div className='w-1/2 flex flex-col'>
-                                            <h3 className='text-lg font-semibold text-gray-700 mb-3 sm:mb-4'>
-                                                Продажи
-                                            </h3>
-                                            <div className='relative flex-1 overflow-hidden'>
-                                                <div className='overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 overflow-y-auto h-full'>
-                                                    <table className='w-full min-w-[600px]'>
-                                                        <thead className='sticky top-0 bg-white z-10'>
-                                                            <tr className='border-b border-slate-200'>
-                                                                <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    ID
-                                                                </th>
-                                                                <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    Товары
-                                                                </th>
-                                                                <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    Сумма
-                                                                </th>
-                                                                <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    Дата
-                                                                </th>
-                                                                <th className='text-right p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    Действия
-                                                                </th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {companySales.length === 0 ? (
-                                                                <tr>
-                                                                    <td
-                                                                        colSpan='5'
-                                                                        className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
-                                                                    >
-                                                                        Нет данных
-                                                                    </td>
-                                                                </tr>
-                                                            ) : (
-                                                                companySales.map((sale) => (
-                                                                    <tr
-                                                                        key={sale.id}
-                                                                        className='border-b border-slate-200 hover:bg-gray-50'
-                                                                    >
-                                                                        <td className='p-3'>
-                                                                            <div className='text-xs sm:text-sm font-bold text-gray-700'>
-                                                                                {sale.id}
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className='p-3'>
-                                                                            <div className='text-xs sm:text-sm text-slate-600'>
-                                                                                {sale.products &&
-                                                                                sale.products
-                                                                                    .length > 0
-                                                                                    ? sale.products
-                                                                                          .map(
-                                                                                              (
-                                                                                                  p
-                                                                                              ) => {
-                                                                                                  return `${
-                                                                                                      p.name ||
-                                                                                                      'Товар'
-                                                                                                  } (${
-                                                                                                      p.pivot_quantity ||
-                                                                                                      p.quantity ||
-                                                                                                      0
-                                                                                                  })`
-                                                                                              }
-                                                                                          )
-                                                                                          .join(
-                                                                                              ', '
-                                                                                          )
-                                                                                    : '-'}
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className='p-3'>
-                                                                            <div className='text-xs sm:text-sm text-slate-600 font-semibold'>
-                                                                                {formatNumber(
-                                                                                    sale.summa || 0
-                                                                                )}
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className='p-3'>
-                                                                            <div className='text-xs sm:text-sm text-slate-600'>
-                                                                                {(() => {
-                                                                                    const dateStr =
-                                                                                        sale.date ||
-                                                                                        sale.created_at
-                                                                                    if (!dateStr)
-                                                                                        return '-'
-                                                                                    try {
-                                                                                        const date =
-                                                                                            new Date(
-                                                                                                dateStr
-                                                                                            )
-                                                                                        if (
-                                                                                            isNaN(
-                                                                                                date.getTime()
-                                                                                            )
-                                                                                        )
-                                                                                            return dateStr
-                                                                                        const day =
-                                                                                            String(
-                                                                                                date.getDate()
-                                                                                            ).padStart(
-                                                                                                2,
-                                                                                                '0'
-                                                                                            )
-                                                                                        const month =
-                                                                                            String(
-                                                                                                date.getMonth() +
-                                                                                                    1
-                                                                                            ).padStart(
-                                                                                                2,
-                                                                                                '0'
-                                                                                            )
-                                                                                        const year =
-                                                                                            date.getFullYear()
-                                                                                        return `${day}-${month}-${year}`
-                                                                                    } catch {
-                                                                                        return dateStr
-                                                                                    }
-                                                                                })()}
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className='p-3'>
-                                                                            <div className='flex justify-end'>
-                                                                                <Button
-                                                                                    onClick={() => {
-                                                                                        setSelectedDetail(
-                                                                                            sale
-                                                                                        )
-                                                                                        setDetailType(
-                                                                                            'sale'
-                                                                                        )
-                                                                                        setIsDetailModalOpen(
-                                                                                            true
-                                                                                        )
-                                                                                    }}
-                                                                                    variant='secondary'
-                                                                                    className='btn-xs sm:btn-sm btn-circle'
-                                                                                    title='Показать детали'
-                                                                                >
-                                                                                    <svg
-                                                                                        xmlns='http://www.w3.org/2000/svg'
-                                                                                        fill='none'
-                                                                                        viewBox='0 0 24 24'
-                                                                                        strokeWidth={
-                                                                                            1.5
-                                                                                        }
-                                                                                        stroke='currentColor'
-                                                                                        className='w-3 h-3 sm:w-4 sm:h-4'
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap='round'
-                                                                                            strokeLinejoin='round'
-                                                                                            d='M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z'
-                                                                                        />
-                                                                                        <path
-                                                                                            strokeLinecap='round'
-                                                                                            strokeLinejoin='round'
-                                                                                            d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
-                                                                                        />
-                                                                                    </svg>
-                                                                                </Button>
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))
-                                                            )}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Right Section - Payments */}
-                                        <div className='w-1/2 flex flex-col'>
-                                            <h3 className='text-lg font-semibold text-gray-700 mb-3 sm:mb-4'>
-                                                Оплаченные платежи
-                                            </h3>
-                                            <div className='relative flex-1 overflow-hidden'>
-                                                <div className='overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 overflow-y-auto h-full'>
-                                                    <table className='w-full min-w-[600px]'>
-                                                        <thead className='sticky top-0 bg-white z-10'>
-                                                            <tr className='border-b border-slate-200'>
-                                                                <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    ID
-                                                                </th>
-                                                                <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    Название
-                                                                </th>
-                                                                <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    Тип платежа
-                                                                </th>
-                                                                <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    Сумма
-                                                                </th>
-                                                                <th className='text-left p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    Дата
-                                                                </th>
-                                                                <th className='text-right p-3 text-slate-400 text-[10px] font-bold uppercase'>
-                                                                    Действия
-                                                                </th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {companyPayments.length === 0 ? (
-                                                                <tr>
-                                                                    <td
-                                                                        colSpan='6'
-                                                                        className='p-6 sm:p-8 text-center text-slate-500 text-xs sm:text-sm'
-                                                                    >
-                                                                        Нет данных
-                                                                    </td>
-                                                                </tr>
-                                                            ) : (
-                                                                companyPayments.map((payment) => {
-                                                                    const paymentType =
-                                                                        payment.payment_type_id ===
-                                                                        1
-                                                                            ? '$'
-                                                                            : payment.payment_type_id ===
-                                                                              2
-                                                                            ? '$'
-                                                                            : '-'
-                                                                    // Get amount from companies pivot
-                                                                    const companyPayment =
-                                                                        payment.companies?.find(
-                                                                            (c) =>
-                                                                                c.id ===
-                                                                                selectedCompany?.id
-                                                                        )
-                                                                    const amount =
-                                                                        companyPayment?.pivot
-                                                                            ?.amount || 0
-
-                                                                    return (
-                                                                        <tr
-                                                                            key={payment.id}
-                                                                            className='border-b border-slate-200 hover:bg-gray-50'
-                                                                        >
-                                                                            <td className='p-3'>
-                                                                                <div className='text-xs sm:text-sm font-bold text-gray-700'>
-                                                                                    {payment.id}
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className='p-3'>
-                                                                                <div className='text-xs sm:text-sm font-bold text-gray-700'>
-                                                                                    {payment.name ||
-                                                                                        '-'}
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className='p-3'>
-                                                                                <div className='text-xs sm:text-sm text-slate-600'>
-                                                                                    {paymentType}
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className='p-3'>
-                                                                                <div className='text-xs sm:text-sm text-slate-600 font-semibold'>
-                                                                                    {formatNumber(
-                                                                                        amount
-                                                                                    )}
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className='p-3'>
-                                                                                <div className='text-xs sm:text-sm text-slate-600'>
-                                                                                    {(() => {
-                                                                                        const dateStr =
-                                                                                            payment.date ||
-                                                                                            payment.created_at
-                                                                                        if (
-                                                                                            !dateStr
-                                                                                        )
-                                                                                            return '-'
-                                                                                        try {
-                                                                                            const date =
-                                                                                                new Date(
-                                                                                                    dateStr
-                                                                                                )
-                                                                                            if (
-                                                                                                isNaN(
-                                                                                                    date.getTime()
-                                                                                                )
-                                                                                            )
-                                                                                                return dateStr
-                                                                                            const day =
-                                                                                                String(
-                                                                                                    date.getDate()
-                                                                                                ).padStart(
-                                                                                                    2,
-                                                                                                    '0'
-                                                                                                )
-                                                                                            const month =
-                                                                                                String(
-                                                                                                    date.getMonth() +
-                                                                                                        1
-                                                                                                ).padStart(
-                                                                                                    2,
-                                                                                                    '0'
-                                                                                                )
-                                                                                            const year =
-                                                                                                date.getFullYear()
-                                                                                            return `${day}-${month}-${year}`
-                                                                                        } catch {
-                                                                                            return dateStr
-                                                                                        }
-                                                                                    })()}
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className='p-3'>
-                                                                                <div className='flex justify-end'>
-                                                                                    <Button
-                                                                                        onClick={() => {
-                                                                                            setSelectedDetail(
-                                                                                                payment
-                                                                                            )
-                                                                                            setDetailType(
-                                                                                                'payment'
-                                                                                            )
-                                                                                            setIsDetailModalOpen(
-                                                                                                true
-                                                                                            )
-                                                                                        }}
-                                                                                        variant='secondary'
-                                                                                        className='btn-xs sm:btn-sm btn-circle'
-                                                                                        title='Показать детали'
-                                                                                    >
-                                                                                        <svg
-                                                                                            xmlns='http://www.w3.org/2000/svg'
-                                                                                            fill='none'
-                                                                                            viewBox='0 0 24 24'
-                                                                                            strokeWidth={
-                                                                                                1.5
-                                                                                            }
-                                                                                            stroke='currentColor'
-                                                                                            className='w-3 h-3 sm:w-4 sm:h-4'
-                                                                                        >
-                                                                                            <path
-                                                                                                strokeLinecap='round'
-                                                                                                strokeLinejoin='round'
-                                                                                                d='M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z'
-                                                                                            />
-                                                                                            <path
-                                                                                                strokeLinecap='round'
-                                                                                                strokeLinejoin='round'
-                                                                                                d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
-                                                                                            />
-                                                                                        </svg>
-                                                                                    </Button>
-                                                                                </div>
-                                                                            </td>
-                                                                        </tr>
-                                                                    )
-                                                                })
-                                                            )}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <form method='dialog' className='modal-backdrop'>
-                            <button onClick={() => setIsDebtModalOpen(false)}>close</button>
-                        </form>
-                    </dialog>
-                )}
-
-                {/* Detail Modal for Sale or Payment */}
-                <Modal
-                    isOpen={isDetailModalOpen}
-                    onClose={() => {
-                        setIsDetailModalOpen(false)
-                        setSelectedDetail(null)
-                        setDetailType(null)
-                    }}
-                    title={
-                        detailType === 'sale'
-                            ? `Детали продажи #${selectedDetail?.id || ''}`
-                            : `Детали платежа #${selectedDetail?.id || ''}`
-                    }
-                    maxWidth='max-w-4xl'
-                >
-                    {selectedDetail && detailType === 'sale' && (
-                        <div className='space-y-4'>
-                            <div className='grid grid-cols-2 gap-4'>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        ID
-                                    </div>
-                                    <div className='text-xs sm:text-sm font-bold text-gray-700'>
-                                        {selectedDetail.id}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        Сумма
-                                    </div>
-                                    <div className='text-sm font-semibold text-gray-700'>
-                                        {formatNumber(selectedDetail.summa || 0)}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        Дата создания
-                                    </div>
-                                    <div className='text-sm text-gray-700'>
-                                        {(() => {
-                                            const dateStr =
-                                                selectedDetail.created_at || selectedDetail.date
-                                            if (!dateStr) return '-'
-                                            try {
-                                                const date = new Date(dateStr)
-                                                if (isNaN(date.getTime())) return dateStr
-                                                const day = String(date.getDate()).padStart(2, '0')
-                                                const month = String(date.getMonth() + 1).padStart(
-                                                    2,
-                                                    '0'
-                                                )
-                                                const year = date.getFullYear()
-                                                return `${day}-${month}-${year}`
-                                            } catch {
-                                                return dateStr
-                                            }
-                                        })()}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        Пользователь
-                                    </div>
-                                    <div className='text-sm text-gray-700'>
-                                        {selectedDetail.user?.username || '-'}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className='text-xs text-slate-400 font-medium uppercase mb-2'>
-                                    Товары
-                                </div>
-                                <div className='space-y-2'>
-                                    {selectedDetail.products &&
-                                    selectedDetail.products.length > 0 ? (
-                                        selectedDetail.products.map((product, index) => (
-                                            <div
-                                                key={index}
-                                                className='bg-gray-50 rounded-lg p-4 border border-gray-200'
-                                            >
-                                                <div className='grid grid-cols-2 gap-4'>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Название
-                                                        </div>
-                                                        <div className='text-sm font-semibold text-gray-700'>
-                                                            {product.name || '-'}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Описание
-                                                        </div>
-                                                        <div className='text-sm text-gray-700'>
-                                                            {product.description || '-'}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Количество
-                                                        </div>
-                                                        <div className='text-sm text-gray-700'>
-                                                            {product.pivot_quantity ||
-                                                                product.quantity ||
-                                                                0}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Цена
-                                                        </div>
-                                                        <div className='text-sm font-semibold text-gray-700'>
-                                                            {formatNumber(
-                                                                product.pivot_price ||
-                                                                    product.price ||
-                                                                    0
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className='text-sm text-slate-500'>Нет товаров</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {selectedDetail && detailType === 'payment' && (
-                        <div className='space-y-4'>
-                            <div className='grid grid-cols-2 gap-4'>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        ID
-                                    </div>
-                                    <div className='text-xs sm:text-sm font-bold text-gray-700'>
-                                        {selectedDetail.id}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        UUID
-                                    </div>
-                                    <div className='text-sm text-gray-700'>
-                                        {selectedDetail.uuid || '-'}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        Название
-                                    </div>
-                                    <div className='text-sm font-semibold text-gray-700'>
-                                        {selectedDetail.name || '-'}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        Тип платежа
-                                    </div>
-                                    <div className='text-sm text-gray-700'>
-                                        {selectedDetail.payment_type_id === 1
-                                            ? '$'
-                                            : selectedDetail.payment_type_id === 2
-                                            ? '$'
-                                            : '-'}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        Статус продажи
-                                    </div>
-                                    <div className='text-sm text-gray-700'>
-                                        {selectedDetail.sales_stage || '-'}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        Пользователь
-                                    </div>
-                                    <div className='text-sm text-gray-700'>
-                                        {selectedDetail.user?.username || '-'}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className='text-xs text-slate-400 font-medium uppercase mb-2'>
-                                    Компании
-                                </div>
-                                <div className='space-y-2'>
-                                    {selectedDetail.companies &&
-                                    selectedDetail.companies.length > 0 ? (
-                                        selectedDetail.companies.map((company, index) => (
-                                            <div
-                                                key={index}
-                                                className='bg-gray-50 rounded-lg p-4 border border-gray-200'
-                                            >
-                                                <div className='grid grid-cols-2 gap-4'>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Название
-                                                        </div>
-                                                        <div className='text-sm font-semibold text-gray-700'>
-                                                            {company.name || '-'}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Телефон
-                                                        </div>
-                                                        <div className='text-sm text-gray-700'>
-                                                            {company.phone || '-'}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Адрес
-                                                        </div>
-                                                        <div className='text-sm text-gray-700'>
-                                                            {company.address || '-'}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Сумма
-                                                        </div>
-                                                        <div className='text-sm font-semibold text-gray-700'>
-                                                            {formatNumber(
-                                                                company.pivot?.amount || 0
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className='text-sm text-slate-500'>Нет компаний</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </Modal>
             </div>
         </Layout>
     )

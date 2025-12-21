@@ -38,6 +38,8 @@ export const translations = {
         yes: 'Да',
         no: 'Нет',
         logout: 'Выйти',
+        deposit: 'Депозит',
+        debt: 'Долг',
     },
 }
 

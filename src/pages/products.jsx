@@ -204,10 +204,10 @@ const Products = () => {
                             <h2 className='text-base sm:text-lg font-bold text-gray-700'>
                                 Продукты
                             </h2>
-                            <div className='hidden md:flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
+                            <div className='flex gap-1 sm:gap-2 bg-gray-100 p-0.5 sm:p-1 rounded-lg'>
                                 <button
                                     onClick={() => setViewMode('table')}
-                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                         viewMode === 'table'
                                             ? 'bg-white text-gray-900 shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
@@ -217,7 +217,7 @@ const Products = () => {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('cards')}
-                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                                         viewMode === 'cards'
                                             ? 'bg-white text-gray-900 shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'

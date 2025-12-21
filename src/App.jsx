@@ -3,6 +3,7 @@ import { Route, Routes, useNavigate } from 'react-router-dom'
 import { Context } from './context'
 import Actions from './pages/actions'
 import Companies from './pages/companies'
+import CompanyDetails from './pages/companyDetails'
 import Dashboard from './pages/dashboard'
 import Expances from './pages/expances'
 import Login from './pages/login'
@@ -91,6 +92,7 @@ const App = () => {
                     <Route path='/material_types' element={<MaterialTypes />} />
                     <Route path='/materials' element={<Materials />} />
                     <Route path='/companies' element={<Companies />} />
+                    <Route path='/companies/:id' element={<CompanyDetails />} />
                     <Route path='/sales' element={<Sales />} />
                     <Route path='/payments' element={<Payments />} />
                     <Route path='/expances' element={<Expances />} />
