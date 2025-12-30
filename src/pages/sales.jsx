@@ -323,12 +323,7 @@ const Sales = () => {
                     const paymentSubmitData = {
                         name: generatedName,
                         payment_type_id: 2, // "$" (dollars)
-                        sales: [
-                            {
-                                company_id: parseInt(formData.company_id),
-                                amount: saleTotalAmount,
-                            },
-                        ],
+                        amount: saleTotalAmount,
                     }
 
                     const paymentResponse = await api('post', paymentSubmitData, '/payments/create')
