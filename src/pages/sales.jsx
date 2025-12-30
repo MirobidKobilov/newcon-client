@@ -324,6 +324,7 @@ const Sales = () => {
                         name: generatedName,
                         payment_type_id: 2, // "$" (dollars)
                         amount: saleTotalAmount,
+                        sale_id: newSaleId,
                     }
 
                     const paymentResponse = await api('post', paymentSubmitData, '/payments/create')

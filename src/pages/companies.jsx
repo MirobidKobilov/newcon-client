@@ -289,6 +289,9 @@ const Companies = () => {
                                         <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
                                             {t('common.debt')}
                                         </th>
+                                        <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
+                                            Сумма платежей ($)
+                                        </th>
                                         <th className='text-right p-3 text-slate-400 text-xs font-bold uppercase'>
                                             Действия
                                         </th>
@@ -298,7 +301,7 @@ const Companies = () => {
                                     {loading ? (
                                         <tr>
                                             <td
-                                                colSpan='7'
+                                                colSpan='8'
                                                 className='p-6 text-center text-slate-500 text-sm'
                                             >
                                                 Загрузка...
@@ -307,7 +310,7 @@ const Companies = () => {
                                     ) : !items || items.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan='7'
+                                                colSpan='8'
                                                 className='p-6 text-center text-slate-500 text-sm'
                                             >
                                                 Нет данных
@@ -351,6 +354,11 @@ const Companies = () => {
                                                 <td className='p-3'>
                                                     <div className='text-sm font-semibold text-gray-700'>
                                                         {formatDecimal(item.debt || 0)}
+                                                    </div>
+                                                </td>
+                                                <td className='p-3'>
+                                                    <div className='text-sm font-semibold text-gray-700'>
+                                                        {formatNumber(item.total_payments || 0)}
                                                     </div>
                                                 </td>
                                                 <td className='p-3'>
@@ -477,6 +485,16 @@ const Companies = () => {
                                                             </div>
                                                             <div className='text-base font-semibold text-gray-700'>
                                                                 {formatDecimal(item.debt || 0)}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className='text-xs text-slate-500 mb-1'>
+                                                                Всего платежей
+                                                            </div>
+                                                            <div className='text-base font-semibold text-gray-700'>
+                                                                {formatNumber(
+                                                                    item.total_payments || 0
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
