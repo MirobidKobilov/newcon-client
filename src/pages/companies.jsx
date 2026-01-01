@@ -284,13 +284,13 @@ const Companies = () => {
                                             Адрес
                                         </th>
                                         <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
+                                            Сумма платежей ($)
+                                        </th>
+                                        <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
                                             {t('common.deposit')}
                                         </th>
                                         <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
                                             {t('common.debt')}
-                                        </th>
-                                        <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
-                                            Сумма платежей ($)
                                         </th>
                                         <th className='text-right p-3 text-slate-400 text-xs font-bold uppercase'>
                                             Действия
@@ -348,6 +348,11 @@ const Companies = () => {
                                                 </td>
                                                 <td className='p-3'>
                                                     <div className='text-sm font-semibold text-gray-700'>
+                                                        {formatNumber(item.total_payments || 0)}
+                                                    </div>
+                                                </td>
+                                                <td className='p-3'>
+                                                    <div className='text-sm font-semibold text-gray-700'>
                                                         {formatDecimal(item.deposit || 0)}
                                                     </div>
                                                 </td>
@@ -356,11 +361,7 @@ const Companies = () => {
                                                         {formatDecimal(item.debt || 0)}
                                                     </div>
                                                 </td>
-                                                <td className='p-3'>
-                                                    <div className='text-sm font-semibold text-gray-700'>
-                                                        {formatNumber(item.total_payments || 0)}
-                                                    </div>
-                                                </td>
+
                                                 <td className='p-3'>
                                                     <div className='flex gap-2 justify-end'>
                                                         <Button
