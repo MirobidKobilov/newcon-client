@@ -284,13 +284,13 @@ const Companies = () => {
                                             Адрес
                                         </th>
                                         <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
-                                            Сумма платежей ($)
+                                            Сумма продаж ($)
                                         </th>
                                         <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
-                                            {t('common.deposit')}
+                                            Общая сумма платежей ($)
                                         </th>
                                         <th className='text-left p-3 text-slate-400 text-xs font-bold uppercase'>
-                                            {t('common.debt')}
+                                            Долг ($)
                                         </th>
                                         <th className='text-right p-3 text-slate-400 text-xs font-bold uppercase'>
                                             Действия
@@ -348,17 +348,17 @@ const Companies = () => {
                                                 </td>
                                                 <td className='p-3'>
                                                     <div className='text-sm font-semibold text-gray-700'>
-                                                        {formatNumber(item.total_payments || 0)}
+                                                        {formatNumber(item.sold_amount || 0)}
                                                     </div>
                                                 </td>
                                                 <td className='p-3'>
                                                     <div className='text-sm font-semibold text-gray-700'>
-                                                        {formatDecimal(item.deposit || 0)}
+                                                        {formatDecimal(item.paid_amount || 0)}
                                                     </div>
                                                 </td>
                                                 <td className='p-3'>
                                                     <div className='text-sm font-semibold text-gray-700'>
-                                                        {formatDecimal(item.debt || 0)}
+                                                        {formatDecimal(item.sold_amount - item.paid_amount || 0)}
                                                     </div>
                                                 </td>
 

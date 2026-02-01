@@ -4,6 +4,7 @@ import Button from '../components/UI/Button'
 import ErrorModal from '../components/UI/ErrorModal'
 import Input from '../components/UI/Input'
 import Modal from '../components/UI/Modal'
+import Select from '../components/UI/Select'
 import SuccessModal from '../components/UI/SuccessModal'
 import Layout from '../layout/layout'
 import { api } from '../utils/api'
@@ -22,6 +23,7 @@ const CompanyDetails = () => {
     const [detailType, setDetailType] = useState(null) // 'sale' or 'payment'
     const [isCreatePaymentModalOpen, setIsCreatePaymentModalOpen] = useState(false)
     const [paymentAmount, setPaymentAmount] = useState('')
+    const [selectedSaleId, setSelectedSaleId] = useState('')
     const [isSubmittingPayment, setIsSubmittingPayment] = useState(false)
     const [isSuccessOpen, setIsSuccessOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState('')
@@ -38,19 +40,23 @@ const CompanyDetails = () => {
         }
     }, [id])
 
-    const [ total_payments, setTotalPayments] = useState(0)
+    const [total_payments, setTotalPayments] = useState(0)
 
     const fetchCompanyDetails = async () => {
         setLoading(true)
         try {
             // Fetch sales and payments for this company
-            const response = await api('get', {}, `/companies/overall-debt/${id}`)
+            const response = await api('get', {}, `/companies/show/${id}`)
             if (response.success && response.data && response.data.data) {
                 const data = response.data.data
-                // Set company info if available
-                if (data.company) {
-                    setCompany(data.company)
-                }
+                // Set company info - data contains id, name, phone, address directly
+                setCompany({
+                    id: data.id,
+                    name: data.name,
+                    phone: data.phone,
+                    address: data.address,
+                    deposit: data.deposit,
+                })
 
                 setTotalPayments(data.total_payments || 0)
 
@@ -189,17 +195,21 @@ const CompanyDetails = () => {
                 return
             }
 
+            if (!selectedSaleId) {
+                setError({
+                    message: 'Пожалуйста, выберите продажу',
+                })
+                setIsErrorOpen(true)
+                setIsSubmittingPayment(false)
+                return
+            }
+
             const paymentData = {
                 name: 'Платеж',
                 payment_type_id: 1,
-                sale_id: null,
+                sale_id: parseInt(selectedSaleId),
                 amount: amount,
-                sales: [
-                    {
-                        company_id: parseInt(id),
-                        amount: amount,
-                    },
-                ],
+                company_id: parseInt(id),
             }
 
             const response = await api('post', paymentData, '/payments/create')
@@ -210,6 +220,7 @@ const CompanyDetails = () => {
 
                 setIsCreatePaymentModalOpen(false)
                 setPaymentAmount('')
+                setSelectedSaleId('')
                 setSuccessMessage('Платеж успешно создан')
                 setIsSuccessOpen(true)
             } else {
@@ -281,12 +292,6 @@ const CompanyDetails = () => {
 
                 <div className='bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden'>
                     <div className='p-4 sm:p-6 flex flex-row justify-between items-center border-b border-slate-200'>
-                        <div className='flex items-center justify-between gap-4 mb-4'>
-                            <div className='text-base md:text-lg font-bold text-slate-500'>
-                                Кол-во платежей: {formatNumber(total_payments)}
-                            </div>
-                        </div>
-
                         <div className='flex items-center justify-end gap-4 mb-4'>
                             <Button
                                 onClick={() => setIsCreatePaymentModalOpen(true)}
@@ -343,9 +348,6 @@ const CompanyDetails = () => {
                                                         </th>
                                                         <th className='text-left px-2 py-1.5 text-slate-400 text-[10px] font-bold uppercase'>
                                                             Сумма
-                                                        </th>
-                                                        <th className='text-left px-2 py-1.5 text-slate-400 text-[10px] font-bold uppercase'>
-                                                            Дата
                                                         </th>
                                                         <th className='text-right px-2 py-1.5 text-slate-400 text-[10px] font-bold uppercase'>
                                                             Действия
@@ -416,14 +418,6 @@ const CompanyDetails = () => {
                                                                     <div className='text-xs text-slate-600 font-semibold'>
                                                                         {formatNumber(
                                                                             sale.summa || 0
-                                                                        )}
-                                                                    </div>
-                                                                </td>
-                                                                <td className='px-2 py-1.5'>
-                                                                    <div className='text-xs text-slate-600'>
-                                                                        {formatDate(
-                                                                            sale.date ||
-                                                                                sale.created_at
                                                                         )}
                                                                     </div>
                                                                 </td>
@@ -862,39 +856,6 @@ const CompanyDetails = () => {
                                         {formatNumber(selectedDetail.summa || 0)}
                                     </div>
                                 </div>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        Дата создания
-                                    </div>
-                                    <div className='text-sm text-gray-700'>
-                                        {(() => {
-                                            const dateStr =
-                                                selectedDetail.created_at || selectedDetail.date
-                                            if (!dateStr) return '-'
-                                            try {
-                                                const date = new Date(dateStr)
-                                                if (isNaN(date.getTime())) return dateStr
-                                                const day = String(date.getDate()).padStart(2, '0')
-                                                const month = String(date.getMonth() + 1).padStart(
-                                                    2,
-                                                    '0'
-                                                )
-                                                const year = date.getFullYear()
-                                                return `${day}-${month}-${year}`
-                                            } catch {
-                                                return dateStr
-                                            }
-                                        })()}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
-                                        Пользователь
-                                    </div>
-                                    <div className='text-sm text-gray-700'>
-                                        {selectedDetail.user?.username || '-'}
-                                    </div>
-                                </div>
                             </div>
 
                             <div>
@@ -1081,11 +1042,25 @@ const CompanyDetails = () => {
                     onClose={() => {
                         setIsCreatePaymentModalOpen(false)
                         setPaymentAmount('')
+                        setSelectedSaleId('')
                     }}
                     title='Создать платеж'
                     maxWidth='max-w-md'
                 >
                     <form onSubmit={handleCreatePayment} className='space-y-4'>
+                        <Select
+                            label='Продажа'
+                            required
+                            options={companySales.map((sale) => ({
+                                value: sale.id,
+                                label: `#${sale.id} - ${formatNumber(
+                                    sale.summa || 0
+                                )} (${formatDate(sale.date || sale.created_at)})`,
+                            }))}
+                            value={selectedSaleId}
+                            onChange={setSelectedSaleId}
+                            placeholder='Выберите продажу'
+                        />
                         <Input
                             label='Сумма'
                             name='amount'
@@ -1116,6 +1091,7 @@ const CompanyDetails = () => {
                                 onClick={() => {
                                     setIsCreatePaymentModalOpen(false)
                                     setPaymentAmount('')
+                                    setSelectedSaleId('')
                                 }}
                                 disabled={isSubmittingPayment}
                             >
@@ -1124,7 +1100,7 @@ const CompanyDetails = () => {
                             <Button
                                 type='submit'
                                 variant='primary'
-                                disabled={isSubmittingPayment || !paymentAmount}
+                                disabled={isSubmittingPayment || !paymentAmount || !selectedSaleId}
                             >
                                 {isSubmittingPayment ? 'Создание...' : 'Создать'}
                             </Button>
