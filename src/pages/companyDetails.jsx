@@ -621,13 +621,8 @@ const CompanyDetails = () => {
                                                                     : payment.payment_type_id === 2
                                                                     ? '$'
                                                                     : '-'
-                                                            // Get amount from companies pivot
-                                                            const companyPayment =
-                                                                payment.companies?.find(
-                                                                    (c) => c.id === parseInt(id)
-                                                                )
-                                                            const amount =
-                                                                companyPayment?.pivot?.amount || 0
+                                                            // Get amount directly from payment object
+                                                            const amount = payment.amount || 0
 
                                                             return (
                                                                 <tr
@@ -722,11 +717,8 @@ const CompanyDetails = () => {
                                                             : payment.payment_type_id === 2
                                                             ? '$'
                                                             : '-'
-                                                    const companyPayment = payment.companies?.find(
-                                                        (c) => c.id === parseInt(id)
-                                                    )
-                                                    const amount =
-                                                        companyPayment?.pivot?.amount || 0
+                                                    // Get amount directly from payment object
+                                                    const amount = payment.amount || 0
 
                                                     return (
                                                         <div
@@ -977,61 +969,62 @@ const CompanyDetails = () => {
                                 </div>
                             </div>
 
-                            <div>
-                                <div className='text-xs text-slate-400 font-medium uppercase mb-2'>
-                                    Компании
+                            <div className='grid grid-cols-2 gap-4'>
+                                <div>
+                                    <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
+                                        Сумма платежа
+                                    </div>
+                                    <div className='text-sm font-semibold text-gray-700'>
+                                        {formatNumber(selectedDetail.amount || 0)}
+                                    </div>
                                 </div>
-                                <div className='space-y-2'>
-                                    {selectedDetail.companies &&
-                                    selectedDetail.companies.length > 0 ? (
-                                        selectedDetail.companies.map((company, index) => (
-                                            <div
-                                                key={index}
-                                                className='bg-gray-50 rounded-lg p-4 border border-gray-200'
-                                            >
-                                                <div className='grid grid-cols-2 gap-4'>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Название
-                                                        </div>
-                                                        <div className='text-sm font-semibold text-gray-700'>
-                                                            {company.name || '-'}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Телефон
-                                                        </div>
-                                                        <div className='text-sm text-gray-700'>
-                                                            {company.phone || '-'}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Адрес
-                                                        </div>
-                                                        <div className='text-sm text-gray-700'>
-                                                            {company.address || '-'}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className='text-xs text-slate-400 mb-1'>
-                                                            Сумма
-                                                        </div>
-                                                        <div className='text-sm font-semibold text-gray-700'>
-                                                            {formatNumber(
-                                                                company.pivot?.amount || 0
-                                                            )}
-                                                        </div>
-                                                    </div>
+                                {selectedDetail.sale_id && (
+                                    <div>
+                                        <div className='text-xs text-slate-400 font-medium uppercase mb-1'>
+                                            ID продажи
+                                        </div>
+                                        <div className='text-sm text-gray-700'>
+                                            #{selectedDetail.sale_id}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {selectedDetail.companies && (
+                                <div>
+                                    <div className='text-xs text-slate-400 font-medium uppercase mb-2'>
+                                        Компания
+                                    </div>
+                                    <div className='bg-gray-50 rounded-lg p-4 border border-gray-200'>
+                                        <div className='grid grid-cols-2 gap-4'>
+                                            <div>
+                                                <div className='text-xs text-slate-400 mb-1'>
+                                                    Название
+                                                </div>
+                                                <div className='text-sm font-semibold text-gray-700'>
+                                                    {selectedDetail.companies.name || '-'}
                                                 </div>
                                             </div>
-                                        ))
-                                    ) : (
-                                        <div className='text-sm text-slate-500'>Нет компаний</div>
-                                    )}
+                                            <div>
+                                                <div className='text-xs text-slate-400 mb-1'>
+                                                    Телефон
+                                                </div>
+                                                <div className='text-sm text-gray-700'>
+                                                    {selectedDetail.companies.phone || '-'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className='text-xs text-slate-400 mb-1'>
+                                                    Адрес
+                                                </div>
+                                                <div className='text-sm text-gray-700'>
+                                                    {selectedDetail.companies.address || '-'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     )}
                 </Modal>
